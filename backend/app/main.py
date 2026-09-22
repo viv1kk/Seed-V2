@@ -7,7 +7,7 @@ rather than on the first request (A-1).
 
 from fastapi import FastAPI
 
-from app.api import events, health
+from app.api import demo, events, health, state
 
 app = FastAPI(
     title="Systems V1",
@@ -16,4 +16,7 @@ app = FastAPI(
 )
 
 app.include_router(health.router, prefix="/api", tags=["health"])
+app.include_router(state.router, prefix="/api", tags=["state"])
 app.include_router(events.router, prefix="/api", tags=["events"])
+# Removed at M2, together with the module it points at.
+app.include_router(demo.router, prefix="/api", tags=["demo"])

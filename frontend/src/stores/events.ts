@@ -1,65 +1,158 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { useSystemStore, type Phase } from './system'
+
+export type Category =
+  | 'DISCOVERY'
+  | 'ANALYSIS'
+  | 'VALIDATION'
+  | 'DECISION'
+  | 'POLICY'
+  | 'WARNING'
+  | 'SUCCESS'
+  | 'HUMAN_INPUT'
+
+export type Severity = 'INFO' | 'WARNING' | 'ERROR'
+
 export interface SystemEvent {
   sequence: number
-  type: string
   timestamp: string
+  type: string
+  phase: Phase
+  category: Category
+  severity: Severity
+  message: string
   payload: Record<string, unknown>
 }
 
 export type ConnectionState = 'idle' | 'connecting' | 'open' | 'error'
 
+/** Every event type the backend emits arrives under its own SSE name. */
+const EVENT_TYPES = [
+  'lifecycle.transition',
+  'seed.loaded',
+  'discovery.system.found',
+  'discovery.endpoint.timeout',
+  'discovery.endpoint.recovered',
+  'assessment.completed',
+  'human.requested',
+  'human.resolved',
+] as const
+
 /**
- * Holds the event stream.
+ * Owns the connection to the event stream.
  *
- * M0 proves the transport only: connect, receive, render. M1 replaces
- * this with snapshot-then-stream, `Last-Event-ID` replay and
- * sequence-gap detection (FR-E4--E7). The gap check below is the seam
- * that work extends rather than replaces.
+ * Snapshot first, then stream (FR-E5). A sequence gap means the local
+ * view can no longer be trusted, so it is discarded and rebuilt rather
+ * than patched (FR-E6). Reconnection replays exactly, because the
+ * browser sends `Last-Event-ID` on its own and the backend serves the
+ * retained log from that point (FR-E7).
  */
 export const useEventStore = defineStore('events', () => {
+  const system = useSystemStore()
+
   const events = ref<SystemEvent[]>([])
   const connection = ref<ConnectionState>('idle')
   const lastSequence = ref(0)
+
+  /** Sequence numbers at which a gap was detected, for the operator. */
   const gaps = ref<number[]>([])
+  const resyncs = ref(0)
 
   let source: EventSource | null = null
+  let resyncing = false
 
-  function record(event: SystemEvent): void {
+  function receive(event: SystemEvent): void {
+    // Contiguity is the whole guarantee. Anything else means an event
+    // was lost, and a lost event cannot be reconstructed locally.
     const expected = lastSequence.value + 1
     if (lastSequence.value > 0 && event.sequence !== expected) {
       gaps.value.push(expected)
-    }
-    lastSequence.value = event.sequence
-    events.value.push(event)
-  }
-
-  function connect(): void {
-    if (source) {
+      void resync()
       return
     }
-    connection.value = 'connecting'
+
+    lastSequence.value = event.sequence
+    events.value.push(event)
+    system.apply(event)
+  }
+
+  function open(): void {
     source = new EventSource('/api/events')
+    connection.value = 'connecting'
 
     source.onopen = () => {
       connection.value = 'open'
     }
 
+    // The browser reconnects on its own and replays from
+    // `Last-Event-ID`, so an error here is a state to display rather
+    // than something to act on.
     source.onerror = () => {
       connection.value = 'error'
     }
 
-    source.addEventListener('system.heartbeat', (message) => {
-      record(JSON.parse((message as MessageEvent).data) as SystemEvent)
-    })
+    for (const type of EVENT_TYPES) {
+      source.addEventListener(type, (message) => {
+        receive(JSON.parse((message as MessageEvent).data) as SystemEvent)
+      })
+    }
+  }
+
+  function close(): void {
+    source?.close()
+    source = null
+  }
+
+  async function connect(): Promise<void> {
+    if (source) {
+      return
+    }
+    connection.value = 'connecting'
+    await system.fetchSnapshot()
+    lastSequence.value = 0
+    open()
+  }
+
+  /** Discard local state and rebuild it from a fresh snapshot (FR-E6). */
+  async function resync(): Promise<void> {
+    if (resyncing) {
+      return
+    }
+    resyncing = true
+    resyncs.value += 1
+    try {
+      close()
+      events.value = []
+      lastSequence.value = 0
+      await system.fetchSnapshot()
+      open()
+    } finally {
+      resyncing = false
+    }
   }
 
   function disconnect(): void {
-    source?.close()
-    source = null
+    close()
     connection.value = 'idle'
   }
 
-  return { events, connection, lastSequence, gaps, connect, disconnect }
+  /** Reset the run, then rebuild from the state it left behind. */
+  async function reset(): Promise<void> {
+    await system.reset()
+    await resync()
+  }
+
+  return {
+    events,
+    connection,
+    lastSequence,
+    gaps,
+    resyncs,
+    connect,
+    disconnect,
+    resync,
+    reset,
+  }
 })

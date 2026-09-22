@@ -1,14 +1,28 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
+import LifecycleIndicator from './components/LifecycleIndicator.vue'
 import { useEventStore } from './stores/events'
+import { useSystemStore } from './stores/system'
 import { useThemeStore } from './stores/theme'
 
 const events = useEventStore()
+const system = useSystemStore()
 const theme = useThemeStore()
+
+const busy = ref(false)
 
 onMounted(() => events.connect())
 onBeforeUnmount(() => events.disconnect())
+
+async function post(path: string): Promise<void> {
+  busy.value = true
+  try {
+    await fetch(path, { method: 'POST' })
+  } finally {
+    busy.value = false
+  }
+}
 
 function clockOf(timestamp: string): string {
   return new Date(timestamp).toLocaleTimeString([], { hour12: false })
@@ -23,11 +37,17 @@ function clockOf(timestamp: string): string {
         <span class="version">V1</span>
       </div>
 
+      <LifecycleIndicator :phase="system.phase" />
+
       <div class="controls">
-        <span class="connection" :data-state="events.connection">
-          {{ events.connection }}
-        </span>
-        <button type="button" class="toggle" @click="theme.toggle()">
+        <span class="connection" :data-state="events.connection">{{ events.connection }}</span>
+        <button type="button" class="control" :disabled="busy" @click="post('/api/demo/start')">
+          Start
+        </button>
+        <button type="button" class="control" :disabled="busy" @click="events.reset()">
+          Reset
+        </button>
+        <button type="button" class="control" @click="theme.toggle()">
           {{ theme.theme === 'light' ? 'Dark' : 'Light' }}
         </button>
       </div>
@@ -35,20 +55,45 @@ function clockOf(timestamp: string): string {
 
     <main class="stage">
       <section class="panel">
-        <h1 class="heading">Walking skeleton</h1>
-        <p class="note">
-          Backend, event stream and frontend are connected. Milestone M1
-          replaces this stream with the real event backbone.
-        </p>
+        <div class="status">
+          <div class="field">
+            <span class="key">Lifecycle</span>
+            <span class="value mono">{{ system.lifecycle }}</span>
+          </div>
+          <div class="field">
+            <span class="key">Events</span>
+            <span class="value mono">{{ events.lastSequence }}</span>
+          </div>
+          <div class="field">
+            <span class="key">Gaps</span>
+            <span class="value mono">{{ events.gaps.length }}</span>
+          </div>
+          <div class="field">
+            <span class="key">Resyncs</span>
+            <span class="value mono">{{ events.resyncs }}</span>
+          </div>
+        </div>
+
+        <!-- Appears only while input is required, and leaves once
+             resolved (FR-H1). -->
+        <div v-if="system.blockedOn" class="request" :data-kind="system.blockedOn.kind">
+          <span class="kind">{{ system.blockedOn.kind }}</span>
+          <p class="prompt">{{ system.blockedOn.prompt }}</p>
+          <button type="button" class="control" :disabled="busy" @click="post('/api/demo/resume')">
+            Provide and continue
+          </button>
+        </div>
 
         <ol class="stream">
           <li v-for="event in events.events" :key="event.sequence" class="event">
             <span class="sequence">{{ String(event.sequence).padStart(4, '0') }}</span>
             <span class="clock">{{ clockOf(event.timestamp) }}</span>
-            <span class="type">{{ event.type }}</span>
-            <span class="message">{{ event.payload.message }}</span>
+            <span class="category" :data-category="event.category">{{ event.category }}</span>
+            <span class="message" :data-severity="event.severity">{{ event.message }}</span>
           </li>
-          <li v-if="events.events.length === 0" class="empty">Waiting for the first event.</li>
+          <li v-if="events.events.length === 0" class="empty">
+            No activity yet. Start the run to drive the state machine.
+          </li>
         </ol>
       </section>
     </main>
@@ -66,6 +111,7 @@ function clockOf(timestamp: string): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-8);
   padding: var(--space-3) var(--space-6);
   background: var(--surface-raised);
   border-bottom: 1px solid var(--border-subtle);
@@ -92,10 +138,11 @@ function clockOf(timestamp: string): string {
 .controls {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
 
 .connection {
+  margin-right: var(--space-2);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--text-muted);
@@ -111,7 +158,7 @@ function clockOf(timestamp: string): string {
   color: var(--status-negative);
 }
 
-.toggle {
+.control {
   padding: var(--space-1) var(--space-3);
   color: var(--text-secondary);
   background: var(--surface-base);
@@ -121,51 +168,93 @@ function clockOf(timestamp: string): string {
   transition: all var(--duration-fast) var(--ease-out);
 }
 
-.toggle:hover {
+.control:hover:not(:disabled) {
   color: var(--text-primary);
   border-color: var(--border-strong);
 }
 
+.control:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .stage {
   flex: 1;
-  padding: var(--space-12) var(--space-6);
+  padding: var(--space-8) var(--space-6);
   overflow-y: auto;
 }
 
 .panel {
-  max-width: 62rem;
+  max-width: 68rem;
   margin: 0 auto;
-  padding: var(--space-8);
+  padding: var(--space-6) var(--space-8) var(--space-8);
   background: var(--surface-raised);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
-.heading {
-  margin: 0;
-  font-size: var(--text-xl);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+.status {
+  display: flex;
+  gap: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.note {
-  margin: var(--space-2) 0 var(--space-8);
-  max-width: 44rem;
-  color: var(--text-secondary);
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.key {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.value {
   font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.request {
+  margin: var(--space-6) 0;
+  padding: var(--space-4) var(--space-6);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.kind {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.prompt {
+  margin: var(--space-2) 0 var(--space-4);
+  max-width: 48rem;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
 }
 
 .stream {
-  margin: 0;
+  margin: var(--space-6) 0 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--border-subtle);
 }
 
 .event {
   display: grid;
-  grid-template-columns: 4rem 6rem 12rem 1fr;
+  grid-template-columns: 4rem 6rem 8rem 1fr;
   gap: var(--space-4);
   align-items: baseline;
   padding: var(--space-2) 0;
@@ -175,25 +264,43 @@ function clockOf(timestamp: string): string {
 
 .sequence,
 .clock,
-.type {
+.category {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
 }
 
-.sequence {
-  color: var(--text-muted);
-}
-
+.sequence,
 .clock {
   color: var(--text-muted);
 }
 
-.type {
+.category {
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.category[data-category='SUCCESS'] {
+  color: var(--status-positive);
+}
+
+.category[data-category='WARNING'] {
+  color: var(--status-warning);
+}
+
+.category[data-category='HUMAN_INPUT'] {
   color: var(--accent);
 }
 
 .message {
   color: var(--text-secondary);
+}
+
+.message[data-severity='WARNING'] {
+  color: var(--status-warning);
+}
+
+.message[data-severity='ERROR'] {
+  color: var(--status-negative);
 }
 
 .empty {

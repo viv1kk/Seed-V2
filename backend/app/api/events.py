@@ -1,48 +1,86 @@
-"""Server-sent event stream.
+"""Server-sent event stream with exact replay.
 
-M0 carries a single trivial event type end to end so the transport is
-proven before anything depends on it. M1 replaces the generator below
-with the real event log, `Last-Event-ID` replay and sequence-gap
-detection (FR-E1--E7); the wire format used here is already the one
-M1 needs, so only the source of the events changes.
+A client that reconnects sends `Last-Event-ID`, and receives every event
+recorded since that sequence number before it receives any live one
+(FR-E7). The browser's own `EventSource` sets that header without being
+asked, so replay costs the frontend nothing.
+
+The order of work in `_stream` is what makes replay exact: subscribe
+first, then read the backlog. Reading first would leave a window in
+which an event is recorded after the backlog is taken and before the
+subscription exists, and that event would be lost with no gap visible
+to the client.
 """
 
 import asyncio
-import json
 from collections.abc import AsyncIterator
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
-from app.config import HEARTBEAT_INTERVAL
+from app.config import KEEPALIVE_INTERVAL
+from app.domain.events import Event
+from app.runtime import bus, state
 
 router = APIRouter()
 
 
-def _frame(sequence: int, event_type: str, payload: dict) -> str:
+def _frame(event: Event) -> str:
     """Format one event as an SSE frame.
 
-    The `id` field is the sequence number, which is what makes
-    `Last-Event-ID` replay possible in M1.
+    The `id` field is the sequence number. That is what the browser
+    echoes back as `Last-Event-ID`, so the sequence is both the gap
+    check and the replay cursor.
     """
-    body = {
-        "sequence": sequence,
-        "type": event_type,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "payload": payload,
-    }
-    return f"id: {sequence}\nevent: {event_type}\ndata: {json.dumps(body)}\n\n"
+    return (
+        f"id: {event.sequence}\n"
+        f"event: {event.type}\n"
+        f"data: {event.model_dump_json()}\n\n"
+    )
+
+
+def _last_event_id(request: Request) -> int:
+    """Read the replay cursor, tolerating a malformed header.
+
+    A client that sends nonsense gets the whole log rather than an
+    error: over-delivery is recoverable, silent under-delivery is not.
+    """
+    raw = request.headers.get("last-event-id")
+    if raw is None:
+        return 0
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 0
 
 
 async def _stream(request: Request) -> AsyncIterator[str]:
-    sequence = 0
-    while True:
-        if await request.is_disconnected():
-            return
-        sequence += 1
-        yield _frame(sequence, "system.heartbeat", {"message": "backbone alive"})
-        await asyncio.sleep(HEARTBEAT_INTERVAL)
+    queue = bus.subscribe()
+    try:
+        # Subscribe, then take the backlog, with no await in between.
+        # Nothing else can run in that window, so the backlog holds
+        # every event recorded before this point and the queue holds
+        # every event recorded after it. The two are disjoint, which is
+        # why no duplicate check is needed below --- and a duplicate
+        # check would be wrong anyway, since Reset restarts the
+        # sequence, after which a lower number is a new event rather
+        # than an echo.
+        backlog = list(state.events.since(_last_event_id(request)))
+
+        for event in backlog:
+            yield _frame(event)
+
+        while True:
+            try:
+                event = await asyncio.wait_for(queue.get(), timeout=KEEPALIVE_INTERVAL)
+            except asyncio.TimeoutError:
+                # An SSE comment. Keeps the connection from being closed
+                # as idle during the quiet stretches of the narrative.
+                yield ": keepalive\n\n"
+                continue
+            yield _frame(event)
+    finally:
+        bus.unsubscribe(queue)
 
 
 @router.get("/events")
