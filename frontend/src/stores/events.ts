@@ -33,8 +33,10 @@ const EVENT_TYPES = [
   'lifecycle.transition',
   'seed.loaded',
   'discovery.system.found',
+  'discovery.credentials.accepted',
   'discovery.endpoint.timeout',
   'discovery.endpoint.recovered',
+  'assessment.methodology.evaluated',
   'assessment.completed',
   'human.requested',
   'human.resolved',
@@ -138,10 +140,19 @@ export const useEventStore = defineStore('events', () => {
     connection.value = 'idle'
   }
 
-  /** Reset the run, then rebuild from the state it left behind. */
+  /** Reset the run, then rebuild from the state it left behind (FR-O4). */
   async function reset(): Promise<void> {
     await system.reset()
     await resync()
+  }
+
+  /** Answer an outstanding human request (FR-H7). */
+  async function submitHuman(requestId: string, submission: unknown): Promise<void> {
+    await fetch(`/api/human/${encodeURIComponent(requestId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(submission),
+    })
   }
 
   return {
@@ -154,5 +165,6 @@ export const useEventStore = defineStore('events', () => {
     disconnect,
     resync,
     reset,
+    submitHuman,
   }
 })

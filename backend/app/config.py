@@ -13,6 +13,13 @@ FRONTEND_PORT = 5173
 #: connection is not closed during the quiet stretches of the narrative.
 KEEPALIVE_INTERVAL = 15.0
 
-#: Seconds between steps of the throwaway M1 workflow. The beat runner
-#: replaces this with weighted beats in M2 (D-8).
-DEMO_STEP_INTERVAL = 0.6
+#: Target length of the whole narrative at 1x, in seconds. The single
+#: number that retimes everything (D-8), set for the four-to-five minute
+#: target of OQ-7. M13 calibrates it against a rehearsal.
+TOTAL_DURATION_SECONDS = 270.0
+
+#: The sum of every beat weight in the narrative. Declared rather than
+#: derived, because generators are lazy and cannot be measured without
+#: being run. The calibration test asserts that a full run consumes
+#: exactly this, so drift shows up as a test failure.
+NARRATIVE_WEIGHT = 100.0

@@ -1,28 +1,17 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 
+import HumanRequest from './components/HumanRequest.vue'
 import LifecycleIndicator from './components/LifecycleIndicator.vue'
+import OperatorPanel from './components/OperatorPanel.vue'
 import { useEventStore } from './stores/events'
 import { useSystemStore } from './stores/system'
-import { useThemeStore } from './stores/theme'
 
 const events = useEventStore()
 const system = useSystemStore()
-const theme = useThemeStore()
-
-const busy = ref(false)
 
 onMounted(() => events.connect())
 onBeforeUnmount(() => events.disconnect())
-
-async function post(path: string): Promise<void> {
-  busy.value = true
-  try {
-    await fetch(path, { method: 'POST' })
-  } finally {
-    busy.value = false
-  }
-}
 
 function clockOf(timestamp: string): string {
   return new Date(timestamp).toLocaleTimeString([], { hour12: false })
@@ -31,58 +20,20 @@ function clockOf(timestamp: string): string {
 
 <template>
   <div class="shell">
+    <!-- No transport bar. The chrome carries identity and the lifecycle
+         and nothing an audience should not see (FR-O2). -->
     <header class="bar">
       <div class="identity">
         <span class="name">Systems</span>
         <span class="version">V1</span>
       </div>
-
       <LifecycleIndicator :phase="system.phase" />
-
-      <div class="controls">
-        <span class="connection" :data-state="events.connection">{{ events.connection }}</span>
-        <button type="button" class="control" :disabled="busy" @click="post('/api/demo/start')">
-          Start
-        </button>
-        <button type="button" class="control" :disabled="busy" @click="events.reset()">
-          Reset
-        </button>
-        <button type="button" class="control" @click="theme.toggle()">
-          {{ theme.theme === 'light' ? 'Dark' : 'Light' }}
-        </button>
-      </div>
+      <span class="lifecycle mono">{{ system.lifecycle }}</span>
     </header>
 
     <main class="stage">
       <section class="panel">
-        <div class="status">
-          <div class="field">
-            <span class="key">Lifecycle</span>
-            <span class="value mono">{{ system.lifecycle }}</span>
-          </div>
-          <div class="field">
-            <span class="key">Events</span>
-            <span class="value mono">{{ events.lastSequence }}</span>
-          </div>
-          <div class="field">
-            <span class="key">Gaps</span>
-            <span class="value mono">{{ events.gaps.length }}</span>
-          </div>
-          <div class="field">
-            <span class="key">Resyncs</span>
-            <span class="value mono">{{ events.resyncs }}</span>
-          </div>
-        </div>
-
-        <!-- Appears only while input is required, and leaves once
-             resolved (FR-H1). -->
-        <div v-if="system.blockedOn" class="request" :data-kind="system.blockedOn.kind">
-          <span class="kind">{{ system.blockedOn.kind }}</span>
-          <p class="prompt">{{ system.blockedOn.prompt }}</p>
-          <button type="button" class="control" :disabled="busy" @click="post('/api/demo/resume')">
-            Provide and continue
-          </button>
-        </div>
+        <HumanRequest v-if="system.blockedOn" :request="system.blockedOn" />
 
         <ol class="stream">
           <li v-for="event in events.events" :key="event.sequence" class="event">
@@ -92,11 +43,13 @@ function clockOf(timestamp: string): string {
             <span class="message" :data-severity="event.severity">{{ event.message }}</span>
           </li>
           <li v-if="events.events.length === 0" class="empty">
-            No activity yet. Start the run to drive the state machine.
+            No activity yet. Shift+O for the operator panel.
           </li>
         </ol>
       </section>
     </main>
+
+    <OperatorPanel />
   </div>
 </template>
 
@@ -129,53 +82,18 @@ function clockOf(timestamp: string): string {
   letter-spacing: 0.02em;
 }
 
-.version {
-  font-family: var(--font-mono);
+.version,
+.lifecycle {
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
 
-.controls {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.connection {
-  margin-right: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  text-transform: uppercase;
+.lifecycle {
   letter-spacing: 0.06em;
 }
 
-.connection[data-state='open'] {
-  color: var(--status-positive);
-}
-
-.connection[data-state='error'] {
-  color: var(--status-negative);
-}
-
-.control {
-  padding: var(--space-1) var(--space-3);
-  color: var(--text-secondary);
-  background: var(--surface-base);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.control:hover:not(:disabled) {
-  color: var(--text-primary);
-  border-color: var(--border-strong);
-}
-
-.control:disabled {
-  opacity: 0.5;
-  cursor: default;
+.mono {
+  font-family: var(--font-mono);
 }
 
 .stage {
@@ -194,60 +112,8 @@ function clockOf(timestamp: string): string {
   box-shadow: var(--shadow-sm);
 }
 
-.status {
-  display: flex;
-  gap: var(--space-8);
-  padding-bottom: var(--space-6);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.key {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.value {
-  font-size: var(--text-sm);
-  color: var(--text-primary);
-}
-
-.mono {
-  font-family: var(--font-mono);
-}
-
-.request {
-  margin: var(--space-6) 0;
-  padding: var(--space-4) var(--space-6);
-  background: var(--accent-subtle);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-md);
-}
-
-.kind {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.prompt {
-  margin: var(--space-2) 0 var(--space-4);
-  max-width: 48rem;
-  font-size: var(--text-sm);
-  color: var(--text-primary);
-}
-
 .stream {
-  margin: var(--space-6) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }

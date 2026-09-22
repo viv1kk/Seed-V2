@@ -120,7 +120,7 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   async function reset(): Promise<void> {
-    const response = await fetch('/api/state/reset', { method: 'POST' })
+    const response = await fetch('/api/operator/reset', { method: 'POST' })
     if (!response.ok) {
       throw new Error(`Reset failed: ${response.status}`)
     }

@@ -6,8 +6,10 @@ rather than on the first request (A-1).
 """
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
-from app.api import demo, events, health, state
+from app.api import events, health, human, operator, state
+from app.simulation.protocol import EngineError
 
 app = FastAPI(
     title="Systems V1",
@@ -18,5 +20,11 @@ app = FastAPI(
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(state.router, prefix="/api", tags=["state"])
 app.include_router(events.router, prefix="/api", tags=["events"])
-# Removed at M2, together with the module it points at.
-app.include_router(demo.router, prefix="/api", tags=["demo"])
+app.include_router(operator.router, prefix="/api", tags=["operator"])
+app.include_router(human.router, prefix="/api", tags=["human"])
+
+
+@app.exception_handler(EngineError)
+async def engine_refusal(_: object, error: EngineError) -> JSONResponse:
+    """A refusal is a conflict with the current state, not a server fault."""
+    return JSONResponse(status_code=409, content={"detail": str(error)})
