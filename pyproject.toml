@@ -12,6 +12,10 @@ dependencies = [
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
+    # Test-only, for Starlette TestClient. The refusal contract of the API
+    # layer --- 400 for a rejected seed, 409 for a refused transition --- is
+    # behaviour worth a test, and it can only be reached over HTTP.
+    "httpx2>=0.29",
 ]
 
 [tool.uv]

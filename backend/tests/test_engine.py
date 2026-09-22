@@ -28,6 +28,7 @@ from app.simulation.protocol import (
     AlreadyRunning,
     EventSource,
     NoPendingRequest,
+    NotInitialized,
     RunStatus,
     Speed,
     UnknownRequest,
@@ -45,8 +46,10 @@ def tiny(state: SystemState) -> Workflow:
     Same structure --- work, beat, park, resume, work --- so the engine is
     exercised the same way. One small floor, so a test that needs a real
     delay waits milliseconds rather than seconds.
+
+    Starts from INITIALIZED, like the real workflows: the seed is planted
+    before a run begins, so no workflow transitions into that state.
     """
-    state.transition(LifecycleState.INITIALIZED)
     yield Beat(weight=10)
 
     state.transition(LifecycleState.DISCOVERING)
@@ -82,17 +85,35 @@ def tiny(state: SystemState) -> Workflow:
 TINY = (WorkflowSpec(name="tiny", factory=tiny),)
 
 
+def plant(state: SystemState) -> SystemState:
+    """Put the state where planting the seed leaves it.
+
+    The seed is planted over HTTP before a run starts (FR-S2), and the
+    engine refuses to start without it. These tests are about the beat
+    runner, so they arrive at INITIALIZED the short way and `test_seed`
+    covers the route that produces it properly.
+    """
+    state.transition(LifecycleState.INITIALIZED)
+    return state
+
+
 def engine(
     workflows=NARRATIVE, *, total: float = 0.2, weight: float = 100.0
 ) -> SimulationEngine:
     return SimulationEngine(
-        SystemState(), workflows, total_duration=total, narrative_weight=weight
+        plant(SystemState()), workflows, total_duration=total, narrative_weight=weight
     )
 
 
 def small(total: float = 0.2) -> SimulationEngine:
     """An engine running the `tiny` workflow."""
     return engine(TINY, total=total, weight=TINY_WEIGHT)
+
+
+async def replant(runner: SimulationEngine) -> None:
+    """Reset returns to the seed screen, so a second run is planted again."""
+    await runner.reset()
+    plant(runner.state)
 
 
 async def settle(runner: SimulationEngine, limit: float = 10.0) -> None:
@@ -371,7 +392,7 @@ async def test_reset_while_parked_then_run_again() -> None:
     runner = small()
     await runner.start()
     await settle(runner)
-    await runner.reset()
+    await replant(runner)
 
     await runner.start()
     await settle(runner)
@@ -428,7 +449,7 @@ async def test_a_reset_run_reproduces_the_first_one() -> None:
     await drive(runner, REQUEST, {"username": "svc"})
     first = [(event.sequence, event.type, event.message) for event in runner.state.events.all()]
 
-    await runner.reset()
+    await replant(runner)
     await drive(runner, REQUEST, {"username": "svc"})
     second = [(event.sequence, event.type, event.message) for event in runner.state.events.all()]
 
@@ -459,7 +480,7 @@ async def test_the_narrative_consumes_the_declared_weight() -> None:
 @pytest.mark.asyncio
 async def test_a_workflow_with_no_beats_completes() -> None:
     def empty(state: SystemState):
-        state.transition(LifecycleState.INITIALIZED)
+        state.transition(LifecycleState.DISCOVERING)
         return
         yield  # pragma: no cover
 
@@ -473,9 +494,9 @@ async def test_a_workflow_with_no_beats_completes() -> None:
 async def test_starting_over_a_finished_run_is_refused() -> None:
     """A finished run is not a startable one.
 
-    Workflows begin by transitioning out of UNINITIALIZED, so a second
-    start over a completed run would raise inside the task where nobody
-    is watching. Reset is the way back.
+    Workflows begin from INITIALIZED, so a second start over a completed
+    run would raise inside the task where nobody is watching. Reset is
+    the way back.
     """
     runner = small()
     runner.set_speed(Speed.INSTANT)
@@ -485,7 +506,7 @@ async def test_starting_over_a_finished_run_is_refused() -> None:
     with pytest.raises(AlreadyRunning):
         await runner.start()
 
-    await runner.reset()
+    await replant(runner)
     await runner.start()
     await settle(runner)
     assert runner.status is RunStatus.AWAITING_HUMAN
@@ -509,9 +530,9 @@ async def test_a_failing_workflow_is_reported_as_an_event() -> None:
     """FR-E1: all system activity is expressed as events, failure included."""
 
     def broken(state: SystemState) -> Workflow:
-        state.transition(LifecycleState.INITIALIZED)
+        state.transition(LifecycleState.DISCOVERING)
         yield Beat(weight=1)
-        # Illegal from INITIALIZED, so the machine refuses it (FR-L3).
+        # Illegal from DISCOVERING, so the machine refuses it (FR-L3).
         state.transition(LifecycleState.RUNNING)
 
     runner = engine((WorkflowSpec(name="broken", factory=broken),), total=0.01)
@@ -529,4 +550,36 @@ async def test_a_failing_workflow_is_reported_as_an_event() -> None:
     assert failure.severity is Severity.ERROR
     assert failure.payload == {"error": "IllegalTransition"}
     # The state machine held: nothing illegal was applied.
-    assert runner.snapshot().lifecycle is LifecycleState.INITIALIZED
+    assert runner.snapshot().lifecycle is LifecycleState.DISCOVERING
+
+
+@pytest.mark.asyncio
+async def test_starting_without_a_seed_is_refused() -> None:
+    """FR-S3: there is no run to start before the seed is planted."""
+    runner = SimulationEngine(
+        SystemState(), TINY, total_duration=0.2, narrative_weight=TINY_WEIGHT
+    )
+
+    with pytest.raises(NotInitialized):
+        await runner.start()
+
+    assert runner.status is RunStatus.IDLE
+    assert runner.snapshot().sequence == 0
+
+
+@pytest.mark.asyncio
+async def test_a_reset_run_cannot_be_started_until_it_is_planted_again() -> None:
+    """FR-O4: reset returns the system to the seed screen."""
+    runner = small()
+    await runner.start()
+    await settle(runner)
+    await runner.reset()
+
+    with pytest.raises(NotInitialized):
+        await runner.start()
+
+    plant(runner.state)
+    await runner.start()
+    await settle(runner)
+    assert runner.status is RunStatus.AWAITING_HUMAN
+    await runner.reset()

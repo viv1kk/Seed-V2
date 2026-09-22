@@ -3,11 +3,26 @@ import { onBeforeUnmount, onMounted } from 'vue'
 
 import { useEventStore } from '../stores/events'
 import { useOperatorStore, type Speed } from '../stores/operator'
+import { useSeedStore } from '../stores/seed'
+import { useSystemStore } from '../stores/system'
 import { useThemeStore } from '../stores/theme'
 
 const operator = useOperatorStore()
 const events = useEventStore()
+const seed = useSeedStore()
+const system = useSystemStore()
 const theme = useThemeStore()
+
+/**
+ * One key advances the demo.
+ *
+ * Before the seed is planted there is no run to start, so the same key
+ * plants it. This is the only shortcut that does two things, and it does
+ * them because at any moment only one of them is available.
+ */
+function advance(): void | Promise<void> {
+  return system.lifecycle === 'UNINITIALIZED' ? seed.initialize() : operator.start()
+}
 
 /**
  * The shortcuts, all on Shift, so nothing fires while an operator is
@@ -16,7 +31,8 @@ const theme = useThemeStore()
  */
 const SHORTCUTS: Record<string, () => void | Promise<void>> = {
   O: () => operator.togglePanel(),
-  Enter: () => operator.start(),
+  Enter: () => advance(),
+  P: () => seed.loadBundled(), // the sample seed, without a file picker (FR-S7)
   S: () => operator.skipPhase(),
   R: () => events.reset(),
   '!': () => operator.setSpeed('1x'), // Shift+1
@@ -58,6 +74,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     </header>
 
     <dl class="readout">
+      <dt>Lifecycle</dt>
+      <dd class="mono">{{ system.lifecycle }}</dd>
       <dt>Run</dt>
       <dd class="mono">{{ operator.status }}</dd>
       <dt>Stream</dt>
@@ -86,10 +104,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     </div>
 
     <div class="group">
+      <span class="label">Seed</span>
+      <div class="row">
+        <button type="button" class="action" title="Shift+P" @click="seed.loadBundled()">
+          Load sample seed
+        </button>
+      </div>
+    </div>
+
+    <div class="group">
       <span class="label">Run</span>
       <div class="row">
-        <button type="button" class="action" title="Shift+Enter" @click="operator.start()">
-          Start
+        <button type="button" class="action" title="Shift+Enter" @click="advance()">
+          {{ system.lifecycle === 'UNINITIALIZED' ? 'Initialize' : 'Start' }}
         </button>
         <button type="button" class="action" title="Shift+S" @click="operator.skipPhase()">
           Skip phase

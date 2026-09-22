@@ -56,6 +56,16 @@ class UnknownRequest(EngineError):
     pass
 
 
+class NotInitialized(EngineError):
+    """The seed has not been planted, so there is nothing to run.
+
+    The state machine would refuse the first transition anyway (FR-L3),
+    but it would do so inside the run task where only the event log
+    would show it. Refusing at the call gives the operator a 409 and an
+    explanation instead.
+    """
+
+
 class RunStatus(StrEnum):
     IDLE = "idle"
     RUNNING = "running"

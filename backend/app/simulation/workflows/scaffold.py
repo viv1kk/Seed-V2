@@ -20,14 +20,19 @@ from app.simulation.beats import AwaitHuman, Beat, Workflow
 
 
 def discovery(state: SystemState) -> Workflow:
-    """Seed to DISCOVERY_COMPLETE, pausing once for credentials."""
-    state.transition(LifecycleState.INITIALIZED)
+    """INITIALIZED to DISCOVERY_COMPLETE, pausing once for credentials.
+
+    The run begins from INITIALIZED rather than reaching it. Planting the
+    seed is what produces that state, and it happens over HTTP before the
+    engine is started (FR-S2), so `seed.loaded` and the transition into
+    INITIALIZED belong to the seed API and not to this workflow.
+    """
     state.record(
-        type="seed.loaded",
+        type="system.ready",
         category=Category.SUCCESS,
-        message="Seed accepted. Three methodology definitions registered.",
+        message="Three layers registered. The system is ready to discover an environment.",
     )
-    yield Beat(weight=4, label="seed accepted")
+    yield Beat(weight=4, label="system ready")
 
     state.transition(LifecycleState.DISCOVERING)
     yield Beat(weight=2, label="discovery begins")

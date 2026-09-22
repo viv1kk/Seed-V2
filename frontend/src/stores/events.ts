@@ -32,6 +32,8 @@ export type ConnectionState = 'idle' | 'connecting' | 'open' | 'error'
 const EVENT_TYPES = [
   'lifecycle.transition',
   'seed.loaded',
+  'system.ready',
+  'run.failed',
   'discovery.system.found',
   'discovery.credentials.accepted',
   'discovery.endpoint.timeout',

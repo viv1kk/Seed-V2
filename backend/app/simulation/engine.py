@@ -12,12 +12,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.domain.events import Category, Severity
-from app.domain.lifecycle import Phase
+from app.domain.lifecycle import LifecycleState, Phase
 from app.domain.state import BlockedOn, StateSnapshot, SystemState
 from app.simulation.beats import AwaitHuman, Beat, Workflow
 from app.simulation.protocol import (
     AlreadyRunning,
     NoPendingRequest,
+    NotInitialized,
     RunStatus,
     Speed,
     UnknownRequest,
@@ -172,13 +173,22 @@ class SimulationEngine:
         """Begin a run.
 
         Refused unless the engine is idle. A finished run is not a
-        startable one: the workflows begin by transitioning out of
-        UNINITIALIZED, so starting again over a completed run would
-        raise inside the task where nobody is watching.
+        startable one: the workflows begin from INITIALIZED, so starting
+        again over a completed run would raise inside the task where
+        nobody is watching.
+
+        Also refused before the seed is planted. The narrative begins at
+        INITIALIZED because the plant is what produces that state
+        (FR-S2), and Reset returns the system to the seed screen rather
+        than to a startable run (FR-O4).
         """
         if self.status is not RunStatus.IDLE:
             raise AlreadyRunning(
                 f"The run is {self.status}. Reset before starting another."
+            )
+        if self.state.lifecycle is not LifecycleState.INITIALIZED:
+            raise NotInitialized(
+                f"The system is {self.state.lifecycle}. Plant the seed before starting."
             )
         self._task = asyncio.create_task(self._drive())
 
