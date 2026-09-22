@@ -318,7 +318,12 @@ async def test_the_escalation_is_what_the_approval_answers() -> None:
 
 @pytest.mark.asyncio
 async def test_authentication_follows_the_credential_request() -> None:
-    """No source is read before the identity to read it with is established."""
+    """No source is read before the identity to read it with is established.
+
+    The supplied credential is used for its one handshake (PR-021) before
+    the authentication it makes possible, and nothing is enumerated or read
+    until both have been allowed.
+    """
     state = await _run_narrative()
     decisions = [
         event.payload for event in state.events.all() if event.type == "policy.decision"
@@ -326,7 +331,9 @@ async def test_authentication_follows_the_credential_request() -> None:
     verbs = [(d["verb"], d["source"]) for d in decisions]
 
     servicenow = [verb for verb, source in verbs if source == "ServiceNow"]
-    assert servicenow[:3] == ["request-credential", "authenticate", "enumerate"]
+    assert servicenow[:4] == [
+        "request-credential", "use-credential", "authenticate", "enumerate",
+    ]
 
 
 # -- Parity with protection.md (D-6, FR-P7) ---------------------------

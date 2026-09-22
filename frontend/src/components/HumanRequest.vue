@@ -194,6 +194,9 @@ async function submit(chosen?: string): Promise<void> {
 .facts {
   display: grid;
   grid-template-columns: auto minmax(0, 60ch);
+  /* Without this the auto column stretches to absorb the free width, and
+     each fact sits a screen away from its label. */
+  justify-content: start;
   gap: var(--space-1) var(--space-4);
   margin: 0 0 var(--space-4);
   font-size: var(--text-xs);

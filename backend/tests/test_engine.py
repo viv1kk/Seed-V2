@@ -7,7 +7,7 @@ to be exact.
 Two kinds of workflow appear here. The real narrative from the registry
 is used where the content matters, and a purpose-built `tiny` workflow is
 used where only the engine's behaviour matters. The reason is the beat
-floors: a floor is an absolute number of seconds, so the scaffold's
+floors: a floor is an absolute number of seconds, so the narrative's
 protected beats cost seven seconds at 1x no matter how small the total
 duration is. That is correct for the demo and wrong for a test suite, so
 tests that need real delays use a workflow whose floors are small, and

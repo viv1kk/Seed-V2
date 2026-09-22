@@ -153,10 +153,10 @@ class SimulationEngine:
 
         waiter = self._waiter
         self._pending = None
-        self.state.unblock()
+        self.state.unblock(fields=list(submission))
         # The submission travels to the generator and is not retained
         # here. Credential values are never stored (FR-H5), and
-        # `unblock` records the kind of request rather than its contents.
+        # `unblock` records which fields were supplied, never their values.
         waiter.set_result(submission)
 
     # -- Run ---------------------------------------------------------

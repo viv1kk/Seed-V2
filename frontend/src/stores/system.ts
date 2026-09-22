@@ -52,13 +52,121 @@ export interface BlockedOn {
   options: RequestOption[]
 }
 
+/** A request the system waited on, as System State records it (FR-H6). */
+export interface HumanRequestRecord {
+  requestId: string
+  kind: RequestKind
+  prompt: string
+  status: 'pending' | 'resolved'
+  /** Which fields were supplied. Never their values (FR-H5). */
+  fields: string[]
+  requestedAt: number
+  resolvedAt: number | null
+}
+
+export type NodeKind = 'client' | 'system' | 'service' | 'api' | 'database' | 'dataset'
+
+/** FR-D4. */
+export type NodeStatus =
+  | 'unknown'
+  | 'detected'
+  | 'testing'
+  | 'validated'
+  | 'requires-input'
+  | 'connected'
+  | 'error'
+
+/** FR-D5. */
+export type EdgeKind = 'contains' | 'connects_to' | 'provides' | 'depends_on'
+
+export type Origin = 'declared' | 'discovered' | 'administrator-supplied'
+
+export interface EnvironmentNode {
+  id: string
+  kind: NodeKind
+  label: string
+  detail: string | null
+  system: string | null
+  /** Hand-authored, in canvas units (D-4). */
+  x: number
+  y: number
+  status: NodeStatus
+  origin: Origin
+  /** The rule that refused this node, when policy did. */
+  excludedBy: string | null
+}
+
+export interface EnvironmentEdge {
+  id: string
+  source: string
+  target: string
+  kind: EdgeKind
+  detail: string | null
+}
+
+export interface FieldProfile {
+  name: string
+  concept: string
+  completeness: number
+}
+
+export interface DataSource {
+  id: string
+  label: string
+  system: string | null
+  source: string | null
+  fields: FieldProfile[]
+}
+
+export interface DiscoverySummary {
+  complete: boolean
+  systems: number
+  declaredSystems: number
+  dataSources: number
+  datasets: number
+  profiled: number
+  excluded: number
+  bySystem: { id: string; label: string; status: NodeStatus; origin: Origin }[]
+  methodologies: {
+    id: string
+    name: string
+    required: number
+    located: number
+    missing: string[]
+    appearsFeasible: boolean
+  }[]
+}
+
+/** The constructed graph, as System State holds it. */
+export interface Environment {
+  client: string
+  canvas: { width: number; height: number }
+  nodes: EnvironmentNode[]
+  edges: EnvironmentEdge[]
+  dataSources: DataSource[]
+  complete: boolean
+  summary: DiscoverySummary | null
+}
+
+/** What an event carries when it changes the graph. */
+interface EnvironmentDelta {
+  client: string
+  canvas: { width: number; height: number }
+  nodes: EnvironmentNode[]
+  edges: EnvironmentEdge[]
+  dataSources: DataSource[]
+  summary: DiscoverySummary | null
+}
+
 export interface StateSnapshot {
   sequence: number
   lifecycle: LifecycleState
   phase: Phase
   blockedOn: BlockedOn | null
+  humanRequests: HumanRequestRecord[]
   seed: Record<string, unknown> | null
-  environment: Record<string, unknown>
+  /** Empty until discovery begins. */
+  environment: Environment | Record<string, never>
   assessments: Record<string, unknown>[]
   solutions: Record<string, unknown>[]
   approvals: Record<string, unknown>[]
@@ -84,6 +192,13 @@ export const useSystemStore = defineStore('system', () => {
   const phase = ref<Phase>('INIT')
   const blockedOn = ref<BlockedOn | null>(null)
 
+  /**
+   * The environment graph, derived from the snapshot and then from the
+   * deltas events carry. There is no model of it here beyond that fold:
+   * what is drawn is what System State says was discovered (FR-L5).
+   */
+  const environment = ref<Environment | null>(null)
+
   /** The sequence number the snapshot is current as of. */
   const baseline = ref(0)
 
@@ -93,6 +208,51 @@ export const useSystemStore = defineStore('system', () => {
     phase.value = next.phase
     blockedOn.value = next.blockedOn
     baseline.value = next.sequence
+    environment.value =
+      'nodes' in next.environment ? structuredClone(next.environment as Environment) : null
+  }
+
+  function upsert<T extends { id: string }>(records: T[], record: T): void {
+    const index = records.findIndex((existing) => existing.id === record.id)
+    if (index === -1) {
+      records.push({ ...record })
+    } else {
+      records[index] = { ...records[index], ...record }
+    }
+  }
+
+  /**
+   * Fold one environment delta.
+   *
+   * Nodes and data sources arrive as full records and are upserted, so
+   * folding one twice changes nothing and a late joiner converges on the
+   * same graph as a client that watched throughout. The backend's
+   * `test_discovery.py` replays the same fold against System State.
+   */
+  function foldEnvironment(delta: EnvironmentDelta): void {
+    const target: Environment = environment.value ?? {
+      client: delta.client,
+      canvas: delta.canvas,
+      nodes: [],
+      edges: [],
+      dataSources: [],
+      complete: false,
+      summary: null,
+    }
+    for (const node of delta.nodes) {
+      upsert(target.nodes, node)
+    }
+    for (const source of delta.dataSources) {
+      upsert(target.dataSources, source)
+    }
+    for (const edge of delta.edges) {
+      if (!target.edges.some((existing) => existing.id === edge.id)) {
+        target.edges.push({ ...edge })
+      }
+    }
+    target.summary = delta.summary
+    target.complete = delta.summary?.complete ?? false
+    environment.value = target
   }
 
   async function fetchSnapshot(): Promise<void> {
@@ -113,6 +273,10 @@ export const useSystemStore = defineStore('system', () => {
   function apply(event: SystemEvent): void {
     if (event.sequence <= baseline.value) {
       return
+    }
+    // Any event may carry a change to the graph, whatever its type.
+    if (event.payload.environment) {
+      foldEnvironment(event.payload.environment as EnvironmentDelta)
     }
     switch (event.type) {
       case 'lifecycle.transition':
@@ -139,5 +303,15 @@ export const useSystemStore = defineStore('system', () => {
     adopt((await response.json()) as StateSnapshot)
   }
 
-  return { snapshot, lifecycle, phase, blockedOn, baseline, fetchSnapshot, apply, reset }
+  return {
+    snapshot,
+    lifecycle,
+    phase,
+    blockedOn,
+    environment,
+    baseline,
+    fetchSnapshot,
+    apply,
+    reset,
+  }
 })

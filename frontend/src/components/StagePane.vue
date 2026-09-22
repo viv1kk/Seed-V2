@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import EnvironmentStage from './EnvironmentStage.vue'
 import type { LayerSummary } from '../stores/seed'
 import { useSystemStore, type Phase } from '../stores/system'
 
@@ -10,15 +11,14 @@ const system = useSystemStore()
  * What each phase puts on the stage.
  *
  * The pane changes; the workspace around it does not (NFR-A3, §13). Init
- * is filled: it shows what the seed loader actually registered. The other
- * four state what belongs there, and the milestone that builds each one
- * replaces the corresponding branch rather than the layout.
+ * shows what the seed loader actually registered, and Discovery the
+ * environment graph as System State holds it. The other three state what
+ * belongs there, and the milestone that builds each one replaces the
+ * corresponding branch rather than the layout.
  */
-const PENDING: Record<Exclude<Phase, 'INIT'>, { title: string; note: string }> = {
-  DISCOVERY: {
-    title: 'Environment',
-    note: 'The discovered environment is drawn here as a graph, with nodes appearing as each system is enumerated.',
-  },
+type Pending = Exclude<Phase, 'INIT' | 'DISCOVERY'>
+
+const PENDING: Record<Pending, { title: string; note: string }> = {
   ASSESSMENT: {
     title: 'Assessment',
     note: 'Each methodology is shown against the evidence discovery found, with its feasibility and the limitations behind it.',
@@ -38,7 +38,9 @@ const layers = computed<LayerSummary[]>(
 )
 
 const pending = computed(() =>
-  system.phase === 'INIT' ? null : PENDING[system.phase as Exclude<Phase, 'INIT'>],
+  system.phase === 'INIT' || system.phase === 'DISCOVERY'
+    ? null
+    : PENDING[system.phase as Pending],
 )
 </script>
 
@@ -47,7 +49,10 @@ const pending = computed(() =>
     <!-- Init: the registered seed, summarised from the files that were
          actually supplied (FR-S5). It stays visible while the system is
          initialized and idle, so the screen after planting is not empty. -->
-    <template v-if="!pending">
+    <!-- Discovery: the environment, growing as it is found (FR-D3). -->
+    <EnvironmentStage v-if="system.phase === 'DISCOVERY'" :environment="system.environment" />
+
+    <template v-else-if="!pending">
       <header class="head">
         <h2 class="title">Seed</h2>
         <p class="note">

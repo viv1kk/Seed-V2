@@ -84,6 +84,7 @@ class StateSnapshot(Schema):
     lifecycle: LifecycleState
     phase: Phase
     blocked_on: BlockedOn | None = None
+    human_requests: list[dict[str, Any]] = Field(default_factory=list)
     seed: dict[str, Any] | None = None
     environment: dict[str, Any] = Field(default_factory=dict)
     assessments: list[dict[str, Any]] = Field(default_factory=list)
@@ -127,6 +128,7 @@ class SystemState:
         """
         self.lifecycle = LifecycleState.UNINITIALIZED
         self.blocked_on: BlockedOn | None = None
+        self.human_requests: list[dict[str, Any]] = []
         self.events = EventLog()
         self.seed: dict[str, Any] | None = None
         self.environment: dict[str, Any] = {}
@@ -166,6 +168,17 @@ class SystemState:
         surface from the event alone and cannot drift from the snapshot.
         """
         self.blocked_on = blocked_on
+        self.human_requests.append(
+            {
+                "requestId": blocked_on.request_id,
+                "kind": blocked_on.kind,
+                "prompt": blocked_on.prompt,
+                "status": "pending",
+                "fields": [],
+                "requestedAt": self.events.last_sequence + 1,
+                "resolvedAt": None,
+            }
+        )
         self.record(
             type="human.requested",
             category=Category.HUMAN_INPUT,
@@ -177,16 +190,32 @@ class SystemState:
             },
         )
 
-    def unblock(self) -> None:
+    def unblock(self, fields: list[str] | None = None) -> None:
+        """Stop waiting, and keep the answer in the record (FR-H6).
+
+        What is kept is the shape of the answer --- which fields were
+        supplied --- and never the values. A credential is used for the
+        handshake it was requested for and discarded (FR-H5), and a
+        record that held it would be the credential store PR-022 forbids.
+        """
         if self.blocked_on is None:
             return
         resolved = self.blocked_on
         self.blocked_on = None
+        names = sorted(fields or [])
+        for entry in reversed(self.human_requests):
+            if entry["requestId"] == resolved.request_id and entry["status"] == "pending":
+                entry.update(
+                    status="resolved",
+                    fields=names,
+                    resolvedAt=self.events.last_sequence + 1,
+                )
+                break
         self.record(
             type="human.resolved",
             category=Category.HUMAN_INPUT,
             message="Human input received. Resuming from the point of suspension.",
-            payload={"kind": resolved.kind, "requestId": resolved.request_id},
+            payload={"kind": resolved.kind, "requestId": resolved.request_id, "fields": names},
         )
 
     # -- Events ------------------------------------------------------
@@ -226,6 +255,7 @@ class SystemState:
             lifecycle=self.lifecycle,
             phase=self.phase,
             blocked_on=self.blocked_on,
+            human_requests=self.human_requests,
             seed=self.seed,
             environment=self.environment,
             assessments=self.assessments,

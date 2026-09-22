@@ -88,12 +88,21 @@ async def test_every_event_the_narrative_emits_classifies_as_intended() -> None:
     expected = {
         "system.ready": Presentation.ACTIVITY,
         "lifecycle.transition": Presentation.ACTIVITY,
+        "discovery.inventory.loaded": Presentation.ACTIVITY,
         "discovery.system.found": Presentation.ACTIVITY,
-        "discovery.system.registered": Presentation.ACTIVITY,
-        "policy.decision": Presentation.ACTIVITY,
+        "discovery.endpoint.testing": Presentation.ACTIVITY,
+        "discovery.credentials.required": Presentation.ACTIVITY,
         "discovery.credentials.accepted": Presentation.ACTIVITY,
+        "discovery.datasets.enumerated": Presentation.ACTIVITY,
+        # A dataset left out under policy is the boundary working, not a
+        # fault and not a withheld conclusion.
+        "discovery.dataset.excluded": Presentation.ACTIVITY,
+        "discovery.system.connected": Presentation.ACTIVITY,
         "discovery.endpoint.timeout": Presentation.ERROR,
         "discovery.endpoint.recovered": Presentation.ACTIVITY,
+        "discovery.system.registered": Presentation.ACTIVITY,
+        "discovery.completed": Presentation.ACTIVITY,
+        "policy.decision": Presentation.ACTIVITY,
         "assessment.methodology.evaluated": Presentation.ACTIVITY,
         "assessment.completed": Presentation.ACTIVITY,
         "human.requested": Presentation.DECISION,
@@ -185,11 +194,11 @@ def test_the_request_is_carried_under_wire_names() -> None:
 
 def test_the_scripted_credential_request_states_all_three(  ) -> None:
     """FR-D7's request is the one the audience reads. §17's shape, exactly."""
-    from app.simulation.workflows import scaffold
+    from app.simulation.workflows import discovery
 
     state = SystemState()
     state.transition(LifecycleState.INITIALIZED)
-    workflow = scaffold.discovery(state)
+    workflow = discovery.discovery(state)
 
     request = None
     for step in workflow:
