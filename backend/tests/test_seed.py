@@ -355,7 +355,7 @@ async def test_seed_content_does_not_alter_the_run() -> None:
         await runner.start()
         while runner.status is RunStatus.RUNNING:
             await _tick()
-        await runner.resolve_human("sccm-inventory", {"username": "svc"})
+        await runner.resolve_human("servicenow-incident-api", {"username": "svc"})
         while runner.status is RunStatus.RUNNING:
             await _tick()
         assert runner.status is RunStatus.COMPLETE

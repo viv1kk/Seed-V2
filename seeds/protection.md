@@ -108,7 +108,7 @@ adding a permissive rule can never weaken a restrictive one.
 | PR-030 | Read a dataset declared in the Adaptation concept mapping | ALLOW | Declared datasets are in scope by construction. |
 | PR-031 | Read a dataset from a declared source that is not in the concept mapping | ESCALATE | The source is in scope; this dataset is not yet declared. |
 | PR-032 | Read a dataset classified as personal data beyond the mapped fields | DENY | Field-level scope is the control. Broadening it is not a runtime decision. |
-| PR-033 | Read authentication, audit or security-log tables | DENY | Not required by any methodology, and high consequence if exfiltrated. |
+| PR-033 | Read authentication, credential-store or security-log tables | DENY | Not required by any methodology, and high consequence if exfiltrated. |
 | PR-034 | Read beyond the retrieval window declared in Adaptation | ESCALATE | A wider window changes what the conclusion rests on. |
 | PR-035 | Enumerate schema or table metadata on a declared source | ALLOW | Discovery requires enumeration, which reveals structure rather than content. |
 | PR-036 | Execute an unparameterised query against a source system | DENY | Composed queries are not reviewable and not safely bounded. |
@@ -151,9 +151,10 @@ adding a permissive rule can never weaken a restrictive one.
 | PR-070 | Record an evidence item with a source and field attribution | ALLOW | Attribution is what makes the item evidence. |
 | PR-071 | Record an evidence item with no attribution | DENY | An unattributable fact cannot support a conclusion. |
 | PR-072 | Modify or remove a recorded evidence item | DENY | The evidence chain is append-only. A correction is a new item. |
-| PR-073 | Publish a conclusion whose required evidence is incomplete | DENY | Insufficiency is reported as insufficiency, never as a weaker conclusion. |
-| PR-074 | Publish a conclusion whose supporting evidence is outside its freshness window | ESCALATE | Stale evidence may still be acceptable, and a person decides that. |
-| PR-075 | Present a model output as an evidence item | DENY | A model output is a hypothesis. It is evidenced, not evidence. |
+| PR-073 | Publish a conclusion whose required evidence is complete and within its freshness window | ALLOW | A conclusion on sufficient evidence is what the system exists to produce. |
+| PR-074 | Publish a conclusion whose required evidence is incomplete | DENY | Insufficiency is reported as insufficiency, never as a weaker conclusion. |
+| PR-075 | Publish a conclusion whose supporting evidence is outside its freshness window | ESCALATE | Stale evidence may still be acceptable, and a person decides that. |
+| PR-076 | Present a model output as an evidence item | DENY | A model output is a hypothesis. It is evidenced, not evidence. |
 
 ### Auditability
 

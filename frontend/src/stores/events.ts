@@ -35,6 +35,8 @@ const EVENT_TYPES = [
   'system.ready',
   'run.failed',
   'discovery.system.found',
+  'discovery.system.registered',
+  'policy.decision',
   'discovery.credentials.accepted',
   'discovery.endpoint.timeout',
   'discovery.endpoint.recovered',

@@ -35,7 +35,7 @@ from app.simulation.protocol import (
 )
 from app.simulation.workflows.registry import NARRATIVE
 
-REQUEST = "sccm-inventory"
+REQUEST = "servicenow-incident-api"
 TINY_REQUEST = "tiny-request"
 TINY_WEIGHT = 50.0
 

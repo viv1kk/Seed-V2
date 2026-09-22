@@ -65,7 +65,7 @@ confirms it.
 | Enumeration | Information schema |
 | Rate limit | None; concurrency capped at four |
 
-### Licence Management System
+### License Management System
 
 | Field | Value |
 | --- | --- |
@@ -101,16 +101,16 @@ skipped.
 | Category | ServiceNow | incident.category, incident.subcategory |
 | Priority | ServiceNow | incident.priority |
 | Assignment group | ServiceNow | incident.assignment_group |
-| Reassignment history | ServiceNow | sys_audit on incident.assignment_group |
+| Reassignment history | ServiceNow | metric_instance, for the assignment group metric definition |
 | Group size | ServiceNow | sys_user_grmember, counted per group |
 
 ### Licence concepts
 
 | Concept | Source | Field |
 | --- | --- | --- |
-| Entitlement | Licence Management System | entitlement.quantity |
-| Entitlement term | Licence Management System | entitlement.start_date, entitlement.end_date |
-| Assignment | Licence Management System | assignment.user_id, assignment.product_id |
+| Entitlement | License Management System | entitlement.quantity |
+| Entitlement term | License Management System | entitlement.start_date, entitlement.end_date |
+| Assignment | License Management System | assignment.user_id, assignment.product_id |
 | Usage signal | SQL Server | rpt.product_activity (actor, product, activity_date) |
 | Cost | SAP | contract_item.unit_price, contract_item.currency |
 | Leaver record | ServiceNow | sys_user.active, sys_user.last_login_time |
@@ -137,7 +137,7 @@ skipped.
 | ServiceNow | Paged Table API reads, 1000 rows per page, ordered by sys_id, filtered to the analysis window |
 | SAP | OData query with an explicit select list, paged by skip token |
 | SQL Server | Parameterised read against the reporting schema only |
-| Licence Management System | Full catalogue read, then per-product assignment reads |
+| License Management System | Full catalogue read, then per-product assignment reads |
 | Legacy Application Registry | Administrator-supplied CSV export, parsed and checksummed on receipt |
 
 ### Windows
@@ -190,7 +190,7 @@ conclusion drawn from the source.
 | ServiceNow (CMDB) | Authoritative for ownership | Medium | Days | Ownership is unassigned on part of the portfolio |
 | SAP | Authoritative for cost | High | One closed period | Cost is allocated per cost centre, not per application, for part of the portfolio |
 | SQL Server | Derived, not authoritative | High for instrumented entities | 24 hours | Instrumentation does not cover every application |
-| Licence Management System | Authoritative for entitlement and assignment | High | Hours | Holds no usage signal, so it cannot evidence consumption |
+| License Management System | Authoritative for entitlement and assignment | High | Hours | Holds no usage signal, so it cannot evidence consumption |
 | Legacy Application Registry | Not authoritative | Unknown | At export | Superseded in part by SQL Server; overlap is unresolved |
 
 ### Declared conflicts
@@ -224,5 +224,5 @@ prediction of the result.
 | Methodology | Feasible | Limiting factor |
 | --- | --- | --- |
 | Ticket Anomaly Detection | Yes | None. All required evidence is present and authoritative. |
-| Licence Optimisation | Yes | Usage signal coverage must be confirmed per product before an unconsumed classification is reported. |
-| Application Portfolio Rationalisation | Partially | Usage instrumentation is incomplete and the inventory conflict is unresolved. Retirement dispositions are withheld for uninstrumented applications. |
+| License Optimization | Yes | Usage signal coverage must be confirmed per product before an unconsumed classification is reported. |
+| Application Portfolio Rationalization | Partially | Usage instrumentation is incomplete and the inventory conflict is unresolved. Retirement dispositions are withheld for uninstrumented applications. |

@@ -333,8 +333,8 @@ records, and find the numbers consistent at every level.
 
 ## 8. Open questions
 
-Not blocking; to be resolved during implementation. OQ-4, OQ-5 and OQ-7
-are closed in `decisions.md`; the rest are carried.
+Not blocking; to be resolved during implementation. OQ-4, OQ-5, OQ-6 and
+OQ-7 are closed in `decisions.md`; the rest are carried.
 
 | ID    | Question                                                                                                        |
 | ----- | ----------------------------------------------------------------------------------------------------------------- |
@@ -343,5 +343,5 @@ are closed in `decisions.md`; the rest are carried.
 | OQ-3  | Accent colour and typeface selection.                                                                            |
 | OQ-4  | ~~Whether the activity stream requires virtualisation.~~ Provisionally **no**; confirm at M13. See `decisions.md` §4. |
 | OQ-5  | ~~Whether dataset generation needs a local cache.~~ Measured: **no**. See `decisions.md` §1. |
-| OQ-6  | Which specific actions trigger the required `DENY` and `ESCALATE` policy decisions of FR-P6.                      |
+| OQ-6  | ~~Which specific actions trigger the required `DENY` and `ESCALATE` policy decisions of FR-P6.~~ Ruled at M5. See `decisions.md` §4. |
 | OQ-7  | ~~Target wall-clock duration of the full narrative at 1x.~~ Ruled: **4 to 5 minutes**. See `decisions.md` §4. |

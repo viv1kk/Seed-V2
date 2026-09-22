@@ -259,6 +259,7 @@ excluded.
 | OQ-5 | Does dataset generation need a local cache?   | **No.** Generation costs 0.108 s for the largest dataset. A cache would cost more than it saves.  |
 | OQ-7 | Target narrative duration at 1x               | **4 to 5 minutes.** Sets the D-8 budget at roughly 270 seconds across all beats.                  |
 | OQ-4 | Does the activity stream need virtualisation? | **Provisionally no**, given OQ-7's duration. Confirm by measurement at M13.                       |
+| OQ-6 | Which actions trigger the DENY and ESCALATE   | **DENY:** reading ServiceNow's security log as a usage signal (PR-033). **ESCALATE:** deploying the assessed solutions (PR-053). Settled at M5. |
 
 ### What OQ-7's answer costs
 
@@ -291,7 +292,28 @@ These are M6 concerns. Raising the total at rehearsal is one number
 | OQ-1 | Exact chart inventory per dashboard                  | M9        |
 | OQ-2 | Drill-down hierarchies for the two smaller solutions | M9        |
 | OQ-3 | Accent colour and typeface                           | M12       |
-| OQ-6 | Which actions trigger the required DENY and ESCALATE | M5        |
+
+### What OQ-6's answer means
+
+Both decisions are chosen so the boundary is visible without adding an
+interruption to §83.6's narrative.
+
+*The DENY carries a plausible motive.* Discovery considers sign-in events
+as a usage signal, which is a reasonable analytical instinct, and asks to
+read only the application identifier and timestamp. PR-033 refuses it
+regardless, because the rule is about the table rather than the columns.
+A boundary that holds only against obviously bad requests demonstrates
+nothing; one that holds against a well-motivated, minimised request is
+the point of §10. The PR-031 escalation path also matches and is recorded
+as overruled, so the audit log shows a permission that existed and lost.
+
+*The ESCALATE is the reason for the approval.* At the end of assessment
+the system asks to deploy, PR-053 escalates, and the lifecycle moves to
+AWAITING_APPROVAL as a consequence. The approval step of §26 is therefore
+not a scripted pause but the answer to a policy decision, and it costs
+the narrative no additional stop.
+
+---
 
 OQ-1 moves earlier, from M10 to M9. Under D-1 the chart inventory defines
 the descriptor schema, so it must be settled before the schema is built

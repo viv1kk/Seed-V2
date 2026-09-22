@@ -8,7 +8,7 @@ rather than on the first request (A-1).
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from app.api import events, health, human, operator, seed, state
+from app.api import events, health, human, operator, protection, seed, state
 from app.domain.lifecycle import IllegalTransition
 from app.knowledge.seed_loader import SeedRejected
 from app.simulation.protocol import EngineError
@@ -22,6 +22,7 @@ app = FastAPI(
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(state.router, prefix="/api", tags=["state"])
 app.include_router(seed.router, prefix="/api", tags=["seed"])
+app.include_router(protection.router, prefix="/api", tags=["protection"])
 app.include_router(events.router, prefix="/api", tags=["events"])
 app.include_router(operator.router, prefix="/api", tags=["operator"])
 app.include_router(human.router, prefix="/api", tags=["human"])

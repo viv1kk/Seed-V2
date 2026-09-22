@@ -53,10 +53,21 @@ watch(
           <span class="phase">{{ event.phase }}</span>
         </li>
 
-        <li class="entry" :data-presentation="presentationOf(event)">
+        <li
+          class="entry"
+          :data-presentation="presentationOf(event)"
+          :data-effect="event.category === 'POLICY' ? event.payload.effect : undefined"
+        >
           <div class="meta">
             <span class="clock">{{ clockOf(event.timestamp) }}</span>
-            <span class="category">{{ labelOf(event.category) }}</span>
+            <span class="category">
+              {{ labelOf(event.category) }}
+              <!-- A decision cites its effect and rule inline (FR-P4). -->
+              <template v-if="event.category === 'POLICY'">
+                <span class="verdict">{{ event.payload.effect }}</span>
+                <span class="rule">{{ event.payload.rule }}</span>
+              </template>
+            </span>
             <span class="sequence">{{ String(event.sequence).padStart(4, '0') }}</span>
           </div>
           <p class="message">{{ event.message }}</p>
@@ -184,6 +195,40 @@ watch(
 .entry[data-presentation='insufficient'] .message {
   color: var(--text-secondary);
   font-style: italic;
+}
+
+/* Policy decisions. A denial is the boundary working, so it is marked
+   by its effect rather than presented as a fault (FR-H4, FR-P4). */
+.verdict {
+  margin-left: var(--space-2);
+  letter-spacing: 0.08em;
+}
+
+.rule {
+  margin-left: var(--space-2);
+  color: var(--text-muted);
+}
+
+.entry[data-effect='ALLOW'] .verdict {
+  color: var(--status-positive);
+}
+
+/* The rule beside a denial is neutral and strong, not red: a red rule is
+   what a fault looks like two entries away, and this is not one. */
+.entry[data-effect='DENY'] {
+  border-left-color: var(--text-secondary);
+}
+
+.entry[data-effect='DENY'] .verdict {
+  color: var(--status-negative);
+}
+
+.entry[data-effect='ESCALATE'] {
+  border-left-color: var(--status-warning);
+}
+
+.entry[data-effect='ESCALATE'] .verdict {
+  color: var(--status-warning);
 }
 
 .empty {

@@ -231,7 +231,7 @@ found rather than individual escalations.
 - More than 10 per cent of tickets in the window missing a resolved
   timestamp.
 
-### Licence Optimisation
+### License Optimization
 
 #### Purpose
 
@@ -283,7 +283,7 @@ difference.
 - Any product where usage signal coverage is below 80 per cent of
   assignments.
 
-### Application Portfolio Rationalisation
+### Application Portfolio Rationalization
 
 #### Purpose
 

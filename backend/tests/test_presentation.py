@@ -89,6 +89,8 @@ async def test_every_event_the_narrative_emits_classifies_as_intended() -> None:
         "system.ready": Presentation.ACTIVITY,
         "lifecycle.transition": Presentation.ACTIVITY,
         "discovery.system.found": Presentation.ACTIVITY,
+        "discovery.system.registered": Presentation.ACTIVITY,
+        "policy.decision": Presentation.ACTIVITY,
         "discovery.credentials.accepted": Presentation.ACTIVITY,
         "discovery.endpoint.timeout": Presentation.ERROR,
         "discovery.endpoint.recovered": Presentation.ACTIVITY,
@@ -108,7 +110,7 @@ async def test_every_event_the_narrative_emits_classifies_as_intended() -> None:
     await runner.start()
     while runner.status is RunStatus.RUNNING:
         await asyncio.sleep(0.01)
-    await runner.resolve_human("sccm-inventory", {"username": "svc"})
+    await runner.resolve_human("servicenow-incident-api", {"username": "svc"})
     while runner.status is RunStatus.RUNNING:
         await asyncio.sleep(0.01)
     assert runner.status is RunStatus.COMPLETE
@@ -200,7 +202,7 @@ def test_the_scripted_credential_request_states_all_three(  ) -> None:
     assert request.access
     assert request.reason
     # The reason says what the evidence is for, not that it is needed.
-    assert "Rationalisation" in request.reason
+    assert "Ticket Anomaly Detection" in request.reason
 
 
 def test_every_request_kind_is_distinct() -> None:
