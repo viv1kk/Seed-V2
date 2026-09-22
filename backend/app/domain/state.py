@@ -37,16 +37,38 @@ class RequestKind(StrEnum):
     CONFIRMATION = "confirmation"
 
 
+class RequestOption(Schema):
+    """One legitimate answer to a request that is a choice, not a form.
+
+    Ambiguity, missing information, approval and confirmation are all
+    decisions between stated alternatives (§8, §18). The alternatives are
+    modelled rather than written into the prompt, so the surface can
+    present them as choices and the audit log can record which was taken.
+    """
+
+    value: str
+    label: str
+    note: str | None = None
+
+
 class BlockedOn(Schema):
     """What the system is waiting for, beside the state it waits in.
 
     A flag rather than a state (FR-L4), so the lifecycle still reports
     what the system was doing when it stopped.
+
+    The three fields after `kind` are FR-H2: what is needed, what access
+    that requires, and why it is needed. `prompt` alone would collapse
+    them into a sentence and lose the third one, which is the one that
+    makes an escalation answerable rather than merely obeyed.
     """
 
     kind: RequestKind
     request_id: str
     prompt: str
+    access: str | None = None
+    reason: str | None = None
+    options: list[RequestOption] = Field(default_factory=list)
 
 
 class StateSnapshot(Schema):
@@ -137,12 +159,22 @@ class SystemState:
     # -- Human input -------------------------------------------------
 
     def block(self, blocked_on: BlockedOn) -> None:
+        """Wait on a person, and say so in the stream.
+
+        The whole request travels in the payload, not a summary of it. A
+        client that joins late, or resyncs after a gap, rebuilds the
+        surface from the event alone and cannot drift from the snapshot.
+        """
         self.blocked_on = blocked_on
         self.record(
             type="human.requested",
             category=Category.HUMAN_INPUT,
             message=blocked_on.prompt,
-            payload={"kind": blocked_on.kind, "requestId": blocked_on.request_id},
+            payload={
+                "kind": blocked_on.kind,
+                "requestId": blocked_on.request_id,
+                "request": blocked_on.model_dump(by_alias=True),
+            },
         )
 
     def unblock(self) -> None:

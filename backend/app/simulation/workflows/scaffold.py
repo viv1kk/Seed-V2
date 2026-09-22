@@ -47,14 +47,21 @@ def discovery(state: SystemState) -> Workflow:
         yield Beat(weight=6, label=f"found {system}")
 
     # Discovery has not ended here; it is waiting (FR-L4, FR-D7).
+    #
+    # Three fields, because a request a person can answer has to say what
+    # is wanted, what it will be able to reach, and what for (FR-H2). The
+    # third is the one that makes this an escalation rather than a prompt.
     state.transition(LifecycleState.DISCOVERY_BLOCKED)
     submission = yield AwaitHuman(
         request=BlockedOn(
             kind=RequestKind.CREDENTIALS,
             request_id="sccm-inventory",
-            prompt=(
-                "Read credentials are required for the SCCM inventory endpoint, "
-                "which holds the deployment data the assessment needs."
+            prompt="The SCCM inventory endpoint requires authentication.",
+            access="Read-only inventory API",
+            reason=(
+                "Deployment and usage records from SCCM are required evidence for "
+                "Application Portfolio Rationalisation. Without them no application "
+                "can be classified as unused rather than uninstrumented."
             ),
         )
     )

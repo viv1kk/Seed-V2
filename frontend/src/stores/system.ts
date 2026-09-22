@@ -33,10 +33,23 @@ export type RequestKind =
   | 'approval'
   | 'confirmation'
 
+/** One legitimate answer to a request that is a choice rather than a form. */
+export interface RequestOption {
+  value: string
+  label: string
+  note: string | null
+}
+
 export interface BlockedOn {
   kind: RequestKind
   requestId: string
+  /** What is needed (FR-H2). */
   prompt: string
+  /** What access that requires (FR-H2). */
+  access: string | null
+  /** Why it is needed (FR-H2). The field that makes this answerable. */
+  reason: string | null
+  options: RequestOption[]
 }
 
 export interface StateSnapshot {
@@ -107,11 +120,10 @@ export const useSystemStore = defineStore('system', () => {
         phase.value = event.phase
         break
       case 'human.requested':
-        blockedOn.value = {
-          kind: event.payload.kind as RequestKind,
-          requestId: event.payload.requestId as string,
-          prompt: event.message,
-        }
+        // The whole request travels in the payload, so a client that
+        // joined late rebuilds the surface without inferring it from the
+        // message (FR-E5).
+        blockedOn.value = event.payload.request as BlockedOn
         break
       case 'human.resolved':
         blockedOn.value = null
