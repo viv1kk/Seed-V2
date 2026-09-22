@@ -1,0 +1,41 @@
+/* Element defaults. Everything here reads from tokens.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Respect a viewer who has asked for less motion (NFR-V1 calm). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

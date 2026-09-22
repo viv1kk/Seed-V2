@@ -1,0 +1,125 @@
+/*
+ * Design tokens --- the single source of truth for both themes (NFR-V2).
+ *
+ * Light is the default; dark overrides the same names under
+ * [data-theme='dark']. Nothing in the application may hardcode a colour:
+ * components read these names, and from M9 the ECharts theme resolves
+ * the semantic roles below at paint time rather than carrying its own
+ * palette (D-5).
+ */
+
+:root {
+  /* Surfaces, from furthest back to nearest front. */
+  --surface-base: #f7f8fa;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eef0f4;
+  --surface-overlay: #ffffff;
+
+  /* Lines. */
+  --border-subtle: #e2e5eb;
+  --border-default: #cbd0d9;
+  --border-strong: #9aa2b1;
+
+  /* Text, from most to least emphasis. */
+  --text-primary: #12151b;
+  --text-secondary: #4a5261;
+  --text-muted: #79818f;
+  --text-inverse: #f7f8fa;
+
+  /* Accent. Provisional until OQ-3 is settled at M12. */
+  --accent: #2f6df6;
+  --accent-hover: #2557ce;
+  --accent-subtle: #e6edfe;
+
+  /* Semantic status. */
+  --status-positive: #1b7f4b;
+  --status-warning: #a96a00;
+  --status-negative: #c0392f;
+  --status-neutral: #5a6172;
+
+  /* Semantic roles for charts. Specifications name a role; the
+   * renderer resolves the role to one of these (D-5). */
+  --chart-series-1: #2f6df6;
+  --chart-series-2: #6b4fd8;
+  --chart-series-3: #0e8f8f;
+  --chart-series-4: #a96a00;
+  --chart-series-5: #b8437c;
+  --chart-positive: #1b7f4b;
+  --chart-negative: #c0392f;
+  --chart-anomaly: #d1451f;
+  --chart-baseline: #9aa2b1;
+  --chart-muted: #cbd0d9;
+  --chart-grid: #e2e5eb;
+
+  /* Type. */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+
+  /* Space, on a 4px step. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Shape and depth. */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --shadow-sm: 0 1px 2px rgb(18 21 27 / 8%);
+  --shadow-md: 0 4px 12px rgb(18 21 27 / 10%);
+
+  /* Motion. Every duration passes through this scale so the operator
+   * speed control has one place to act from M2 (FR-O1). */
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 400ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme='dark'] {
+  --surface-base: #0e1116;
+  --surface-raised: #161b22;
+  --surface-sunken: #090c10;
+  --surface-overlay: #1c222b;
+
+  --border-subtle: #21272f;
+  --border-default: #2f3742;
+  --border-strong: #4a5461;
+
+  --text-primary: #e8ebf0;
+  --text-secondary: #a8b1bd;
+  --text-muted: #6f7885;
+  --text-inverse: #0e1116;
+
+  --accent: #5b8cff;
+  --accent-hover: #7aa2ff;
+  --accent-subtle: #17233d;
+
+  --status-positive: #3fb27a;
+  --status-warning: #d79a3a;
+  --status-negative: #e5705f;
+  --status-neutral: #6f7885;
+
+  --chart-series-1: #5b8cff;
+  --chart-series-2: #9a82f0;
+  --chart-series-3: #35b8b8;
+  --chart-series-4: #d79a3a;
+  --chart-series-5: #e06fa8;
+  --chart-positive: #3fb27a;
+  --chart-negative: #e5705f;
+  --chart-anomaly: #ff7a4d;
+  --chart-baseline: #4a5461;
+  --chart-muted: #2f3742;
+  --chart-grid: #21272f;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 50%);
+}
