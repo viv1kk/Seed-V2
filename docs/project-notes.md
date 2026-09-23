@@ -3727,8 +3727,9 @@ The audit found five differences from the preliminary inventory:
   `recommendation` key, whose non-empty value a test asserts.
 - One more display string: the deployment request's purpose.
 - `ReviewDrawer.vue` has no MEDIUM selector. MEDIUM inherits
-  `--text-primary`, the same colour the card sets, so nothing needs
-  fixing.
+  `--text-primary`, the same colour the card sets, so the two agree.
+  The grade-colour follow-up below later gave MEDIUM its own colour on
+  every surface.
 - The `Grade` type sits one line earlier than the plan said.
 
 **Agreed for M13.** The display wording table, the four recommendation
@@ -3802,6 +3803,9 @@ build pass. Live checks:
     `rgb(215,154,58)`, LOW `rgb(111,120,133)`;
   - light: HIGH `rgb(27,127,75)`, MEDIUM `rgb(18,21,27)`, PARTIAL
     `rgb(169,106,0)`, LOW `rgb(90,97,114)`.
+  - These MEDIUM values are the plain text colour. The grade-colour
+    follow-up below replaces them with olive: `rgb(138,171,76)` in dark
+    and `rgb(95,127,26)` in light.
 - All three approvals were made through the interface. The drawer then
   reads "Approved on potential HIGH, under PR-053."
 

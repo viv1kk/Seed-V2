@@ -549,10 +549,11 @@ grades and the grade selectors. Every line is in exactly one table.
 - The `recommendation` key, which the preliminary inventory left out, is
   contract. A test asserts that its value is non-empty.
 - The `Grade` type is at `stores/system.ts:161`, not `:162`.
-- `ReviewDrawer.vue` has grade selectors for HIGH, PARTIAL and LOW only.
-  MEDIUM takes the base `dd` colour, `--text-primary`. That is the same
-  colour `SolutionCard.vue:205` sets explicitly for MEDIUM, so the two
-  surfaces agree. M13's colour check covers all four grades on both.
+- `ReviewDrawer.vue` had grade selectors for HIGH, PARTIAL and LOW only,
+  and MEDIUM took the plain text colour on both surfaces. *Updated after
+  M14:* the follow-up that gave Potential its own colour scale added the
+  missing MEDIUM rule. Every grade surface now reads the `--grade-*`
+  tokens: green, olive, amber, grey (`project-notes.md` §84.5).
 
 **Load-bearing: contract.** Payload keys shared by the backend and the
 frontend. All are kept, per D-11.
@@ -590,7 +591,7 @@ and fails no test (R-13).
 
 | Reference | Where |
 | --------- | ----- |
-| CSS selectors on grade values, `[data-grade='…']` | `SolutionCard.vue:201-215` (all four); `ReviewDrawer.vue:259-269` (HIGH, PARTIAL, LOW) |
+| CSS selectors on grade values, `[data-grade='…']` | `SolutionCard.vue:201-215`, `ReviewDrawer.vue:259-273` and, since the post-M14 colour follow-up, `RuntimeStage.vue:208-222`; all four grades on each, coloured by the `--grade-*` tokens in `design/tokens.css` |
 | `data-feasible` attribute and its selector | `EnvironmentStage.vue:116,332` |
 
 **Display only. M13 changes these.** The wording below was reviewed and
