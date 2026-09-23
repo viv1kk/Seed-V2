@@ -31,9 +31,21 @@ const system = useSystemStore()
  */
 const grown = computed(() => system.phase === 'RUNTIME')
 
-/** The build is done: the hand-over from the growing tree to Agent One VW. */
-const complete = computed(() =>
-  ['IMPLEMENTATION_COMPLETE', 'READY_TO_RUN', 'RUNNING'].includes(system.lifecycle),
+/**
+ * Seeding is closed: the hand-over from the growing tree to Agent One VW.
+ *
+ * At the end of closing, not of the build (M18, D-18): the tree stays up
+ * through the clean-up, where it loses its stake and the last of its seed.
+ */
+const complete = computed(() => ['READY_TO_RUN', 'RUNNING'].includes(system.lifecycle))
+
+/** The header's word for what the tree is doing. */
+const doing = computed(() =>
+  system.lifecycle === 'CLOSING_SEEDING'
+    ? 'Cleaning up'
+    : system.lifecycle === 'IMPLEMENTATION_COMPLETE'
+      ? 'Built'
+      : 'Growing',
 )
 
 /** Seeding is under way: the seed is planted and the build is not done. */
@@ -70,7 +82,7 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
   <section class="life" aria-label="Life">
     <header class="head">
       <h2 class="title">Agent One VW <span class="mark">(ValueWise™)</span></h2>
-      <span v-if="growing" class="state mono">Growing</span>
+      <span v-if="growing" class="state mono">{{ doing }}</span>
       <button
         v-if="complete"
         type="button"

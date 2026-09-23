@@ -51,7 +51,26 @@ export interface Growth {
   /** Agent One VW is ready to run: the tree flowers. */
   bloom: Grown | null
   waterings: Watering[]
+  /**
+   * The build tools, standing beside the tree as a stake from the start
+   * of the build until closing retires them (D-16).
+   */
+  staked: boolean
+  /** Closing the seeding phase has begun. */
+  closing: boolean
+  /** How many of closing's four clean-up steps are done. */
+  cleaned: number
+  /** The seed is consumed: nothing of it remains beside the tree. */
+  consumed: boolean
 }
+
+/** The four clean-up steps of closing, in order (D-16). */
+const CLEAN_UP = [
+  'seeding.notes.consolidated',
+  'seeding.scratch.cleared',
+  'seeding.interfaces.promoted',
+  'seeding.tools.retired',
+]
 
 function payloadOf<T>(event: SystemEvent, key: string): T | undefined {
   return event.payload[key] as T | undefined
@@ -73,14 +92,19 @@ export function growthOf(events: readonly SystemEvent[]): Growth {
     branches: [],
     bloom: null,
     waterings: [],
+    staked: false,
+    closing: false,
+    cleaned: 0,
+    consumed: false,
   }
 
   for (const event of events) {
     growth.phase = event.phase
     switch (event.type) {
       case 'seed.loaded':
-        growth.roots = (payloadOf<{ title: string | null; layer: string }[]>(event, 'layers') ?? [])
-          .map((layer) => ({ sequence: event.sequence, label: layer.title ?? layer.layer }))
+        growth.roots = (
+          payloadOf<{ title: string | null; layer: string }[]>(event, 'layers') ?? []
+        ).map((layer) => ({ sequence: event.sequence, label: layer.title ?? layer.layer }))
         break
       case 'system.ready':
         growth.sprouted = true
@@ -97,6 +121,22 @@ export function growthOf(events: readonly SystemEvent[]): Growth {
           sequence: event.sequence,
           label: payloadOf<string>(event, 'methodology') ?? 'Methodology',
         })
+        break
+      case 'implementation.started':
+        growth.staked = true
+        break
+      case 'seeding.closing.started':
+        growth.closing = true
+        break
+      case 'seeding.notes.consolidated':
+      case 'seeding.scratch.cleared':
+      case 'seeding.interfaces.promoted':
+      case 'seeding.tools.retired':
+        growth.cleaned = CLEAN_UP.indexOf(event.type) + 1
+        if (event.type === 'seeding.tools.retired') growth.staked = false
+        break
+      case 'seeding.consumed':
+        growth.consumed = true
         break
       case 'implementation.build.started': {
         const solutions = payloadOf<{ id: string; name: string }[]>(event, 'solutions') ?? []

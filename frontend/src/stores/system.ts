@@ -13,25 +13,15 @@ export type LifecycleState =
   | 'AWAITING_APPROVAL'
   | 'IMPLEMENTING'
   | 'IMPLEMENTATION_COMPLETE'
+  | 'CLOSING_SEEDING'
   | 'READY_TO_RUN'
   | 'RUNNING'
 
 export type Phase = 'INIT' | 'DISCOVERY' | 'ASSESSMENT' | 'IMPLEMENTATION' | 'RUNTIME'
 
-export const PHASE_ORDER: Phase[] = [
-  'INIT',
-  'DISCOVERY',
-  'ASSESSMENT',
-  'IMPLEMENTATION',
-  'RUNTIME',
-]
+export const PHASE_ORDER: Phase[] = ['INIT', 'DISCOVERY', 'ASSESSMENT', 'IMPLEMENTATION', 'RUNTIME']
 
-export type RequestKind =
-  | 'credentials'
-  | 'ambiguity'
-  | 'missing-info'
-  | 'approval'
-  | 'confirmation'
+export type RequestKind = 'credentials' | 'ambiguity' | 'missing-info' | 'approval' | 'confirmation'
 
 /** One legitimate answer to a request that is a choice rather than a form. */
 export interface RequestOption {
@@ -68,13 +58,7 @@ export type NodeKind = 'client' | 'system' | 'service' | 'api' | 'database' | 'd
 
 /** FR-D4. */
 export type NodeStatus =
-  | 'unknown'
-  | 'detected'
-  | 'testing'
-  | 'validated'
-  | 'requires-input'
-  | 'connected'
-  | 'error'
+  'unknown' | 'detected' | 'testing' | 'validated' | 'requires-input' | 'connected' | 'error'
 
 /** FR-D5. */
 export type EdgeKind = 'contains' | 'connects_to' | 'provides' | 'depends_on'
@@ -227,13 +211,7 @@ export interface Assessment {
 
 /** FR-AP2. */
 export type SolutionStatus =
-  | 'PROPOSED'
-  | 'AWAITING_APPROVAL'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'BUILDING'
-  | 'READY'
-  | 'RUNNING'
+  'PROPOSED' | 'AWAITING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'BUILDING' | 'READY' | 'RUNNING'
 
 export interface Solution {
   id: string

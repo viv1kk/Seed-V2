@@ -78,6 +78,10 @@ class Action(StrEnum):
     RECORD_DECISION = "record-decision"
     SUPPRESS_RECORD = "suppress-record"
     PROCEED_UNRECORDED = "proceed-unrecorded"
+    CONSOLIDATE_RECORDS = "consolidate-records"
+    CLEAR_SCRATCH = "clear-scratch"
+    PROMOTE_INTERFACE = "promote-interface"
+    RETIRE_TOOL = "retire-tool"
 
     @property
     def label(self) -> str:
@@ -112,7 +116,17 @@ ACTION_LABELS: dict[Action, str] = {
     Action.RECORD_DECISION: "Record decision",
     Action.SUPPRESS_RECORD: "Suppress decision record",
     Action.PROCEED_UNRECORDED: "Proceed unrecorded",
+    Action.CONSOLIDATE_RECORDS: "Consolidate working notes",
+    Action.CLEAR_SCRATCH: "Clear scratch space",
+    Action.PROMOTE_INTERFACE: "Promote interface",
+    Action.RETIRE_TOOL: "Retire build tool",
 }
+
+#: What closing the seeding phase does to the system's own artefacts, and
+#: what PR-092 holds to the system's own (D-16).
+CLEANUP_ACTIONS: frozenset[Action] = frozenset(
+    {Action.CONSOLIDATE_RECORDS, Action.CLEAR_SCRATCH, Action.RETIRE_TOOL}
+)
 
 #: Actions that act on a source system, which is what PR-055 governs.
 SOURCE_ACTIONS: frozenset[Action] = frozenset(
@@ -165,6 +179,9 @@ class ActionRequest(Schema):
     attributed: bool | None = None
     evidence_complete: bool | None = None
     evidence_fresh: bool | None = None
+    system_owned: bool | None = None
+    deployment_approved: bool | None = None
+    build_complete: bool | None = None
 
 
 DESCRIPTIVE_FIELDS: frozenset[str] = frozenset({"action", "resource", "source", "purpose"})
@@ -237,6 +254,7 @@ WRITES = "Write and destructive operations"
 CAPABILITY = "Agent capability"
 EVIDENCE = "Evidence integrity"
 AUDIT = "Auditability"
+CLOSING = "Closing the seeding phase"
 
 GROUPS: tuple[str, ...] = (
     DEFAULT,
@@ -248,6 +266,7 @@ GROUPS: tuple[str, ...] = (
     CAPABILITY,
     EVIDENCE,
     AUDIT,
+    CLOSING,
 )
 
 A, D, E = Effect.ALLOW, Effect.DENY, Effect.ESCALATE
@@ -533,6 +552,53 @@ RULES: tuple[Rule, ...] = (
         "Proceed with an action whose decision was not recorded", D,
         "An unrecorded action is indistinguishable from an unauthorised one.",
         only(Action.PROCEED_UNRECORDED),
+    ),
+    # -- Closing the seeding phase (D-16) -------------------------------
+    Rule(
+        "PR-090", CLOSING,
+        "Consolidate the system's own working notes into one seeding record", A,
+        "The notes are the system's own record. Consolidating keeps every entry and "
+        "changes no seed file.",
+        only(Action.CONSOLIDATE_RECORDS), {"system_owned": True},
+    ),
+    Rule(
+        "PR-091", CLOSING,
+        "Release the system's own temporary analytical workspace", A,
+        "Scratch space is system-owned storage. Releasing it deletes nothing a source "
+        "system holds.",
+        only(Action.CLEAR_SCRATCH), {"system_owned": True},
+    ),
+    Rule(
+        "PR-092", CLOSING,
+        "Consolidate, clear or retire anything the system does not own", D,
+        "Clean-up covers the system's own artefacts. Client data is never cleaned up.",
+        CLEANUP_ACTIONS, {"system_owned": False},
+    ),
+    Rule(
+        "PR-093", CLOSING,
+        "Promote a built Agent Component's interface to its release version when its "
+        "deployment was approved", A,
+        "The approval given under PR-053 already authorised the deployment this completes.",
+        only(Action.PROMOTE_INTERFACE), {"deployment_approved": True},
+    ),
+    Rule(
+        "PR-094", CLOSING,
+        "Promote an interface whose deployment was not approved", E,
+        "A release without an approval is a deployment, and a person authorises it.",
+        only(Action.PROMOTE_INTERFACE), {"deployment_approved": False},
+    ),
+    Rule(
+        "PR-095", CLOSING,
+        "Retire a build tool and revoke its grant once the build is complete", A,
+        "What built Agent One VW is not needed to run it, and a tool not held cannot be "
+        "misused.",
+        only(Action.RETIRE_TOOL), {"system_owned": True, "build_complete": True},
+    ),
+    Rule(
+        "PR-096", CLOSING,
+        "Retire a build tool while a build is in progress", E,
+        "Retiring a tool mid-build strands what it was building, so a person decides.",
+        only(Action.RETIRE_TOOL), {"build_complete": False},
     ),
 )
 

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import BuildLanes from './BuildLanes.vue'
+import ClosingSteps from './ClosingSteps.vue'
 import { useSystemStore } from '../stores/system'
 
 const system = useSystemStore()
@@ -18,9 +19,7 @@ const system = useSystemStore()
 
 const rejected = computed(() => system.solutions.filter((s) => s.status === 'REJECTED'))
 
-const done = computed(
-  () => system.implementations.filter((i) => i.status === 'COMPLETE').length,
-)
+const done = computed(() => system.implementations.filter((i) => i.status === 'COMPLETE').length)
 </script>
 
 <template>
@@ -33,9 +32,9 @@ const done = computed(
         </span>
       </div>
       <p class="note">
-        Each approved Agent Component is one part of Agent One VW, built as a pipeline over the
-        data discovery connected, tested, and validated against the evidence it was approved on.
-        Select a component to see its tests.
+        Each approved Agent Component is one part of Agent One VW, built as a pipeline over the data
+        discovery connected, tested, and validated against the evidence it was approved on. Select a
+        component to see its tests.
       </p>
     </header>
 
@@ -49,6 +48,10 @@ const done = computed(
       {{ rejected.map((s) => s.name).join(', ') }}
       {{ rejected.length === 1 ? 'was' : 'were' }} rejected at approval.
     </p>
+
+    <!-- Closing the seeding phase follows the build, on the same stage
+         (D-16): it is the last act of seeding. -->
+    <ClosingSteps />
   </div>
 </template>
 

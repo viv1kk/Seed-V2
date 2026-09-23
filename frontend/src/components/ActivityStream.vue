@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 
-import {
-  PHASE_LABELS,
-  clockOf,
-  labelOf,
-  presentationOf,
-  startsPhase,
-} from '../design/presentation'
+import { clockOf, labelOf, presentationOf, dividerOf } from '../design/presentation'
 import { useEventStore } from '../stores/events'
 
 const events = useEventStore()
@@ -41,7 +35,10 @@ watch(
     await nextTick()
     const element = scroller.value
     if (element) {
-      element.scrollTop = element.scrollHeight
+      // Instantly, not smoothly. A smooth scroll fires scroll events on its
+      // way down, and during a burst of entries those read as the reader
+      // having scrolled back, which stopped the stream following.
+      element.scrollTo({ top: element.scrollHeight, behavior: 'instant' })
     }
   },
 )
@@ -55,8 +52,8 @@ watch(
   <section class="activity">
     <ol ref="scroller" class="entries" @scroll.passive="onScroll">
       <template v-for="(event, index) in events.events" :key="event.sequence">
-        <li v-if="startsPhase(event, events.events[index - 1])" class="divider">
-          <span class="phase">{{ PHASE_LABELS[event.phase].toUpperCase() }}</span>
+        <li v-if="dividerOf(event, events.events[index - 1])" class="divider">
+          <span class="phase">{{ dividerOf(event, events.events[index - 1]) }}</span>
         </li>
 
         <li
@@ -86,9 +83,7 @@ watch(
     </ol>
 
     <footer v-if="!following" class="resume">
-      <button type="button" class="follow" @click="following = true">
-        Jump to latest
-      </button>
+      <button type="button" class="follow" @click="following = true">Jump to latest</button>
     </footer>
   </section>
 </template>

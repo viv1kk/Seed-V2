@@ -4567,3 +4567,107 @@ build pass. Live, on an isolated copy of the app:
 
 **Check by hand.** Watch a run at 1x: each allowed request should read
 as a soft blue soak and a glow.
+
+### M18 · Closing the seeding phase
+
+**Asked for, 2026-09-24:** show a clean-up before Life. The
+implementation and seeding are complete, the tools that built Agent One
+VW are discarded, and the seed is fully consumed because the tree now
+carries what it held. Show it in the Activity stream, and in the tree if
+possible.
+
+This is M18, built with three decisions, recorded as D-20 and A-15:
+
+- a person confirms, as D-16 rules;
+- D-16's three operations stand, and a fourth retires the build tools;
+- the tree sheds a stake and its seed husk.
+
+**What changed.**
+
+- **Lifecycle** (`domain/lifecycle.py`): `CLOSING_SEEDING` sits between
+  `IMPLEMENTATION_COMPLETE` and `READY_TO_RUN`, in the Implementation
+  phase. The direct edge is gone.
+- **Workflow** (`simulation/workflows/closing.py`, new, registered after
+  implementation):
+  - A `confirmation` request, `close-seeding`, with the one option "Run
+    — clean up and close seeding" and FR-H2's what, access and why.
+  - Then four steps, each a capability request decided and recorded:
+    1. consolidate the working notes (PR-090);
+    2. purge scratch space (PR-091);
+    3. promote each interface on its recorded approval (PR-093);
+    4. retire the component generator and the test runner (PR-095).
+  - Then "seed consumed", and the hand-over (`deployment.ready`, moved
+    here from implementation).
+  - `state.closing` records what was done, and the snapshot carries it.
+  - It weighs 6 beats; `NARRATIVE_WEIGHT` is now 105.
+- **Rules** (`protection/rules.py`, `seeds/protection.md`): four actions,
+  three facts (`system_owned`, `deployment_approved`, `build_complete`)
+  and the group "Closing the seeding phase", PR-090 to PR-096. The
+  parity test passes. `BUILD_TOOLS` is in `protection/capabilities.py`.
+- **Frontend:**
+  - `ClosingSteps.vue` (new) ends the Implementation stage with the
+    checklist and its rule ids.
+  - The Activity stream has a CLEANUP divider (`dividerOf` in
+    `design/presentation.ts`), and now follows the newest entry
+    reliably: a programmatic smooth scroll had been switching following
+    off during bursts.
+  - The Life pane hands over at `READY_TO_RUN`. Its header reads Built,
+    then Cleaning up.
+  - `growth.ts` tracks the stake, the closing steps and the seed
+    consumed. `GrowthTree.vue` draws the stake and husk, with tokens
+    `--growth-stake` and `--growth-tie`.
+  - `system.ts` and `events.ts` gain the state and the six events.
+
+**Test edits.** This is the milestone allowed to edit assertions. The
+plan expected one edit, in the state-machine suite. That suite is
+generated from the transition table, so it needed none, and it now
+covers the new edges on its own. These needed edits instead, each a
+direct consequence of D-16:
+
+- `test_implementation.py`:
+  - the last lifecycle moves now include `CLOSING_SEEDING`;
+  - the weight shares are now implementation 20 and closing 6.
+- `test_assessment.py`: two tests answer the new confirmation before
+  asserting completion. Their assertions are unchanged.
+- `test_presentation.py`: the six new event types are classified.
+- `test_protection.py`: the witness table gains the three new facts.
+- `narrative.py`: the harness answers the confirmation.
+
+New: `tests/test_closing.py`, 13 tests. They cover:
+
+- the edges, legal and illegal;
+- the confirmation;
+- each step's order and rule;
+- the closing record;
+- a rejected component not promoted;
+- scratch versus client data (PR-091, PR-092, PR-051);
+- promotion reading the approval;
+- retirement mid-build;
+- the seed unchanged;
+- skip passing through closing (FR-C7).
+
+**Gates.** `pytest` gives 475 passed. The one failure is the known
+200 ms timing test. Typecheck and build pass. Live, on an isolated copy
+of the app (11 of 11):
+
+- The run pauses for the confirmation at `IMPLEMENTATION_COMPLETE`, with
+  the layout Both and the tree staked.
+- The confirmation is answered through its button.
+- Mid-clean-up, the tree reads "Shedding the seed" and the stream has
+  the CLEANUP divider.
+- The stake lifts away when the tools are retired.
+- Every step appears in the stream with PR-090, PR-091, PR-093 and
+  PR-095, and the protection tally counts 34.
+- The layout hands over to Life at `READY_TO_RUN`.
+- The grown tree stands without stake or husk, and a reload rebuilds it
+  identically.
+- Replay and Reset matched (5 of 5), and the M14 walkthrough passes 31
+  of 31. Both drivers now confirm closing.
+
+**Check by hand.**
+
+1. At 1x, confirm "Run — clean up and close seeding". Watch the
+   checklist tick through, the stream purge, and the tree lose its stake
+   and seed.
+2. Restart your own app server first: the one on port 8000 predates
+   these backend changes.

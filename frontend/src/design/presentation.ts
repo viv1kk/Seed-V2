@@ -115,6 +115,18 @@ export function startsPhase(event: SystemEvent, previous: SystemEvent | undefine
 }
 
 /**
+ * The divider above an entry, if one belongs there.
+ *
+ * A phase's name where a phase begins. Closing the seeding phase belongs
+ * to Implementation (D-16), so it opens no phase of its own, but the
+ * purge is a distinct act and the stream marks where it starts.
+ */
+export function dividerOf(event: SystemEvent, previous: SystemEvent | undefined): string | null {
+  if (event.type === 'seeding.closing.started') return 'CLEANUP'
+  return startsPhase(event, previous) ? PHASE_LABELS[event.phase].toUpperCase() : null
+}
+
+/**
  * A proportion as a percentage, to one decimal where it has one.
  *
  * One formatter for every surface, so a figure reads the same on a card,

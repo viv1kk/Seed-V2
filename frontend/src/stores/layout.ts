@@ -14,7 +14,8 @@ export type Layout = 'both' | 'seeding' | 'life'
  * side, the tree growing with them on the other, so the process and its
  * growth are watched together. Both through the hand-over when
  * Implementation completes. Life only once there is something running to
- * look at.
+ * look at. Closing the seeding phase (M18) is still seeding, so it is
+ * Both too: the clean-up in the stream and the tree losing its stake.
  */
 function defaultFor(lifecycle: LifecycleState): Layout {
   switch (lifecycle) {

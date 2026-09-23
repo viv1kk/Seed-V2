@@ -92,6 +92,7 @@ class StateSnapshot(Schema):
     solutions: list[dict[str, Any]] = Field(default_factory=list)
     approvals: list[dict[str, Any]] = Field(default_factory=list)
     implementations: list[dict[str, Any]] = Field(default_factory=list)
+    closing: dict[str, Any] = Field(default_factory=dict)
     runtime: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -138,6 +139,10 @@ class SystemState:
         self.solutions: list[dict[str, Any]] = []
         self.approvals: list[dict[str, Any]] = []
         self.implementations: list[dict[str, Any]] = []
+        #: What closing the seeding phase did (D-16): the one seeding
+        #: record, the scratch released, the interfaces promoted and the
+        #: tools retired. Empty until seeding is closed.
+        self.closing: dict[str, Any] = {}
         self.runtime: dict[str, Any] = {}
 
     @property
@@ -265,5 +270,6 @@ class SystemState:
             solutions=self.solutions,
             approvals=self.approvals,
             implementations=self.implementations,
+            closing=self.closing,
             runtime=self.runtime,
         )

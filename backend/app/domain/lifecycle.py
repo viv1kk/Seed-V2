@@ -15,7 +15,7 @@ from enum import StrEnum
 
 
 class LifecycleState(StrEnum):
-    """The states of FR-L2, in narrative order."""
+    """The states of FR-L9 (FR-L2 as amended by A-3), in narrative order."""
 
     UNINITIALIZED = "UNINITIALIZED"
     INITIALIZED = "INITIALIZED"
@@ -26,6 +26,7 @@ class LifecycleState(StrEnum):
     AWAITING_APPROVAL = "AWAITING_APPROVAL"
     IMPLEMENTING = "IMPLEMENTING"
     IMPLEMENTATION_COMPLETE = "IMPLEMENTATION_COMPLETE"
+    CLOSING_SEEDING = "CLOSING_SEEDING"
     READY_TO_RUN = "READY_TO_RUN"
     RUNNING = "RUNNING"
 
@@ -63,13 +64,15 @@ PHASE_OF: dict[LifecycleState, Phase] = {
     LifecycleState.AWAITING_APPROVAL: Phase.ASSESSMENT,
     LifecycleState.IMPLEMENTING: Phase.IMPLEMENTATION,
     LifecycleState.IMPLEMENTATION_COMPLETE: Phase.IMPLEMENTATION,
+    # Closing is the last act of seeding, not the first act of Life (D-16).
+    LifecycleState.CLOSING_SEEDING: Phase.IMPLEMENTATION,
     LifecycleState.READY_TO_RUN: Phase.RUNTIME,
     LifecycleState.RUNNING: Phase.RUNTIME,
 }
 
 #: The transition table. Reset is not an edge here: it is an explicit
 #: operation that rebuilds state from nothing (FR-L7), and modelling it
-#: as a transition from all eleven states would say something false
+#: as a transition from all twelve states would say something false
 #: about how it works.
 TRANSITIONS: dict[LifecycleState, frozenset[LifecycleState]] = {
     LifecycleState.UNINITIALIZED: frozenset({LifecycleState.INITIALIZED}),
@@ -84,7 +87,11 @@ TRANSITIONS: dict[LifecycleState, frozenset[LifecycleState]] = {
     LifecycleState.ASSESSING: frozenset({LifecycleState.AWAITING_APPROVAL}),
     LifecycleState.AWAITING_APPROVAL: frozenset({LifecycleState.IMPLEMENTING}),
     LifecycleState.IMPLEMENTING: frozenset({LifecycleState.IMPLEMENTATION_COMPLETE}),
-    LifecycleState.IMPLEMENTATION_COMPLETE: frozenset({LifecycleState.READY_TO_RUN}),
+    # A built system is not yet a running one. A person confirms the close
+    # of seeding, and closing cleans up after the build before anything
+    # runs (D-16). The direct edge to READY_TO_RUN is gone.
+    LifecycleState.IMPLEMENTATION_COMPLETE: frozenset({LifecycleState.CLOSING_SEEDING}),
+    LifecycleState.CLOSING_SEEDING: frozenset({LifecycleState.READY_TO_RUN}),
     # Running a solution and returning to the workspace, repeatedly:
     # completion is per-solution, not global (FR-L8).
     LifecycleState.READY_TO_RUN: frozenset({LifecycleState.RUNNING}),

@@ -123,6 +123,13 @@ async def test_every_event_the_narrative_emits_classifies_as_intended() -> None:
         "implementation.tests.passed": Presentation.ACTIVITY,
         "solution.ready": Presentation.ACTIVITY,
         "implementation.completed": Presentation.ACTIVITY,
+        # Closing the seeding phase (M18): clean-up reports progress.
+        "seeding.closing.started": Presentation.ACTIVITY,
+        "seeding.notes.consolidated": Presentation.ACTIVITY,
+        "seeding.scratch.cleared": Presentation.ACTIVITY,
+        "seeding.interfaces.promoted": Presentation.ACTIVITY,
+        "seeding.tools.retired": Presentation.ACTIVITY,
+        "seeding.consumed": Presentation.ACTIVITY,
         "deployment.ready": Presentation.ACTIVITY,
         # Running a solution, and returning from it, are a person acting.
         "solution.started": Presentation.DECISION,

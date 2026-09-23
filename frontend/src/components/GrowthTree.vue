@@ -197,7 +197,14 @@ const targets = computed<Targets>(() => {
   const branches = g.branches.length
   const parts = g.branches.reduce((n, b) => n + b.leaves.length, 0)
 
-  t.seed = g.roots.length > 0 ? 1 : 0
+  // The seed sits whole in the soil until it sprouts. Then it splits, and
+  // its husk stays at the foot of the stem until closing consumes it: a
+  // quarter less with each clean-up step, and gone with the seed (D-16).
+  t.seed = g.roots.length > 0 && !g.sprouted ? 1 : 0
+  t.husk = g.sprouted && !g.consumed ? 1 - 0.2 * g.cleaned : 0
+  // The build tools, as a stake: set beside the tree when the build
+  // begins, and pulled away when closing retires them.
+  t.stake = g.staked ? 1 : 0
   g.roots.forEach((_, i) => (t[`root:${i}`] = 1))
   // The roots bush out as the plant above them grows: a few laterals at
   // planting, the whole system once the build is well under way.
@@ -361,6 +368,48 @@ const trunk = computed(() => {
     `C${CX + tw + lean} ${top + h * 0.25} ${CX + w / 2} ${GROUND - h * 0.5} ${CX + w / 2} ${GROUND - h * 0.12} ` +
     `Q${CX + w / 2} ${GROUND} ${CX + w / 2 + flare} ${SEED_Y} Z`
   )
+})
+
+/**
+ * The build tools, as a stake beside the trunk, tied to it twice. It rises
+ * into place as the build begins and is lifted away as closing retires
+ * the tools, so the tree is seen to stand on its own.
+ */
+const stake = computed(() => {
+  const k = v('stake')
+  if (k <= 0.01) return null
+  const w = Math.max(v('width'), 2)
+  const x = CX + w / 2 + 8
+  const top = GROUND - Math.min(Math.max(v('height') * 0.55, 40), 150)
+  const lift = (1 - k) * 36
+  const ties = [0.35, 0.75].map((f) => {
+    const y = GROUND - (GROUND - top) * f
+    return `M${CX + w * 0.3} ${y} Q${(CX + x) / 2} ${y + 3} ${x} ${y}`
+  })
+  return {
+    pole: `M${x} ${GROUND + 8} L${x} ${top}`,
+    ties,
+    opacity: k,
+    transform: `translate(0 ${-lift})`,
+  }
+})
+
+/**
+ * The seed's husk, split in two at the foot of the stem. It shrinks and
+ * fades with each clean-up step until the seed is consumed.
+ */
+const husk = computed(() => {
+  const k = v('husk')
+  if (k <= 0.01) return null
+  const w = Math.max(v('width'), 2)
+  return [-1, 1].map((side) => ({
+    cx: CX + side * (w / 2 + 3.5),
+    cy: SEED_Y + 1,
+    rx: 4.6 * k,
+    ry: 3 * k,
+    rotate: `rotate(${side * 28} ${CX + side * (w / 2 + 3.5)} ${SEED_Y + 1})`,
+    opacity: Math.min(1, k * 1.2),
+  }))
 })
 
 /** A leaf, pointing out from its stem, with a midrib drawn over it. */
@@ -657,6 +706,18 @@ const STAGES = {
 const caption = computed(() => {
   const g = growth.value
   const phase = g.phase ?? 'INIT'
+  // Closing the seeding phase: the tree loses its stake and the last of
+  // its seed, and stands on its own (D-16).
+  if (g.consumed || g.closing) {
+    return {
+      stage: g.consumed ? 'Standing on its own' : 'Shedding the seed',
+      phase: 'Closing seeding',
+      detail: g.consumed
+        ? 'seed consumed, build tools retired'
+        : `${g.cleaned} of 4 clean-up steps done`,
+      waiting: false,
+    }
+  }
   const parts = g.branches.reduce((n, b) => n + b.leaves.length, 0)
   const detail: Record<keyof typeof STAGES, string> = {
     INIT: `${g.roots.length} layers rooted`,
@@ -879,11 +940,27 @@ const caption = computed(() => {
           :cy="disc.cy"
           :r="disc.r"
         />
+        <g v-if="stake" class="stake" :opacity="stake.opacity" :transform="stake.transform">
+          <title>The build tools, retired when seeding closes</title>
+          <path class="pole" :d="stake.pole" />
+          <path v-for="(tie, i) in stake.ties" :key="i" class="tie" :d="tie" />
+        </g>
         <g v-if="trunk">
           <path class="trunk" :d="trunk" :style="{ fill: wood.trunk }" />
           <path :d="trunk" :fill="`url(#${ids.bark})`" :opacity="wood.furrows" />
           <path :d="trunk" :fill="`url(#${ids.shade})`" />
         </g>
+        <ellipse
+          v-for="(half, i) in husk ?? []"
+          :key="`husk${i}`"
+          class="husk"
+          :cx="half.cx"
+          :cy="half.cy"
+          :rx="half.rx"
+          :ry="half.ry"
+          :transform="half.rotate"
+          :opacity="half.opacity"
+        />
         <use
           v-for="leaf in stemLeaves"
           :key="leaf.key"
@@ -1057,6 +1134,26 @@ svg {
 
 .seed {
   fill: var(--growth-root);
+}
+
+.husk {
+  fill: var(--growth-nodule);
+  stroke: var(--growth-root);
+  stroke-width: 0.8;
+}
+
+.pole {
+  fill: none;
+  stroke: var(--growth-stake);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.tie {
+  fill: none;
+  stroke: var(--growth-tie);
+  stroke-width: 1.1;
+  stroke-linecap: round;
 }
 
 .twig {

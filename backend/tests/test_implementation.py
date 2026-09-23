@@ -86,7 +86,12 @@ def timeline(state: SystemState, solution_id: str) -> list[list[dict[str, Any]]]
 @pytest.mark.asyncio
 async def test_the_narrative_ends_ready_to_run(built: SystemState) -> None:
     moves = [e.payload["to"] for e in events_of(built, "lifecycle.transition")]
-    assert moves[-3:] == ["IMPLEMENTING", "IMPLEMENTATION_COMPLETE", "READY_TO_RUN"]
+    assert moves[-4:] == [
+        "IMPLEMENTING",
+        "IMPLEMENTATION_COMPLETE",
+        "CLOSING_SEEDING",
+        "READY_TO_RUN",
+    ]
     assert built.lifecycle is LifecycleState.READY_TO_RUN
     assert built.events.all()[-1].type == "deployment.ready"
 
@@ -302,7 +307,10 @@ async def test_with_nothing_approved_the_system_is_ready_with_nothing_to_run() -
 
 
 def test_implementation_takes_its_declared_share() -> None:
-    """21 of 100 in the scripted narrative: 1 to open, 6 per build, 2 to close."""
+    """20 of 105 in the scripted narrative: 1 to open, 6 per build, 1 to close.
+
+    Since M18 the hand-over belongs to closing, which weighs 6 (D-16).
+    """
     state = SystemState()
     state.transition(LifecycleState.INITIALIZED)
     beats: dict[str, float] = {}
@@ -324,7 +332,9 @@ def test_implementation_takes_its_declared_share() -> None:
                     answer = {"solution": pending["id"], "decision": "approve"}
                 else:
                     answer = {"username": "svc"}
-    assert beats == pytest.approx({"discovery": 54, "assessment": 25, "implementation": 21})
+    assert beats == pytest.approx(
+        {"discovery": 54, "assessment": 25, "implementation": 20, "closing": 6}
+    )
 
 
 # -- Records -----------------------------------------------------------

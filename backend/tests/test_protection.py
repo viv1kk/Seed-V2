@@ -67,6 +67,9 @@ BENIGN: dict[str, object] = {
     "attributed": True,
     "evidence_complete": True,
     "evidence_fresh": True,
+    "system_owned": True,
+    "deployment_approved": True,
+    "build_complete": True,
 }
 
 

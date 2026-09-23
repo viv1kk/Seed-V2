@@ -1,4 +1,4 @@
-"""Implementation: AWAITING_APPROVAL to READY_TO_RUN.
+"""Implementation: AWAITING_APPROVAL to IMPLEMENTATION_COMPLETE.
 
 Each approved solution is built in turn as a pipeline of components
 (§27, §52). Components move through a wave: while one is generated, the
@@ -7,6 +7,7 @@ so every component passes through all five states of FR-I2 and the
 pipeline visibly advances rather than flipping to done. Then the unit
 and integration suites report, the output is validated against the
 evidence the solution was approved on, and the solution is Ready (FR-I6).
+Closing the seeding phase follows, in its own workflow (D-16).
 
 The activity stream reports this as §28 does, one "Generated ..." per
 component, and nothing that is not happening is narrated (FR-E9). No
@@ -25,7 +26,7 @@ readiness cites the recorded decision instead.
 Only approved solutions are built. A rejected solution is named once and
 left alone: rejection is final (FR-AP2).
 
-The beats: one to open, six per solution, two to close. NARRATIVE_WEIGHT
+The beats: one to open, six per solution, one to close. NARRATIVE_WEIGHT
 describes the scripted narrative, in which all three solutions are
 approved (§83.6). A run that approves fewer is shorter by the builds it
 does not do, which is the honest reading of a total-duration budget.
@@ -111,19 +112,6 @@ def implementation(state: SystemState) -> Workflow:
     )
     state.transition(LifecycleState.IMPLEMENTATION_COMPLETE)
     yield Beat(weight=1, label="implementation complete")
-
-    state.transition(LifecycleState.READY_TO_RUN)
-    state.record(
-        type="deployment.ready",
-        category=Category.SUCCESS,
-        message=(
-            f"System ready. {_count(len(ready), 'Agent Component')} ready to run."
-            if ready
-            else "System ready. No Agent Component was approved, so there is nothing to run."
-        ),
-        payload={"ready": [s["id"] for s in ready]},
-    )
-    yield Beat(weight=1, label="system ready")
 
 
 def _emit(

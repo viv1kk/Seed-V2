@@ -997,6 +997,52 @@ pure function of the log:
   the header. What lies beneath stays mounted.
 
 
+### D-20 · Closing retires the build tools and consumes the seed (2026-09-24)
+
+**Ruled at M18, from the review of D-19. Closing the seeding phase is
+shown as a clean-up that discards the tools that built Agent One VW and
+consumes the seed. The seed is no longer needed, because the tree
+carries what it held and sustains itself.** This amends D-16 and adds
+amendment A-15.
+
+Three questions were answered first:
+
+- The trigger stays D-16's: a person confirms.
+- D-16's three operations stand, and a fourth is added.
+- The tree shows the clean-up: its stake is removed and its seed husk
+  dissolves.
+
+*The fourth operation.* After the interfaces are promoted, closing
+retires each build tool (the component generator and the test runner)
+and revokes its grant. Each retirement is a capability request:
+
+| Rule   | Decides | When |
+| ------ | ------- | ---- |
+| PR-095 | ALLOW | a system-owned tool, once the build is complete |
+| PR-096 | ESCALATE | while a build is still in progress, because retiring a tool mid-build strands what it was building |
+| PR-092 | DENY | anything the system does not own; this also bounds consolidation and clearing |
+
+*The seed consumed.* After the four steps, the stream reports the seed
+consumed. Its layers are carried by the Agent Components that grew from
+them. The seed files are not touched (FR-C5), and the Planting summary
+is still true.
+
+*The rules.* The new group "Closing the seeding phase" holds PR-090 to
+PR-096. They are in `rules.py` and `protection.md`, and the parity test
+holds the two together.
+
+*In the tree.* The build tools stand beside the trunk as a stake, tied
+to it twice, from the start of the build. When closing retires the
+tools, the stake is lifted away. When the seed sprouts, it splits into a
+husk at the foot of the stem. The husk shrinks with each clean-up step
+and is gone once the seed is consumed. The caption reads "Shedding the
+seed" during closing and "Standing on its own" after it.
+
+*In the Seeding pane.* The Implementation stage ends with a "Closing the
+seeding phase" checklist: five entries, the four steps and the seed
+consumed. Each shows its decision and rule once it is done. The Activity
+stream marks where the clean-up begins with a CLEANUP divider.
+
 ### 7.2 Requirement amendments
 
 Applied in `requirements.md`. Superseded requirements are struck through
@@ -1016,6 +1062,7 @@ and left in place, not deleted.
 | A-12 | FR-W4  | Until the build completes, the Life pane shows the growing tree rather than an empty state. When it completes, the tree hands over to Agent One VW. | D-18 |
 | A-13 | FR-W3  | Supersedes A-11: Both is the default from planting until the build completes. | D-19 |
 | A-14 | FR-W4  | After the hand-over the tree stays available: a Growth control in the Life pane's header drops it open above Agent One VW. | D-19 |
+| A-15 | FR-C3, FR-C5 | Closing performs four operations, not three: the fourth retires the build tools and revokes their grants. Then the seed is consumed. | D-20 |
 
 New requirement groups: FR-N (display vocabulary), FR-W (panes), FR-G
 (growth tree), FR-C (closing), FR-LF (Life pane), plus FR-A11 to FR-A13,

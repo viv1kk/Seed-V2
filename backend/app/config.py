@@ -23,8 +23,11 @@ TOTAL_DURATION_SECONDS = 270.0
 #: being run. The calibration test asserts that a full run consumes
 #: exactly this, so drift shows up as a test failure.
 #:
-#: Shares since M8: discovery 54, assessment 25, implementation 21. It
+#: Shares since M18: discovery 54, assessment 25, implementation 20,
+#: closing 6. Closing's six units are about 15 seconds at 1x, D-16's
+#: allowance; the total duration is unchanged, so the rest runs slightly
+#: faster until M22 recalibrates. It
 #: describes the scripted narrative, in which every solution is approved
 #: (§83.6); a run that approves fewer is shorter by the builds it skips.
 #: Time a person spends deciding is not narrative time and is not in it.
-NARRATIVE_WEIGHT = 100.0
+NARRATIVE_WEIGHT = 105.0

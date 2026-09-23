@@ -19,5 +19,12 @@ GRANTED_TOOLS: frozenset[str] = frozenset(
 )
 
 
+#: The tools that built Agent One VW. Closing the seeding phase retires
+#: them (D-16): the component generator produced each pipeline, and the
+#: test runner is the granted tool above. Neither is needed to run what
+#: they built.
+BUILD_TOOLS: tuple[str, ...] = ("component-generator", "test-runner")
+
+
 def granted(tool: str) -> bool:
     return tool in GRANTED_TOOLS

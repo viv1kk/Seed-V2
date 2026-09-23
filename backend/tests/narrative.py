@@ -1,7 +1,8 @@
 """Driving a run to its end, answering whatever it asks.
 
 Since M7 the narrative parks twice over: once for the credential and then
-once per solution for its decision. Every test that needs a finished run
+once per solution for its decision. Since M18 it parks once more, for the
+confirmation that closes the seeding phase. Every test that needs a finished run
 answers the same way, so the answering lives here rather than in five
 slightly different loops.
 """
@@ -46,6 +47,8 @@ async def finish(
             target = awaiting(runner.state)[0]["id"]
             verdict = (decisions or {}).get(target, "approve")
             await runner.resolve_human(pending.request_id, {"solution": target, "decision": verdict})
+        elif pending.kind is RequestKind.CONFIRMATION:
+            await runner.resolve_human(pending.request_id, {"acknowledged": True, "choice": "close"})
         else:
             await runner.resolve_human(pending.request_id, dict(credentials or {"username": "svc"}))
 

@@ -37,6 +37,7 @@ from app.runtime import state as process_state
 from app.simulation.engine import SimulationEngine
 from app.simulation.protocol import RunStatus, Speed
 from app.simulation.workflows.registry import NARRATIVE
+from app.simulation.workflows.closing import CLOSE_REQUEST
 from narrative import finish, run_to_end, settle
 
 TAD, LO, APR = (m.id for m in METHODOLOGIES)
@@ -252,6 +253,8 @@ async def test_the_run_waits_until_every_solution_has_a_decision() -> None:
     await settle(runner)
     await runner.resolve_human(APPROVAL_REQUEST, {"solution": LO, "decision": "approve"})
     await settle(runner)
+    # Since M18 the run parks once more, to confirm closing seeding (D-16).
+    await finish(runner)
 
     assert runner.status is RunStatus.COMPLETE
     # Approved solutions go on to be built (M8); the rejection is final.
@@ -366,6 +369,16 @@ def wait_for_decision(client: TestClient) -> None:
     raise AssertionError("the run never asked for a decision")
 
 
+def wait_for_closing(client: TestClient) -> None:
+    """The confirmation that closes the seeding phase (M18, D-16)."""
+    for _ in range(500):
+        blocked = client.get("/api/state").json()["blockedOn"]
+        if blocked and blocked["requestId"] == CLOSE_REQUEST:
+            return
+        time.sleep(0.01)
+    raise AssertionError("the run never asked to close seeding")
+
+
 def test_decisions_and_revisions_over_http(client: TestClient) -> None:
     client.post("/api/seed/initialize", json={"layers": read_bundled()})
     client.post("/api/operator/speed", json={"speed": "instant"})
@@ -398,6 +411,9 @@ def test_decisions_and_revisions_over_http(client: TestClient) -> None:
     for solution in (TAD, LO, APR):
         wait_for_decision(client)
         assert client.post(f"/api/solutions/{solution}/decision", json={"decision": "approve"}).status_code == 200
+    # Since M18 the run parks once more, to confirm closing seeding (D-16).
+    wait_for_closing(client)
+    client.post(f"/api/human/{CLOSE_REQUEST}", json={"acknowledged": True, "choice": "close"})
     wait_for(client, "complete")
     snapshot = client.get("/api/state").json()
     assert [s["status"] for s in snapshot["solutions"]] == ["READY"] * 3

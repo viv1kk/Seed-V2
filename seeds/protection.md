@@ -164,6 +164,18 @@ adding a permissive rule can never weaken a restrictive one.
 | PR-081 | Suppress, redact or delete an entry in the decision record | DENY | A record that can be edited is not a record. |
 | PR-082 | Proceed with an action whose decision was not recorded | DENY | An unrecorded action is indistinguishable from an unauthorised one. |
 
+### Closing the seeding phase
+
+| Rule | Action | Decision | Rationale |
+| --- | --- | --- | --- |
+| PR-090 | Consolidate the system's own working notes into one seeding record | ALLOW | The notes are the system's own record. Consolidating keeps every entry and changes no seed file. |
+| PR-091 | Release the system's own temporary analytical workspace | ALLOW | Scratch space is system-owned storage. Releasing it deletes nothing a source system holds. |
+| PR-092 | Consolidate, clear or retire anything the system does not own | DENY | Clean-up covers the system's own artefacts. Client data is never cleaned up. |
+| PR-093 | Promote a built Agent Component's interface to its release version when its deployment was approved | ALLOW | The approval given under PR-053 already authorised the deployment this completes. |
+| PR-094 | Promote an interface whose deployment was not approved | ESCALATE | A release without an approval is a deployment, and a person authorises it. |
+| PR-095 | Retire a build tool and revoke its grant once the build is complete | ALLOW | What built Agent One VW is not needed to run it, and a tool not held cannot be misused. |
+| PR-096 | Retire a build tool while a build is in progress | ESCALATE | Retiring a tool mid-build strands what it was building, so a person decides. |
+
 ## Human authority
 
 The following always require a person, whatever else permits them.

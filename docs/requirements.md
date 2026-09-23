@@ -328,9 +328,9 @@ Added by the Seeding and Life rework (D-16).
 | ------ | ----------- |
 | FR-C1  | After Implementation completes, a person closes the seeding phase with a single action, labelled "Run --- clean up and close seeding". |
 | FR-C2  | The action is raised as a `confirmation` human request (FR-H3) that states what will happen and why (FR-H2). |
-| FR-C3  | Closing performs three operations, each reported in the activity stream: it consolidates the seeding phase's working notes into one record, clears the system's own scratch space, and promotes each built solution's interface from its build version to its release version. |
+| FR-C3  | Closing performs ~~three~~ four operations (A-15), each reported in the activity stream: it consolidates the seeding phase's working notes into one record, clears the system's own scratch space, promotes each built solution's interface from its build version to its release version, and retires the tools that built Agent One VW, revoking their grants. The stream then reports the seed consumed (D-20). |
 | FR-C4  | Each operation is a capability request evaluated by the protection engine (FR-P2), under rules documented in `protection.md` (FR-P7). |
-| FR-C5  | All three operations are simulated. None touches a seed file, a source system, the local filesystem or the network (§4.1, FR-S6, NFR-D2). |
+| FR-C5  | All ~~three~~ four operations are simulated (A-15). None touches a seed file, a source system, the local filesystem or the network (§4.1, FR-S6, NFR-D2). |
 | FR-C6  | When closing completes, the layout moves to Life only, and each ready solution is listed there with a Run action (supersedes FR-I6, A-6). |
 | FR-C7  | Operator skip (FR-O1) passes through the closing step. |
 

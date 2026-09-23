@@ -243,8 +243,8 @@ seed-v2/
 | M14 Seeding and Life panes   | MOVE   | Built | `34ce3d9` |
 | M15 Declared stack at Planting | NEW  | Built | `64ed030` |
 | M16 Routing-problem flag     | NEW    | Built | `4cf715d` |
-| M17 Growth tree              | NEW    | Built | |
-| M18 Closing the seeding phase | NEW   | Not started | |
+| M17 Growth tree              | NEW    | Built | `8fa369a` |
+| M18 Closing the seeding phase | NEW   | Built | |
 | M19 Life: collection and recalibration | NEW | Not started | |
 | M20 Remaining dashboards *(was M11)* | — | Not started | |
 | M21 Design pass *(was M12)*  | —      | Not started | |
@@ -817,6 +817,9 @@ Operator skip passes through closing (FR-C7). The narrative test harness
 (`tests/narrative.py`) resolves the new confirmation.
 
 *Reworks:* M8's transition from Implementation to Run.
+*Also (D-20):* a fourth operation retires the build tools (PR-095), the
+stream reports the seed consumed, and the tree sheds its stake and seed
+husk as closing proceeds.
 *Also (D-18):* move the Life pane's hand-over from the growing tree to Agent
 One VW, which M17 triggers at `IMPLEMENTATION_COMPLETE`, to the end of
 closing, and keep the tree up through `CLOSING_SEEDING`.
@@ -1023,6 +1026,7 @@ rulings themselves:
 | **D-17** | **Life is time-revealed operation** (Option B, OQ-12): a finite collection cursor over already-generated data, with precomputed recalibration. A drilled-in view pins to its step. | The "maintaining" half of Agent One VW. Needs A-8 and A-9. |
 | **D-18** | **The growth tree grows in the Life pane**, vertically from seed to tree as the process advances, then hands over to Agent One VW. The strip returns to the Seeding pane; Life only is the default during the build. | Ruled after M17's review. Amends D-15 and D-14's layout. A-10 to A-12. |
 | **D-19** | **Both during the build**, and the grown tree kept behind a **Growth** control after the hand-over. The tree's stem ages from green to bark, and it gains texture, leaf cover and denser roots. | Ruled after D-18's review. Amends D-18 and D-14's layout. A-13, A-14. |
+| **D-20** | **Closing retires the build tools and consumes the seed**: a fourth, policy-gated operation, and the tree sheds its stake and seed husk as closing proceeds. | Ruled at M18. Amends D-16. A-15. |
 
 Two requirement amendments follow from these and are applied in
 `requirements.md`:
@@ -1057,6 +1061,8 @@ clarifying rather than deleting (`decisions.md` §7.2):
   until the build completes (D-19).
 - **A-14** --- FR-W4: after the hand-over, a Growth control in the Life
   pane's header drops the grown tree open (D-19).
+- **A-15** --- FR-C3, FR-C5: closing performs four operations; the fourth
+  retires the build tools. Then the seed is consumed (D-20).
 
 ---
 
