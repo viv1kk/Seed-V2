@@ -3,11 +3,17 @@
 > **Status:** Proposal, for review. Derived from `requirements.md`; every
 > milestone below names the requirements it discharges.
 >
-> Nothing here is built yet. **Every decision in section 5 is now ruled,
-> and both requirement conflicts are resolved** --- see `decisions.md`,
-> which is authoritative where it differs from an earlier draft of this
-> document. Section 5 below summarises those rulings; section 6 carries
-> the risk register forward.
+> **Built:** M0 to M10, one commit each. **Every decision in section 5 is
+> ruled**, and `decisions.md` is authoritative where it differs from this
+> document.
+>
+> **Amended 2026-09-23** by the Seeding and Life rework (the Alex
+> Prigojine session; `decisions.md` §7). Nine milestones, M11 to M19, are
+> inserted after M10. **The three milestones not yet built are
+> renumbered:** Remaining dashboards moves from M11 to M20, Design pass
+> from M12 to M21, and Rehearsal and hardening from M13 to M22. Their
+> content is unchanged apart from notes on the rework. M0 to M10 keep
+> their numbers, which the commit history uses.
 
 ---
 
@@ -16,11 +22,17 @@
 Four phases. Each ends at a state worth showing someone.
 
 ```
-PHASE 1   Foundation          M0 - M2    nothing to see, everything depends on it
-PHASE 2   Narrative           M3 - M8    the whole story runs; dashboards are stubs
-PHASE 3   Analytics           M9 - M11   the story ends somewhere real
-PHASE 4   Craft               M12 - M13  the part that actually sells it
+PHASE 1   Foundation          M0 - M2         built
+PHASE 2   Narrative           M3 - M8         built
+PHASE 3   Analytics           M9 - M10, M20   built through M10; M20 remains
+PHASE R   Seeding and Life    M11 - M19       stakeholder rework (decisions.md §7)
+PHASE 4   Craft               M21 - M22       the part that actually sells it
 ```
+
+Phase R was not in the original plan. It relabels and reorganises what
+Phases 2 and 3 built, and adds five features on top. It sits before
+Phase 4 because the design pass and rehearsal must cover the interface
+the rework produces, not the one it replaces.
 
 The ordering is deliberately inverted from the temptation to start with
 the dashboard. Phase 2 produces a complete, demonstrable narrative before
@@ -139,6 +151,36 @@ hierarchies are data on the same principle (FR-EV3):
     { "id": "ticket",          "entity": "ticket" } ] }
 ```
 
+### Seeding and Life (Phase R)
+
+The workspace splits into two panes, both mounted for the whole run
+(D-14, NFR-A7):
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ Seed                        [ Both | Seeding | Life ]            │
+├────────────────────────────────┬─────────────────────────────────┤
+│ SEEDING                        │ LIFE · Agent One VW (ValueWise™)│
+│  growth tree        (D-15)     │  empty until Implementation     │
+│  Planting · Discovery ·        │  completes; then the Agent      │
+│  Assessment · Implementation   │  Components, their dashboards,  │
+│  Activity | Protection rail    │  collection and recalibration   │
+│  human-input surface           │  (D-17)                         │
+└────────────────────────────────┴─────────────────────────────────┘
+```
+
+The screen uses a display vocabulary; the code keeps its own (D-11):
+
+| Code          | Screen          |
+| ------------- | --------------- |
+| the built solutions, as a whole | Agent One VW (ValueWise™) |
+| solution      | Agent Component |
+| methodology   | methodology (unchanged: the analogy names the lifecycle, not the analysis) |
+| product name  | Seed            |
+| `RUNTIME`     | Life            |
+| `INIT`        | Planting        |
+| feasibility   | Potential       |
+
 ### Repository structure
 
 ```
@@ -152,7 +194,8 @@ seed-v2/
 │   ├── simulation/
 │   │   ├── protocol.py           EventSource — the NFR-A1 seam
 │   │   ├── engine.py             beat runner, speed, skip
-│   │   └── workflows/            discovery, assessment, implementation
+│   │   └── workflows/            discovery, assessment, implementation,
+│   │                             closing (M18, D-16)
 │   ├── knowledge/                seed_loader, methodologies
 │   ├── environment/acme.py       five systems and their graph
 │   ├── protection/               rules, engine
@@ -165,16 +208,55 @@ seed-v2/
     ├── stores/                   system, events, operator, dashboard
     ├── design/tokens.css         light + dark, single source (NFR-V2)
     ├── components/               lifecycle, environment, activity,
-    │                             protection, human, build, charts
+    │                             protection, human, build, charts,
+    │                             growth tree (M17), layout control (M14)
     └── views/
-        ├── SeedView.vue
-        ├── WorkspaceView.vue     stays mounted (NFR-A3)
-        └── DashboardView.vue     the one generic renderer (D-1)
+        ├── SeedView.vue          full-screen until planted (FR-W7)
+        ├── WorkspaceView.vue     becomes the Seeding pane (M14)
+        ├── LifeView.vue          the Life pane (M14)
+        └── DashboardView.vue     the one generic renderer (D-1),
+                                  mounted in the Life pane (M14)
 ```
 
 ---
 
 ## 3. Milestones
+
+### Status
+
+| Milestone | Tag    | Status | Commit |
+| --------- | ------ | ------ | ------ |
+| M0 Walking skeleton          | —      | Built | `e496edd` |
+| M1 State and event backbone  | —      | Built | `76ca4bd` |
+| M2 Simulation engine         | —      | Built | `94663f5` |
+| M3 Seed and INIT             | —      | Built | `5f458fe` |
+| M4 Workspace shell           | —      | Built | `1c9450e` |
+| M5 Protection layer          | —      | Built | `20a9146` |
+| M6 Discovery                 | —      | Built | `2b8dc8f` |
+| M7 Assessment and approval   | —      | Built | `893da34` |
+| M8 Implementation and run    | —      | Built | `dabd605` |
+| M9 Analytics core            | —      | Built | `149a710` |
+| M10 Ticket Anomaly dashboard | —      | Built | `08fc371` |
+| M11 Display vocabulary       | RENAME | Not started | |
+| M12 Feasibility reference audit | RENAME (audit) | Not started | |
+| M13 Feasibility displayed as Potential | RENAME | Not started | |
+| M14 Seeding and Life panes   | MOVE   | Not started | |
+| M15 Declared stack at Planting | NEW  | Not started | |
+| M16 Routing-problem flag     | NEW    | Not started | |
+| M17 Growth tree              | NEW    | Not started | |
+| M18 Closing the seeding phase | NEW   | Not started | |
+| M19 Life: collection and recalibration | NEW | Not started | |
+| M20 Remaining dashboards *(was M11)* | — | Not started | |
+| M21 Design pass *(was M12)*  | —      | Not started | |
+| M22 Rehearsal and hardening *(was M13)* | — | Not started | |
+
+The rework reworks, rather than extends, three built milestones, and
+each is flagged where it happens: **M4**'s single workspace becomes the
+Seeding pane (M14); **M7**'s grade presentation becomes Potential (M13,
+M16); and **M8**'s Implementation-to-Run transition gains the closing
+step (M18). M3, M8 and M10 are also relocated or relabelled without
+functional change. None of the built milestones' requirements is
+dropped; four are superseded with successors (A-3 to A-6).
 
 ### Phase 1 — Foundation
 
@@ -336,8 +418,8 @@ NFR-P1, NFR-P2
 under 200 ms, and an evidence query returns figures computed from real
 rows.
 *Note:* under D-1 this is the schedule's single point of failure, not
-merely its pivot. If the schema is right, M10 and M11 are both
-configuration. If it is not expressive enough, no amount of M12 effort
+merely its pivot. If the schema is right, M10 and M20 are both
+configuration. If it is not expressive enough, no amount of M21 effort
 recovers the craft --- see R-6. Design it against §54's seven Ticket
 Anomaly charts, the hardest case, before writing the renderer.
 *Measured:* generation costs 0.108 s and a two-key groupby 6 ms, so
@@ -360,7 +442,373 @@ that achieves this contains no methodology-specific UI code.
 
 ---
 
-**M11 · Remaining dashboards**
+### Phase R — Seeding and Life
+
+From the Alex Prigojine session (`decisions.md` §7). Each milestone is
+tagged:
+
+- **RENAME** changes display copy only.
+- **MOVE** relocates an existing component without changing what it does.
+- **NEW** adds logic.
+
+The milestones run from lowest risk to highest: renames, then the pane
+move, then new features. The new features are ordered by how much of
+the tested core each one touches. One rule holds across the phase:
+**no existing test assertion changes until M18.** Through M15 the
+unedited suite passing is the proof that nothing built was disturbed.
+M16 and M17 add tests without editing any. M18 is the one milestone that
+must edit an assertion, and it is ordered last among the lifecycle work
+for that reason.
+
+Every open question raised by the rework was answered before Phase R
+began (OQ-8 to OQ-12), or deferred (OQ-13). No milestone in the phase
+is blocked.
+
+---
+
+**M11 · RENAME · Display vocabulary**
+
+The copy half of D-11, except Feasibility. Feasibility carries semantics
+and load-bearing references, so it gets its own audit (M12) and its own
+pass (M13).
+
+- Product name "Systems" becomes "Seed": `SeedView.vue:45`,
+  `WorkspaceView.vue:41`, and the page title in `index.html:6`.
+- Phase labels: "Init" becomes "Planting" (`LifecycleStrip.vue:13`), and
+  "Runtime" becomes "Life" (`LifecycleStrip.vue:17`). The INIT stage's
+  heading "Seed" becomes "Planting" (`StagePane.vue:46`).
+- "Solution" becomes "Agent Component" in display copy. In the frontend
+  that includes `RuntimeStage.vue:66`, `ImplementationStage.vue:36,43`,
+  `HumanRequest.vue:147`, `ReviewDrawer.vue:154` and the status labels.
+  In the backend it covers the event messages the activity stream
+  renders (FR-N3). About 57 quoted strings mention "solution" or
+  "runtime" across seven backend files. Only those that reach the screen
+  change.
+- Agent One VW, the name for the whole (FR-N6): the Implementation
+  stage's heading becomes "Building Agent One VW", and its copy calls each
+  lane an Agent Component of it. The Life pane's heading lands with the
+  pane in M14, and the closing hand-over lands with closing in M18.
+- Headings in the seed files that contain the old words, because FR-S5
+  displays headings. Prose changes are optional.
+- **Not renamed:** *methodology*, anywhere (FR-N7).
+
+**Load-bearing. Do not change:**
+
+| Reference | Where | Why |
+| --------- | ----- | --- |
+| `Solution`, `SolutionStatus` types; `solutionId` | `stores/system.ts`, backend payloads | Contract (D-11) |
+| `/api/solutions/*` | `api/solutions.py`, `stores/events.ts` | Contract |
+| Event types `solution.*` | backend workflows; asserted in `test_presentation.py:113-129` | Contract, and tested |
+| Request id `'solution-approval'` | `AssessmentStage.vue:25` and `knowledge/solutions.py:32` | Looks like copy, but it is an id matched across the boundary, so a rename breaks the approval flow silently (R-13) |
+| Phase values `INIT`, `RUNTIME` | `domain/lifecycle.py`, `stores/system.ts` | Ruled in `decisions.md` §4 |
+| "Systems" count label | `EnvironmentStage.vue:74` | Counts client systems. Not the product name (FR-N4) |
+| Component file names | `SolutionCard.vue`, `RuntimeStage.vue` | Renaming them is churn with no visible effect |
+
+*Discharges:* FR-N1 (all but Potential), FR-N2, FR-N3, FR-N4, FR-N6 (in
+part), FR-N7
+*Exit:* a full narrative run shows no "Solution", no "Systems" as the
+product name, no "Init" and no "Runtime". `pytest` passes **with no test
+edited**, which proves no logic moved. Typecheck and build pass. The
+approval flow is exercised by hand (R-13).
+*Risk:* lowest.
+
+---
+
+**M12 · RENAME (audit) · Feasibility references, classified**
+
+**No code changes.** Re-verify the preliminary inventory below against
+the code as it then stands. Classify every occurrence of `feasib` in
+`backend/app`, `backend/tests`, `frontend/src` and `seeds/`, and mark
+each load-bearing reference as either *keep* or *change with the
+contract*. Replace the preliminary inventory with the verified one here,
+and have it reviewed before M13 begins. A reference that is both display
+and load-bearing counts as load-bearing.
+
+*Preliminary inventory, taken while planning (2026-09-23):*
+
+**Load-bearing: contract.** These are payload keys shared by the
+backend and the frontend. All are kept, per D-11.
+
+| Reference | Produced | Consumed |
+| --------- | -------- | -------- |
+| `feasibility` on each assessment | `knowledge/feasibility.py:142` | `stores/system.ts:197`; `SolutionCard.vue:40`, `ReviewDrawer.vue:70`, `RuntimeStage.vue:30`; asserted in `test_assessment.py:66,133,219,388` |
+| `feasibility` on each approval record | `knowledge/solutions.py:133` | `ReviewDrawer.vue:167`; asserted in `test_assessment.py:231` |
+| `appearsFeasible` in the discovery summary | `environment/model.py:453` | `stores/system.ts:136`, `EnvironmentStage.vue:116,123`; counted at `workflows/discovery.py:467`; asserted in `test_discovery.py:332,344` |
+| `from` and `to` grades on improvements | `knowledge/feasibility.py:206-207` | `stores/system.ts:187-188` |
+
+**Load-bearing: logic.**
+
+| Reference | Where | Note |
+| --------- | ----- | ---- |
+| `Grade` values HIGH, MEDIUM, PARTIAL, LOW | `feasibility.py:52-56`; `stores/system.ts:162` | Keep. D-12 changes their meaning on screen, not their values |
+| `grade_of` thresholds | `feasibility.py:84-93` | Keep. The computation is unchanged (FR-A11) |
+| `RECOMMENDATIONS` | `feasibility.py:59-66` | **Keys** are logic and stay. **Values** are display copy and M13 rewrites them |
+| Regrade diff | `knowledge/solutions.py:177-178` | Keep the comparison. Its messages at `:188` and `:190` are display |
+| Grade segment fill | `SolutionCard.vue:28,60` | Keep |
+
+**Load-bearing: silent failure.** Breaking these produces no type error
+and fails no test (R-13).
+
+| Reference | Where |
+| --------- | ----- |
+| CSS selectors on grade values, `[data-grade='…']` | `SolutionCard.vue:201-213`, `ReviewDrawer.vue:259-267` |
+| `data-feasible` attribute and its selector | `EnvironmentStage.vue:116,332` |
+
+**Display only.** M13 changes these.
+
+| Reference | Where |
+| --------- | ----- |
+| Labels and titles | `SolutionCard.vue:53`; `ReviewDrawer.vue:69,85,166`; `RuntimeStage.vue:85`; `AssessmentStage.vue:100`; `EnvironmentStage.vue:123,127` |
+| Backend event messages | `workflows/assessment.py:83,114,138`; `knowledge/solutions.py:142,146,188,190` (`workflows/discovery.py:474` is already neutral) |
+| Recommendation texts | values of `RECOMMENDATIONS`, `feasibility.py:60-65` |
+| Seed content | `seeds/adaptation.md:218-224`. The heading is counted by FR-S5's summary |
+
+**Comments and docstrings.** These have no function. Update them only
+where they explain display behaviour. Examples: `feasibility.py:1-27`,
+`knowledge/solutions.py:12`, `SolutionCard.vue:21`,
+`ReviewDrawer.vue:21-23`, `OperatorPanel.vue:46`.
+
+No test asserts on feasibility **display** text. All test references are
+to keys, grades and the module, so M13 can be verified by the unedited
+suite.
+
+*Discharges:* nothing directly. It gates M13 (R-13).
+*Exit:* every occurrence is classified, and the list of what M13 will
+change has been reviewed and agreed.
+*Risk:* none in itself. It exists to lower M13's.
+
+---
+
+**M13 · RENAME · Feasibility displayed as Potential**
+
+Change only what M12 classified as display:
+
+- labels and section titles ("Feasibility" becomes "Potential"; "Why this
+  is feasible" is reworded to the value framing)
+- the discovery summary's verdict ("Appears feasible" becomes "Evidence
+  located")
+- backend event messages
+- the recommendation texts, rewritten to D-12's meanings
+- the `## Feasibility` section of `adaptation.md`
+
+Keeps: the `feasibility` and `appearsFeasible` keys, the `Grade` values,
+`grade_of`, the CSS value selectors and the module name.
+
+*Reworks:* M7's presentation of the grade, with no change to its
+computation.
+*Discharges:* FR-A11, FR-N1 (Potential)
+*Exit:* a full run shows no "feasib…" anywhere on screen. `pytest` passes
+with no test edited. All four grade colours render correctly in both
+themes, which is the silent-failure check (R-13).
+*Risk:* low. The recommendation texts carry meaning, so they are
+reviewed as content, not just proofread.
+
+---
+
+**M14 · MOVE · Seeding and Life panes**
+
+D-14, as a relocation:
+
+- A top bar with the identity and the layout control (Both, Seeding,
+  Life).
+- **Seeding pane:** today's `WorkspaceView` body (`StagePane` for INIT to
+  IMPLEMENTATION, the rail, `HumanRequest`), unchanged in content.
+  `LifecycleStrip` stays in this pane until M17 replaces it.
+- **Life pane:** headed "Agent One VW (ValueWise™)" (FR-N6).
+  `RuntimeStage` is moved out of `StagePane`, and `DashboardView` is
+  moved from `App.vue`'s full-screen overlay into the pane, still lazily
+  loaded.
+- Default layout driven by the lifecycle, with manual override (FR-W3).
+- Life's empty state (FR-W4).
+- A pending human request forces the Seeding pane visible (FR-W5).
+- Rehearsal links open into Life (FR-W6).
+- `SeedView` stays full-screen until planted (FR-W7).
+
+Until M18 lands, the lifecycle still passes directly from
+`IMPLEMENTATION_COMPLETE` to `READY_TO_RUN`, and the Life pane fills at
+that point. **M14 must leave the narrative runnable end to end without
+M18.**
+
+*Reworks:* M4's single workspace, which becomes the Seeding pane; the
+placement of M8's ready list; and M10's full-screen dashboard.
+*Discharges:* FR-W1–W8, FR-LF1, FR-LF2, FR-L10, NFR-A7
+*Exit:* the full narrative runs in the new shell, with all three layouts
+reachable. Running a component opens its dashboard inside Life.
+Returning keeps the activity stream's scroll position and the
+dashboard's URL filter state. **Every M3 to M10 exit criterion is
+re-verified** (FR-W8).
+*Risk:* medium. The move touches `App.vue`'s screen selection and the
+dashboard's mount point. URL sync (D-3) and the async dashboard load are
+the likeliest things to break.
+
+---
+
+**M15 · NEW · Declared stack at Planting**
+
+D-13. The Adaptation layer's declared inventory enters System State at
+`INITIALIZED` as an additive snapshot field, taken from `acme.py`'s
+`SYSTEM_ORDER`, the same source Discovery's first beat reads. The
+Planting stage lists it, with each system marked declared and not yet
+verified. Once Discovery reaches a system, its status follows the
+environment graph.
+
+*Discharges:* FR-N5
+*Exit:* after planting and before Discovery, the five declared systems
+appear, marked unverified. Discovery's first beat names the same five,
+from the same source.
+*Risk:* low. The field is additive, and no existing assertion changes.
+
+---
+
+**M16 · NEW · Routing-problem flag**
+
+D-12. The meaning was confirmed at OQ-10: evidence that exists but
+cannot reach the analysis.
+
+The flag is computed per assessment from System State: it is raised for
+any required concept whose carrying source was denied by policy, is in
+error status, or is blocked on input. It is an additive field on the
+assessment. The card and the review drawer show it apart from the grade,
+in its own treatment and never the fault colour, which keeps FR-H4's
+distinctions.
+
+The assessment suite gains tests in M7's style: change the fact, and the
+flag moves. Establish whether any methodology carries the flag in the
+scripted run; PR-033 is the candidate. If none does, record that and
+raise it (D-12).
+
+*Reworks:* M7's assessment payload, additively.
+*Discharges:* FR-A12, FR-A13
+*Exit:* the flag is computed, tested and shown separately from the
+grade. Changing a node's status or a policy decision changes it.
+*Risk:* medium. A new contract field, and a new state for the viewer to
+read correctly.
+
+---
+
+**M17 · NEW · Growth tree**
+
+D-15. OQ-11 confirmed that the tree replaces the lifecycle strip.
+
+A hand-built SVG tree in the Seeding pane replaces `LifecycleStrip`
+there, and carries the phase labels (FR-G1). Segments grow from
+lifecycle events. Watering comes from protection decisions, and a denied
+request waters nothing. It honours reduced motion and coalesces at
+instant speed (NFR-V7). **Measure the number of policy decisions per run
+before designing the watering step.** If it runs to hundreds, steps are
+batched.
+
+*Supersedes:* FR-L6, by A-4
+*Discharges:* FR-G1–G6, NFR-V7
+*Exit:* a tree rebuilt from a snapshot plus replay is identical to one
+grown live. Two runs from Reset end with the same tree. Nothing strobes
+at instant speed. Reduced motion shows the same states without
+animation.
+*Risk:* medium. The technical risk is low, and the design risk is high
+(R-14).
+
+---
+
+**M18 · NEW · Closing the seeding phase**
+
+D-16.
+
+**Backend.** The `CLOSING_SEEDING` state and its edges. A closing
+workflow: a `confirmation` request, then three simulated operations,
+each policy-evaluated. The new rules go into the rule set **and**
+`protection.md`, under the D-6 parity test. Closing gets a D-8 weight of
+roughly 10 to 15 seconds.
+
+**Frontend.** The action at the end of the Implementation stage. On
+completion the layout moves to Life only, and the stream records the
+hand-over to Agent One VW (FR-N6). The ready list appears in Life
+(FR-C6).
+
+Operator skip passes through closing (FR-C7). The narrative test harness
+(`tests/narrative.py`) resolves the new confirmation.
+
+*Reworks:* M8's transition from Implementation to Run.
+*Supersedes:* FR-L2 by A-3, and FR-I6 by A-6
+*Discharges:* FR-L9, FR-C1–C7
+*Exit:* the narrative pauses once more, for confirmation. The three
+operations appear in the stream with their policy decisions and rule
+ids, and the protection panel counts them. The layout hands over to
+Life. The state-machine suite covers the new edges, both legal and
+illegal, and the parity test passes.
+*Note:* this is the only milestone in Phase R that must **edit** an
+existing assertion. The state-machine suite currently holds the edge
+`IMPLEMENTATION_COMPLETE → READY_TO_RUN` legal, and it no longer is.
+Together with the rule-set change, that is why this milestone comes last
+among the lifecycle work.
+*Risk:* high.
+
+---
+
+**M19 · NEW · Life: collection and recalibration**
+
+D-17, Option B from `project-notes.md` §84.3.
+
+**Generators.** Each generator (tickets, licences, applications) also
+precomputes, for every collection step, that step's baselines, scores
+and finding membership. The single-step computation that exists today
+runs once per step at startup. **Measure first:** generation costs
+0.108 s now, so N steps should stay far inside NFR-P1, but confirm this
+rather than assume it.
+
+**Query engine.** The collection step becomes one more term in the
+filter context. Aggregates count only records collected up to that step,
+and findings are read from that step's precomputed scores. It is
+URL-synced with the rest of the filter context (D-3).
+
+**Life workflow.** A beat workflow starts when closing completes (M18).
+Each beat advances the system cursor one step and emits a collection
+event. Every few steps it emits a recalibration event that reports what
+moved. It ends caught up. Operator speed, skip and Reset apply
+(FR-LF10).
+
+**Frontend.** The Life pane shows collection progress under the Agent
+One VW heading. A dashboard at the top of its hierarchy follows the
+system cursor. A drilled-in dashboard pins to its step, shows how many
+collections are newer, and catches up on return to the top or on
+request (FR-LF8). The evidence panel names the calibration (FR-LF9).
+
+**Starting values, tuned at M22:** reveal the final 8 to 12 simulated
+weeks, one week per step, a few seconds apart at 1x, and recalibrate
+every 4 steps. That lets Agent One VW catch up in under a minute of
+presenter time. Collection happens after the 270-second narrative, so
+it does not draw on that budget.
+
+*Supersedes:* FR-AN4, by A-9. *Clarifies:* the Evolution exclusion in
+§4.1, by A-8.
+*Discharges:* FR-LF4–LF11, FR-AN10
+*Exit:*
+- After closing, the stream shows collection steps and at least one
+  recalibration that reports a baseline moving and clusters confirmed
+  or withdrawn.
+- KPIs grow step by step, and at the caught-up state they equal the full
+  dataset's counts.
+- A drilled-in finding does not change while collection continues, and
+  it catches up on request.
+- A rehearsal URL opens a chosen step.
+- Two runs from Reset produce the same collection and recalibration
+  events.
+- The query-engine suite covers the step term against record-level
+  ground truth, at several steps.
+
+*Risk:* high. It touches all three generators, the query engine every
+dashboard depends on, and the dashboard's navigation model (R-18). It is
+no longer blocked.
+*Scheduling:* **build M20 first.** M19 adds the collection step to every
+generator. Doing it once, across all three, proves the change generic
+(FR-EV4), rather than retrofitting the two smaller generators later.
+
+---
+
+### Phase 3, continued — Analytics
+
+---
+
+**M20 · Remaining dashboards** *(was M11)*
 
 License Optimization and Application Portfolio Rationalization, each a
 generator plus a hierarchy descriptor plus a dashboard descriptor.
@@ -371,6 +819,11 @@ query code**. Any UI code written here is evidence that M9's schema was
 under-specified.
 *Contingency:* under D-1 the degradation path is a thinner descriptor,
 not a different build. Cheaper than the earlier hand-built plan assumed.
+*Rework note:* the dashboards render in the Life pane (D-14), which
+changes where they appear and nothing about how they are built. This
+milestone has no dependency on Phase R and can run at any point after
+M10. It **must precede M19**, which extends all three generators with
+the collection step (D-17).
 
 ---
 
@@ -378,10 +831,16 @@ not a different build. Cheaper than the earlier hand-built plan assumed.
 
 ---
 
-**M12 · Design pass**
+**M21 · Design pass** *(was M12)*
 
 Final tokens, both themes, typography, motion, chart palettes with
-contrast validation in both themes.
+contrast validation in both themes. **Now also covers what Phase R
+added:** the pane shell and layout control, the growth tree's motion
+budget (R-14), the routing-problem treatment, and the Life pane,
+including how a pinned view shows that newer collections exist (R-18).
+OQ-3, the accent colour and typeface, is still settled here. Visual
+continuity with the Agent One demo is deferred (OQ-13), so it does not
+constrain this pass.
 
 *Discharges:* NFR-V1–V6
 *Exit:* both themes pass contrast checks and the interface reads as
@@ -390,11 +849,14 @@ analytical infrastructure rather than an AI console.
 
 ---
 
-**M13 · Rehearsal and hardening**
+**M22 · Rehearsal and hardening** *(was M13)*
 
 Operator control concealment, beat-timing calibration against the 270 s
 target (D-8, OQ-7), an automated determinism test comparing modulo
-timestamps and durations (A-2), full narrative runs.
+timestamps and durations (A-2), full narrative runs. **Calibration now
+includes the closing beats** (R-15), and the Life pane's collection
+clock and recalibration interval (D-17). The determinism test also covers the growth tree's final
+state (FR-G5).
 
 *Discharges:* FR-O2, NFR-D1–D4, NFR-P3–P5, and the §7 acceptance
 criterion
@@ -407,17 +869,39 @@ virtualisation rather than assuming it does not.
 
 ## 4. Critical path
 
+Built:
+
 ```
-M0 → M1 → M2 ──┬─→ M3 ─→ M4 ─→ M5 ─→ M6 ─→ M7 ─→ M8 ──→ M13
-               └─────────────────────→ M9 ─→ M10 → M11 ─→ M12
+M0 → M1 → M2 ──┬─→ M3 ─→ M4 ─→ M5 ─→ M6 ─→ M7 ─→ M8 ─┐
+               └─────────────────────→ M9 ─→ M10 ─────┴─→ (built)
 ```
 
-M9 has no dependency on M3–M8 beyond the solution id. **It can be built
-in parallel with Phase 2, and should be started early if anything looks
-tight** — under D-1 it carries the chart specification schema as well as
-the query engine, so everything visible in Phase 3 rests on it. M10
-precedes M11 deliberately: M10 proves the schema against the demanding
-case, M11 then confirms the generality claim.
+Remaining:
+
+```
+M11 → M12 → M13 → M14 → M15 → M16 → M17 → M18 ─┬─→ M19 → M21 → M22
+                                                 │
+       M20 ──────────────────────────────────────┘
+       (no dependency on Phase R; any time after M10, but before M19)
+```
+
+The renames (M11 to M13) come first because they are cheap and touch no
+logic. They also leave the vocabulary settled before the move, so M14
+relocates components already carrying their final labels. M14 comes
+before all the new features, because M15 to M19 each put something into
+one of the two panes.
+
+Among the new features, M15, M16 and M17 do not depend on one another,
+and the order among them is by risk. M18 needs M14, because it hands the
+layout over to Life. M19 needs M18, because collection begins where
+seeding closes. **M19 also needs M20**, because it extends all three
+generators, and extending three at once is what proves the change
+generic. M20 depends on nothing in Phase R, so it can be done whenever
+there is room, as long as it lands before M19.
+
+M10 preceded the remaining dashboards deliberately, and still does:
+M10 proved the schema against the demanding case, and M20 confirms the
+generality claim.
 
 ---
 
@@ -434,10 +918,17 @@ rulings themselves:
 | **D-4** | **Hand-authored graph coordinates.** | Deterministic; reads as designed at ~30 nodes. Lives beside `acme.py`. |
 | **D-5** | **Derive the ECharts theme from CSS custom properties at runtime.** | Chart specs carry semantic colour roles, never hex. Contains R-4. |
 | **D-6** | **Parity test** between `protection.md` and the Python rule set. | Folded into D-7's suite. |
-| **D-7** | **Determinism, state machine, query engine**, plus the D-6 parity test. | Covers what a live demo can fail on, without spending M12's time. |
+| **D-7** | **Determinism, state machine, query engine**, plus the D-6 parity test. | Covers what a live demo can fail on, without spending M21's time. |
 | **D-8** | **Total-duration budget**, beats carry relative weights. | Mandatory rather than convenient under a 4--5 minute target. |
 | **D-9** | **Unbounded event log** within a run. | FR-E7 needs exact replay; OQ-7's duration bounds the volume anyway. |
 | **D-10** | **uv.** | Already installed on the target machine (0.12.8), which removes its only cost. |
+| **D-11** | **Renames are display-only.** Identifiers, keys, paths, event types and request ids keep their names. **Agent One VW** names what grows out of the Seed; Agent Components are its parts. Methodologies keep their name. | The Seeding and Life rework. Glossary in §2. OQ-8 and OQ-9 answered. |
+| **D-12** | **Potential** keeps the four computed grades with new meanings, plus a **routing-problem flag** beside the grade. | The flag is computed from facts, never authored. OQ-10 confirmed. |
+| **D-13** | **Planting shows the declared stack**, marked unverified. | Resolves the conflict with G-2: what the seed was told, not what exists. |
+| **D-14** | **Two panes, Seeding and Life**, both mounted; the lifecycle sets the default layout. | The seed screen stays full-screen until planted. |
+| **D-15** | **A growth tree replaces the lifecycle strip** in the Seeding pane; protection decisions water it. | No gen-AI calls exist to water it (NFR-D1). OQ-11 confirmed. |
+| **D-16** | **Closing the seeding phase** is a new lifecycle state, confirmed by a person, with three simulated, policy-gated operations. | Needs new protection rules; the only Phase R milestone that edits a test assertion. |
+| **D-17** | **Life is time-revealed operation** (Option B, OQ-12): a finite collection cursor over already-generated data, with precomputed recalibration. A drilled-in view pins to its step. | The "maintaining" half of Agent One VW. Needs A-8 and A-9. |
 
 Two requirement amendments follow from these and are applied in
 `requirements.md`:
@@ -446,6 +937,22 @@ Two requirement amendments follow from these and are applied in
   `import pandas` alone costs 2.10 s, which no design decision removes.
 - **A-2** --- NFR-D4 defines determinism modulo timestamps and durations.
   **This resolves R-7.**
+
+The Seeding and Life rework adds seven more, each superseding or
+clarifying rather than deleting (`decisions.md` §7.2):
+
+- **A-3** --- FR-L2 superseded by FR-L9, which adds `CLOSING_SEEDING`.
+- **A-4** --- FR-L6 superseded by FR-G1: the growth tree is the
+  lifecycle indicator.
+- **A-5** --- FR-L8 superseded by FR-L10: return to the Life pane.
+- **A-6** --- FR-I6 superseded by FR-C6: the ready list appears in Life
+  after closing.
+- **A-7** --- the §7 acceptance criterion includes closing, the Life
+  pane, and watching Agent One VW collect and recalibrate.
+- **A-8** --- §4.1's Evolution exclusion is clarified: recalibration
+  within a run is not Evolution.
+- **A-9** --- FR-AN4 superseded by FR-AN10: headline counts are those of
+  the data collected so far.
 
 ---
 
@@ -461,7 +968,7 @@ are descriptor-driven, so a fourth methodology genuinely needs no new UI
 code.
 
 **R-7 · NFR-D4 unsatisfiable as written.** Resolved by amendment A-2:
-determinism is defined modulo timestamps and durations. The M13 test
+determinism is defined modulo timestamps and durations. The M22 test
 compares with those fields excluded.
 
 **R-3 · NFR-P1 may not survive three generators.** Closed by
@@ -484,8 +991,8 @@ specific to Ticket Anomaly.
 Very high, raised.* Under D-1 the craft must be expressible as data.
 Emphasis, span, ordering, annotation and empty states have to be
 descriptor fields, or the renderer produces a generic dashboard that no
-M12 effort recovers. This is now an M9 schema-design concern as much as
-an M12 one.
+M21 effort recovers. This is now an M9 schema-design concern as much as
+an M21 one.
 
 **R-4 · Dual theme doubles chart styling work.** — *Medium / Medium,
 reduced.* D-5 makes contrast validation a per-token concern rather than a
@@ -515,13 +1022,52 @@ weights for the credential pause and timeout recovery. Raising the total
 during rehearsal is a single number (D-8), so treat 270 s as a target
 rather than a constraint.
 
+### New in the Seeding and Life rework
+
+Full entries in `decisions.md` §7.5.
+
+**R-12 · Two vocabularies.** — *Certain / Low.* The code says
+`solution` and the screen says "Agent Component". D-11's glossary is the
+mitigation, and new code keeps the code vocabulary.
+
+**R-13 · Silent-failure renames.** — *Medium / Medium.* CSS selectors
+keyed to grade values and the cross-boundary request id
+`'solution-approval'` break with no type error and no failing test.
+M12's audit classifies them before M13 changes anything. The exit
+criteria of M11 and M13 include hand checks of grade colours and of the
+approval flow.
+
+**R-14 · The growth tree reads as decoration or as an "AI toy".** —
+*Medium / High.* The technical risk is low and the design risk high.
+Every segment and every watering step is tied to an event (D-15), the
+motion budget is a requirement (NFR-V7), and M21 reviews it.
+
+**R-15 · Closing lengthens a tight narrative.** — *Medium / Medium.*
+Closing carries a fixed D-8 weight, and M22 recalibrates the total.
+
+**R-16 · Unconfirmed stakeholder terms.** — *Closed.* OQ-8 to OQ-12
+were answered and OQ-13 deferred before any milestone built on them.
+
+**R-17 · "Self-improving" meets the Evolution exclusion.** —
+*Resolved.* D-17's recalibration is precomputed and finite, so
+determinism holds (A-2), and A-8 states why it is not Evolution.
+
+**R-18 · Two cursors confuse.** — *Medium / Medium.* The system cursor
+advances while a drilled-in view stays pinned, so a viewer may not
+realise they are looking at an earlier step. The pinned view always says
+how many collections are newer, and the evidence panel names its
+calibration. M21 designs the treatment.
+
 ---
 
 ## 7. What is still open
 
 | ID   | Question | Needed by |
 | ---- | -------- | --------- |
-| OQ-3 | Accent colour and typeface | M12 |
+| OQ-3 | Accent colour and typeface | M21 |
+OQ-8 to OQ-13, raised by the Seeding and Life rework, are all closed:
+five answered and one deferred. Answers are in `decisions.md` §7.4.
+Only OQ-3 remains open.
 
 Closed: OQ-1 (chart inventory: KPIs, treemap, bar, line, subset and
 record tables, colour bound to pattern), OQ-2 (the two smaller

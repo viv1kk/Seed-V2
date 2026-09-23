@@ -3211,6 +3211,8 @@ First:
 11. Identify architectural risks or ambiguities.
 12. Present the proposed implementation plan for review.
 
+Only after that planning step should implementation begin.
+
 ------------------------------------------------------------------------
 
 # 83. Resolved Requirements (V1)
@@ -3389,4 +3391,240 @@ Failure-injection mode beyond the single scripted timeout
 Generated source-code artifacts
 ```
 
-Only after that planning step should implementation begin.
+------------------------------------------------------------------------
+
+# 84. Stakeholder Rework --- Alex Prigojine Session (2026-09-23)
+
+> **Status:** Incorporated into `decisions.md` §7, `requirements.md` and
+> `implementation-plan.md` (Phase R, M11 to M19). Every question it
+> raised was answered on the same day. The Life pane is **Option B**
+> (§84.3, D-17). Visual continuity with Agent One is deferred.
+
+## 84.1 What the session asked for
+
+Feedback received after M10 was built. It asked to reorganise the
+existing interface into two views, **Seeding** (build time) and **Life**
+(run time), under new names, without removing any functionality.
+
+1.  **Renaming**, as display copy only. Solution becomes Agent Component
+    (also called "Agent One VW"). Systems, and the methodology label,
+    become Seed. Runtime becomes Life. Initiation becomes Planting, which
+    should also show the tech stack being planted into. Feasibility
+    becomes Potential: high means strong value, partial means needs
+    deeper modelling, and a "routing problem" flag is possible.
+2.  **Two panes** with a top toggle for both, left only or right only.
+    Seeding on the left: Planting, Discovery, Assessment and
+    Implementation, with the activity and protection panels. Life on the
+    right: empty until the build completes, then the live system.
+3.  **A growth tree** replaces the progress bar in the Seeding pane. It
+    grows segment by segment, and each API or gen-AI call triggers a
+    watering step.
+4.  **Run / Clean up: close the seeding phase**, after Implementation.
+    Merge leftover MD files, clear scratch disk space, upgrade APIs to
+    their final versions, then collapse Seeding and maximise Life.
+5.  **Life pane behaviour:** the model actively running, collecting
+    data, dashboards, and self-improving, consistent with the earlier
+    Agent One demo and reusing its visual style.
+
+## 84.2 How it was incorporated
+
+| Item | Ruling | Milestone | Tag |
+| ---- | ------ | --------- | --- |
+| 1, renames | D-11: display-only; identifiers keep their names | M11 | RENAME |
+| 1, Feasibility | D-12: Potential semantics and the routing-problem flag | M12 audit, M13 copy, M16 flag | RENAME, NEW |
+| 1, Planting stack | D-13: show the declared stack, marked unverified | M15 | NEW |
+| 2, panes | D-14: Seeding and Life, both mounted | M14 | MOVE |
+| 3, tree | D-15: replaces the lifecycle strip; protection decisions water it | M17 | NEW |
+| 4, closing | D-16: a new lifecycle state, a confirmation, three gated operations | M18 | NEW |
+| 5, Life | D-17: time-revealed operation, Option B of §84.3 | M19 | NEW |
+
+**What it reworks among built milestones.** M4's single workspace
+becomes the Seeding pane. M7's grade is presented as Potential and gains
+the flag. M8's transition from Implementation to Run gains the closing
+step. M3 and M10 are relabelled and relocated without functional change.
+No requirement was deleted. Four were superseded with successors (A-3 to
+A-6).
+
+**Two items were not pure relabelling,** despite the feedback's framing.
+The routing-problem flag is a new state, and the clean-up action is a
+new lifecycle state. Both are scheduled as NEW milestones after the
+renames and the move, not folded into them.
+
+**Two items were adjusted to fit fixed requirements.** The tree cannot
+be watered by gen-AI calls, because none exist (NFR-D1). It is watered
+by the tool requests the protection engine evaluates, which are this
+system's API calls. The clean-up's three operations are simulated; none
+touches a disk, a file or the network, and the seed files are never
+merged into anything.
+
+**Follow-up questions, all answered on 2026-09-23:**
+
+- **Agent One VW (OQ-8)** is what comes out of a seed. It is the
+  framework through which the methodology of building and maintaining
+  the pipeline is implemented. See §84.4.
+- **Methodology naming (OQ-9):** rename only if a seed-themed name is
+  coherent. None was, so methodologies keep their name. Systems becomes
+  Seed, as Alex proposed.
+- **Routing problem (OQ-10):** evidence that exists but cannot reach the
+  analysis. The wording for MEDIUM and LOW is accepted.
+- **Progress bar (OQ-11):** the lifecycle strip.
+- **Life (OQ-12):** Option B.
+- **Agent One demo (OQ-13):** skipped for now. It is a separate demo
+  that displays the detailed agentic steps of an analysis.
+
+**Milestones renumbered.** The rework inserts M11 to M19 after M10. The
+three milestones not yet built move from M11, M12 and M13 to M20, M21
+and M22.
+
+## 84.3 Life pane: the options considered (OQ-12)
+
+> **Chosen, 2026-09-23: Option B**, without Option C's additions.
+> Specified as D-17 and FR-LF4 to FR-LF11. Built at M19. The options are
+> kept here as the record of what was weighed.
+
+The feedback's least-specified item. Every option respects what V1
+already fixes: no LLM (NFR-D1), determinism modulo timing (A-2), no
+statistics at request time (FR-AN3), descriptor-driven dashboards (D-1)
+and the motion budget (NFR-V4). The Evolution phase is excluded (§83.9,
+`requirements.md` §4.1), so "self-improving" has to mean something
+narrower than Evolution or be left out.
+
+### Option A --- Life hosts what was built
+
+**The viewer sees:** the Life pane opens on the list of Agent
+Components. Run opens each one's dashboard inside the pane, and a short
+Life activity stream records runs and evidence opened.
+
+**Collection:** none shown. Dashboards present the generated dataset
+whole. **Self-improvement:** none.
+
+**Requirement cost:** none beyond FR-LF1 and FR-LF2. §4.1 is untouched.
+**Build:** almost nothing past M14. M19 becomes an empty-state and copy
+pass.
+
+**Trade-off:** no risk and no new claims. But it delivers neither
+"actively running" nor "self-improving". Life is the old Runtime stage
+under a new name, which the stakeholder may reasonably read as the
+feedback not having been acted on.
+
+### Option B --- Time-revealed operation *(recommended)*
+
+**The viewer sees:** each Agent Component collecting. A deterministic
+clock advances through the last stretch of the generated data in steps,
+for example one simulated week every few seconds. Each step is a
+collection event: *"Collected 3,412 tickets from ServiceNow, week 34."*
+KPIs and charts update as the cursor advances. At intervals a
+recalibration event recomputes the baseline over the revealed window and
+re-scores the findings: *"Resolution-stall baseline recalibrated on 12
+more weeks: 41.2 h to 39.8 h. Three clusters newly confirmed, one
+withdrawn."*
+
+**How it stays honest.** The records already exist in the generator.
+Collection reveals them, and the stream labels this as simulated
+collection. The cursor is one more term in the filter context (FR-EV1),
+so every dashboard follows it with no per-dashboard code (D-1). The
+generator precomputes the baselines and scores for every step, which
+keeps FR-AN3 intact. Every figure still comes from real rows, and fixed
+steps keep A-2.
+
+**Requirement cost:** an amendment to §4.1 stating that recalibrating
+baselines within a run is not Evolution, where Evolution means new
+methodologies, components or code. FR-AN4's "true counts" becomes "true
+counts of the revealed data". New requirements for the cursor, collection
+events and recalibration. Operator speed applies to the clock (FR-O3).
+
+**Build:** medium. The generator produces per-step baselines and scores;
+the arithmetic already exists for one step. The query engine gains the
+cursor term. The Life stream and clock are new. The evidence panel names
+the calibration a finding was made under.
+
+**Trade-offs:** the most "alive" option that stays truthful, and it
+reuses existing machinery. Two UX risks come with it. Findings could
+shift under a viewer mid-drill; this is mitigated by freezing the cursor
+while the viewer interacts with a dashboard and resuming it on return.
+And a finding that changes between steps looks unstable unless the
+evidence panel says which calibration step produced it.
+
+### Option C --- Agent operations console
+
+**The viewer sees:** Life as a console with one card per running Agent
+Component. Each card shows its state (collecting, analysing or idle),
+cycle count, records ingested, findings emitted and model version. A
+version timeline per component, v1.0 to v1.1 to v1.2, carries a measured
+quality figure: **precision and recall against the planted ground
+truth.** The generator knows which records it planted as anomalous, so
+these figures are arithmetic, not claims. Dashboards open from the
+cards.
+
+**Requirement cost:** needs Option B's mechanics underneath. Without
+them, the cards animate over nothing, which NFR-V5 and the §70 non-goal
+of "a collection of fake AI agents" both forbid. It needs the same §4.1
+amendment as B and pushes further: model versions within a run sit
+closer to Evolution. It also adds new interface surface to take through
+M21.
+
+**Build:** the largest. Option B, plus the console and the timeline.
+
+**Trade-offs:** the most agent-flavoured, and possibly the closest to
+the Agent One demo, if that demo was agent-centred (unknown; OQ-13). It
+carries the highest risk of reading as fake agents, and the most new
+interface to get through the design pass.
+
+### Comparison
+
+|                         | A --- Host what was built | B --- Time-revealed | C --- Operations console |
+| ----------------------- | ------------------------- | ------------------- | ------------------------ |
+| Actively running        | No                        | Yes                 | Yes                      |
+| Collecting data         | No                        | Yes, revealed       | Yes, revealed            |
+| Self-improving          | No                        | Recalibration       | Versions with measured precision |
+| Every figure real       | Yes                       | Yes                 | Yes, only with B beneath |
+| Amends §4.1             | No                        | Narrowly            | Further                  |
+| Build size              | Small                     | Medium              | Large                    |
+| Main risk               | Feedback reads as ignored | Findings shift mid-drill | Reads as fake agents |
+
+### Recommendation
+
+**Option B.** It is the smallest option that delivers both halves of
+the request, running and improving, while every number stays traceable
+to a row. Two parts of Option C are cheap and worth borrowing:
+
+- **Precision and recall against planted ground truth** as the measure
+  of each recalibration. It makes "self-improving" checkable rather than
+  asserted.
+- **A thin per-component status strip** at the top of the Life pane, in
+  place of the full console, if the stakeholder wants the agent framing.
+
+### On reusing the Agent One demo's style
+
+**Deferred** at the stakeholder's direction (OQ-13). Agent One is a
+separate demo that shows the detailed agentic steps of an analysis. None
+of the three options depended on visual style, which lands in M21.
+
+If continuity is revived, its **visual style** can be borrowed freely.
+Its **step-by-step agentic narration** conflicts with FR-E9, which
+forbids showing simulated internal reasoning, and with NFR-D1, unless
+those are amended first (`decisions.md` §7.3).
+
+## 84.4 Naming, as confirmed
+
+The seed analogy names the **lifecycle**. The analysis keeps its own
+names.
+
+```
+Seed                        the product; what is planted
+ ├── Core · Adaptation · Protection      its three layers
+ │    └── methodologies                   carried in Core; name unchanged
+ │
+Planting → Seeding          build time: Discovery, Assessment, Implementation
+ │                          the growth tree shows it happening
+ ▼
+Agent One VW (ValueWise™)   what grows out of the Seed: the framework that
+ │                          implements building and maintaining the pipeline
+ └── Agent Components       its parts, one per approved methodology
+ │
+Life                        run time: Agent One VW collecting, recalibrating,
+                            and answering questions through its dashboards
+```
+
+Seeding shows Agent One VW being **built**. Life shows it being
+**maintained**. Together they make up the whole of what the name claims.

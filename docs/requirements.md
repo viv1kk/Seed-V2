@@ -12,6 +12,14 @@
 > Where this document and `project-notes.md` §§1--82 disagree, **this
 > document wins**. References of the form (§N) point back to the vision
 > document for rationale.
+>
+> **Amended 2026-09-23** by the Seeding and Life rework (the Alex
+> Prigojine session; `decisions.md` §7, D-11 to D-17, A-3 to A-9). The
+> interface now uses a display vocabulary that differs from the one used
+> in these requirements: see §5.13. The requirements keep their original
+> terms, such as *solution* and *feasibility*, because those are also the
+> code's terms (D-11). Superseded requirements are struck through and
+> left in place.
 
 ---
 
@@ -95,7 +103,7 @@ structure (§63).
 | Intelligence          | Any LLM or inference, anywhere, in any phase                             |
 | Seed                  | Seed **content** driving system behaviour; knowledge compilation         |
 | Integration           | Real connectors, real credentials, real network access                   |
-| Lifecycle             | Evolution phase                                                          |
+| Lifecycle             | Evolution phase. *Clarified by A-8:* recalibrating baselines within a run, as the Life pane does (FR-LF6), is not Evolution. Evolution means changing methodologies, components or code. |
 | Persistence           | Durable state, pause/resume, resume after restart                        |
 | Packaging             | Docker, containerisation, hosted deployment                              |
 | Build phase           | Generated source-code artifacts shown to the viewer                      |
@@ -132,13 +140,15 @@ structure (§63).
 | ID     | Requirement                                                                                                                                       |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR-L1  | The system implements a formal state machine with an explicit transition table, not scattered boolean flags (§59).                                  |
-| FR-L2  | States: `UNINITIALIZED`, `INITIALIZED`, `DISCOVERING`, `DISCOVERY_BLOCKED`, `DISCOVERY_COMPLETE`, `ASSESSING`, `AWAITING_APPROVAL`, `IMPLEMENTING`, `IMPLEMENTATION_COMPLETE`, `READY_TO_RUN`, `RUNNING` (§58). |
+| FR-L2  | ~~States: `UNINITIALIZED`, `INITIALIZED`, `DISCOVERING`, `DISCOVERY_BLOCKED`, `DISCOVERY_COMPLETE`, `ASSESSING`, `AWAITING_APPROVAL`, `IMPLEMENTING`, `IMPLEMENTATION_COMPLETE`, `READY_TO_RUN`, `RUNNING` (§58).~~ **Superseded by FR-L9** (A-3). |
 | FR-L3  | An attempted illegal transition raises an error rather than mutating state.                                                                        |
 | FR-L4  | Blocking on human input is represented as a flag (`blockedOn`) alongside the current state, not as a separate state per phase.                      |
 | FR-L5  | System State is the sole source of truth. Simulated agents read from and write to it; they never hold authoritative state internally (§37, §73).     |
-| FR-L6  | A persistent lifecycle indicator shows completed, current and future phases at all times (§14).                                                    |
+| FR-L6  | ~~A persistent lifecycle indicator shows completed, current and future phases at all times (§14).~~ **Superseded by FR-G1** (A-4). |
 | FR-L7  | State is held in memory for a single run. An explicit Reset returns the system to `UNINITIALIZED`.                                                  |
-| FR-L8  | From `READY_TO_RUN`, the user can run any ready solution, return to the workspace, and run another. Completion is per-solution, not global.         |
+| FR-L8  | ~~From `READY_TO_RUN`, the user can run any ready solution, return to the workspace, and run another. Completion is per-solution, not global.~~ **Superseded by FR-L10** (A-5). |
+| FR-L9  | States: FR-L2's eleven, plus `CLOSING_SEEDING` between `IMPLEMENTATION_COMPLETE` and `READY_TO_RUN`. The edge `IMPLEMENTATION_COMPLETE → READY_TO_RUN` is replaced by `IMPLEMENTATION_COMPLETE → CLOSING_SEEDING → READY_TO_RUN`. `CLOSING_SEEDING` belongs to the Implementation phase (D-16). |
+| FR-L10 | From `READY_TO_RUN`, the user can run any ready solution, return to the Life pane's list of solutions, and run another. Completion is per-solution, not global (D-14). |
 
 ### 5.3 Event stream --- `FR-E`
 
@@ -207,6 +217,9 @@ structure (§63).
 | FR-A8  | Review opens a detail surface within the workspace --- drawer or panel --- without navigating away (§25).                                       |
 | FR-A9  | The detail surface shows why the methodology is feasible, the methodology's process chain, and its limitations (§25).                           |
 | FR-A10 | Feasibility figures are presented as simulated demo values and must not be implied to be real enterprise measurements (§21).                    |
+| FR-A11 | Feasibility is displayed as **Potential**, with the meanings of D-12: HIGH is strong value; MEDIUM is value with stated limits; PARTIAL needs deeper modelling; LOW is not yet modellable. The grade values and the rule that computes them are unchanged (FR-A2, FR-A3). |
+| FR-A12 | An assessment carries a **routing-problem** flag, separate from its grade, when evidence the methodology requires exists in the environment but cannot reach the analysis: refused by policy, unreachable, or waiting on input (D-12). |
+| FR-A13 | The routing-problem flag is computed from facts in System State and never authored. Changing those facts changes the flag, as FR-A2 requires of the grade. |
 
 ### 5.8 Approval --- `FR-AP`
 
@@ -226,7 +239,7 @@ structure (§63).
 | FR-I3  | The activity stream reports build progress in realistic terms (§28).                                                          |
 | FR-I4  | The test stage expands into a detailed result view: named test cases, pass/fail status, and timings.                           |
 | FR-I5  | No generated source code is displayed, because none is generated.                                                             |
-| FR-I6  | On completion, each solution is listed as Ready with a Run action (§30, §53).                                                  |
+| FR-I6  | ~~On completion, each solution is listed as Ready with a Run action (§30, §53).~~ **Superseded by FR-C6** (A-6). |
 
 ### 5.10 Analytics --- `FR-AN`
 
@@ -235,12 +248,13 @@ structure (§63).
 | FR-AN1  | Analytical datasets are produced by committed generators with a fixed RNG seed, built into memory at backend startup.                                |
 | FR-AN2  | Datasets contain deliberately planted patterns --- a normal population plus intentionally anomalous clusters (§45).                                  |
 | FR-AN3  | Anomaly labels, scores and baselines are produced at generation time. No statistics or machine learning run at request time.                          |
-| FR-AN4  | Headline metrics report the dataset's true counts.                                                                                                  |
+| FR-AN4  | ~~Headline metrics report the dataset's true counts.~~ **Superseded by FR-AN10** (A-9). |
 | FR-AN5  | All aggregation is performed in the backend from record-level data. The frontend contains no analytical logic.                                       |
 | FR-AN6  | Ticket Anomaly Detection receives a deep, fully polished dashboard (§44).                                                                            |
 | FR-AN7  | License Optimization and Application Portfolio Rationalization each receive a dashboard with roughly 3--4 interactive charts and one drill-down path.  |
 | FR-AN8  | Every chart is interactive. Decorative charts are not acceptable (§32).                                                                             |
 | FR-AN9  | Supported interactions include hover tooltips, click selection, cross-filtering, time-range filtering, category filtering, drill-down, breadcrumb navigation, table views and detail panels (§32). |
+| FR-AN10 | Headline metrics report the true counts of the data collected so far (FR-LF4). When collection has finished, those are the dataset's full counts (D-17). |
 
 ### 5.11 Drill-down, cross-filtering and evidence --- `FR-EV`
 
@@ -263,6 +277,80 @@ structure (§63).
 | FR-O2  | These controls are reachable only by keyboard shortcut or a hidden panel. No transport bar is visible to the audience.              |
 | FR-O3  | Speed changes apply to all subsequent simulated delays without disturbing event ordering or state.                                  |
 | FR-O4  | Reset returns the system to the seed screen with all state cleared, without restarting the backend.                                 |
+
+### 5.13 Display vocabulary --- `FR-N`
+
+Added by the Seeding and Life rework (D-11).
+
+| ID     | Requirement |
+| ------ | ----------- |
+| FR-N1  | The interface displays *solution* as **Agent Component**, the product name as **Seed**, the `RUNTIME` phase as **Life**, the `INIT` phase as **Planting**, and *feasibility* as **Potential**. |
+| FR-N6  | What grows out of the Seed is displayed as **Agent One VW**. The Life pane is headed "Agent One VW (ValueWise™)", the Implementation stage builds Agent One VW, and closing the seeding phase hands over to it. Each Agent Component is shown as a part of Agent One VW (D-11). |
+| FR-N7  | Methodologies keep the name *methodology*. The seed analogy names the lifecycle, not the analysis (D-11). |
+| FR-N2  | Renames are display-only. Identifiers, types, enum values, payload keys, API paths, event types and request ids keep their names. The glossary between the two vocabularies is D-11. |
+| FR-N3  | Backend event messages are display copy, because the activity stream renders them. They follow the display vocabulary. |
+| FR-N4  | "Systems" as the count of client systems in the discovery summary is not the product name, and is not renamed. |
+| FR-N5  | Before Discovery begins, the Planting stage shows the systems the Adaptation layer declares, each marked as declared and not yet verified (D-13). The same declared inventory is Discovery's starting point, from one source. |
+
+### 5.14 Seeding and Life panes --- `FR-W`
+
+Added by the Seeding and Life rework (D-14).
+
+| ID     | Requirement |
+| ------ | ----------- |
+| FR-W1  | The workspace has two panes. **Seeding** holds the Planting, Discovery, Assessment and Implementation stages, the Activity and Protection rail, and the human-input surface. **Life** holds the running system. |
+| FR-W2  | A control in the top bar selects Both, Seeding only, or Life only. |
+| FR-W3  | The lifecycle sets the default layout: Seeding only until `IMPLEMENTATION_COMPLETE`, Both until seeding closes, then Life only. A manual choice holds until the next lifecycle-driven change. |
+| FR-W4  | Until Implementation completes, the Life pane shows a deliberate empty state rather than blank space. |
+| FR-W5  | A pending human request makes the Seeding pane visible, whatever the layout. |
+| FR-W6  | Running a solution opens its dashboard inside the Life pane, not over the whole screen. A rehearsal link (D-3) opens it the same way, in the Life-only layout. |
+| FR-W7  | The seed upload screen stays full-screen until the seed is planted (FR-S2). After planting, the Planting stage is the first stage of the Seeding pane. |
+| FR-W8  | The reorganisation removes no existing function. Every exit criterion from M3 to M10 still holds. |
+
+### 5.15 Growth tree --- `FR-G`
+
+Added by the Seeding and Life rework (D-15).
+
+| ID     | Requirement |
+| ------ | ----------- |
+| FR-G1  | In the Seeding pane, a growth tree replaces the lifecycle strip as the progress indicator. It shows completed, current and future phases, which carries forward FR-L6's intent (A-4). |
+| FR-G2  | The tree grows one segment per completed lifecycle step, driven by events (FR-E1). |
+| FR-G3  | Each capability request the protection engine evaluates triggers one watering step. A denied request waters nothing. |
+| FR-G4  | No part of the tree claims a gen-AI or model call, because none occurs (NFR-D1). Watering is attributed to tool requests. |
+| FR-G5  | The tree's state is a function of the event log. Replaying the log reproduces it exactly (FR-E7), and two runs from Reset end with the same tree (NFR-D4). |
+| FR-G6  | The tree is hand-built SVG (NFR-L3). |
+
+### 5.16 Closing the seeding phase --- `FR-C`
+
+Added by the Seeding and Life rework (D-16).
+
+| ID     | Requirement |
+| ------ | ----------- |
+| FR-C1  | After Implementation completes, a person closes the seeding phase with a single action, labelled "Run --- clean up and close seeding". |
+| FR-C2  | The action is raised as a `confirmation` human request (FR-H3) that states what will happen and why (FR-H2). |
+| FR-C3  | Closing performs three operations, each reported in the activity stream: it consolidates the seeding phase's working notes into one record, clears the system's own scratch space, and promotes each built solution's interface from its build version to its release version. |
+| FR-C4  | Each operation is a capability request evaluated by the protection engine (FR-P2), under rules documented in `protection.md` (FR-P7). |
+| FR-C5  | All three operations are simulated. None touches a seed file, a source system, the local filesystem or the network (§4.1, FR-S6, NFR-D2). |
+| FR-C6  | When closing completes, the layout moves to Life only, and each ready solution is listed there with a Run action (supersedes FR-I6, A-6). |
+| FR-C7  | Operator skip (FR-O1) passes through the closing step. |
+
+### 5.17 Life pane --- `FR-LF`
+
+Added by the Seeding and Life rework (D-14, D-17).
+
+| ID     | Requirement |
+| ------ | ----------- |
+| FR-LF1 | The Life pane shows the running system: the ready solutions and their dashboards (FR-C6, FR-W6). |
+| FR-LF2 | The Life pane's content is independent of the Seeding pane's. Hiding either pane changes neither pane's state (NFR-A7). |
+| FR-LF3 | ~~Further Life behaviour, meaning live data collection and self-improvement, is **pending** the choice among the options in `project-notes.md` §84 (OQ-12).~~ **Resolved by D-17**, and specified as FR-LF4 to FR-LF11. |
+| FR-LF4 | After the seeding phase closes, a deterministic clock advances a **collection cursor** through the final stretch of each dataset, one fixed step (a simulated week) at a time. Each step is an event naming the source, the record count and the period, labelled as simulated collection. |
+| FR-LF5 | Collection reveals records the generators have already produced (FR-AN1). No record is generated at request time. |
+| FR-LF6 | At fixed intervals, a **recalibration** event recomputes the baselines over the collected window and re-scores the findings. It reports what moved: the baseline from and to, and the clusters newly confirmed or withdrawn. Baselines and scores for every step are precomputed by the generators (FR-AN3). |
+| FR-LF7 | The collection step is a term in the filter context (FR-EV1). Every dashboard follows it without per-dashboard code (FR-EV4), and it is URL-synced (D-3). |
+| FR-LF8 | A dashboard at the top of its hierarchy follows collection. A dashboard the viewer has drilled into stays **pinned** to the step at which they drilled in. It shows how many collections are newer, and it catches up when the viewer returns to the top or asks it to. No finding changes while a viewer is inside it. |
+| FR-LF9 | The evidence panel (FR-EV7) names the calibration a finding was scored under. |
+| FR-LF10 | Collection is finite. It ends at the end of the dataset, reported as caught up. Operator speed applies to the clock (FR-O3), operator skip completes collection, and Reset clears it. |
+| FR-LF11 | The collection and recalibration sequence is fixed. Two runs from Reset produce the same collection and recalibration events (NFR-D4, A-2). |
 
 ---
 
@@ -298,6 +386,7 @@ structure (§63).
 | NFR-A4  | The real/simulated boundary of §3 is legible in the code structure (§63).                                                                  |
 | NFR-A5  | No Kafka, Redis, PostgreSQL, Kubernetes, vector database, microservices, agent framework or LLM orchestration framework is introduced (§64, §79). |
 | NFR-A6  | Architectural boundaries take precedence over infrastructure sophistication (§79).                                                         |
+| NFR-A7  | Both panes stay mounted for the whole run. Changing the layout hides a pane and never unmounts it, which extends NFR-A3 (D-14). |
 
 ### 6.4 Visual design --- `NFR-V`
 
@@ -309,6 +398,7 @@ structure (§63).
 | NFR-V4  | Avoided: excessive gradients, generic "AI" glow effects, robot or agent illustrations, excessive cards, fake futuristic styling, too many colours, excessive motion (§47). |
 | NFR-V5  | Animation corresponds to actual state changes. Decorative animation is not acceptable (§46).                                        |
 | NFR-V6  | The visual language communicates serious analytical infrastructure, not an AI toy (§47).                                           |
+| NFR-V7  | Growth and watering animation respects `prefers-reduced-motion`, coalesces at instant speed rather than strobing, and stays inside NFR-V4's motion budget (D-15). |
 
 ### 6.5 Delivery --- `NFR-L`
 
@@ -329,6 +419,13 @@ end --- and when a sceptical viewer can then click freely through the
 Ticket Anomaly dashboard, follow any anomaly down to individual source
 records, and find the numbers consistent at every level.
 
+**Amended by A-7.** The narrative now includes closing the seeding phase
+(FR-C1) between Implementation and running a solution, and the dashboard
+is explored in the Life pane (FR-W6). The viewer also sees Agent One VW
+collect data and recalibrate at least once (FR-LF4, FR-LF6). A finding
+the viewer has drilled into stays stable while collection continues, and
+its evidence names the calibration it was scored under (FR-LF8, FR-LF9).
+
 ---
 
 ## 8. Open questions
@@ -341,7 +438,13 @@ OQ-7 are closed in `decisions.md`; the rest are carried.
 | OQ-1  | Exact chart inventory per dashboard. §54 lists candidates rather than a specification.                            |
 | OQ-2  | Drill-down hierarchies for License Optimization and Application Portfolio Rationalization.                        |
 | OQ-3  | Accent colour and typeface selection.                                                                            |
-| OQ-4  | ~~Whether the activity stream requires virtualisation.~~ Provisionally **no**; confirm at M13. See `decisions.md` §4. |
+| OQ-4  | ~~Whether the activity stream requires virtualisation.~~ Provisionally **no**; confirm at M22 (formerly M13). See `decisions.md` §4. |
 | OQ-5  | ~~Whether dataset generation needs a local cache.~~ Measured: **no**. See `decisions.md` §1. |
 | OQ-6  | ~~Which specific actions trigger the required `DENY` and `ESCALATE` policy decisions of FR-P6.~~ Ruled at M5. See `decisions.md` §4. |
 | OQ-7  | ~~Target wall-clock duration of the full narrative at 1x.~~ Ruled: **4 to 5 minutes**. See `decisions.md` §4. |
+| OQ-8  | ~~What "Agent One VW" names.~~ **What grows out of the Seed**: the framework that implements the build-and-maintain methodology. Agent Components are its parts. See `decisions.md` D-11. |
+| OQ-9  | ~~Whether methodologies are renamed "Seed".~~ **No.** A seed-themed name was assessed and none was coherent. Systems is renamed Seed. See D-11. |
+| OQ-10 | ~~What "routing problem" means.~~ **Evidence that exists but cannot reach the analysis.** MEDIUM and LOW wording accepted. See D-12. |
+| OQ-11 | ~~Which progress bar the growth tree replaces.~~ **The lifecycle strip.** See D-15. |
+| OQ-12 | ~~Which Life pane option to build.~~ **Option B, time-revealed operation.** See D-17. |
+| OQ-13 | ~~Where the Agent One demo is.~~ **Deferred.** Visual continuity with Agent One is skipped for now. See `decisions.md` §7.3. |
