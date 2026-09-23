@@ -153,7 +153,7 @@ NODES: tuple[NodeSpec, ...] = (
              F("unit_price", "unit-cost", 0.64),
              F("currency", "unit-cost", 1.0)),
     _dataset("sap.cost_centre_allocation", "cost_centre_allocation", 562, "sap.odata",
-             F("amount", "application-cost", 0.58),
+             F("amount", "application-cost", 0.78),
              detail="Allocated per cost centre, not per application, for part of the portfolio"),
 
     # -- Legacy Application Registry --------------------------------------

@@ -5,9 +5,9 @@ keeps M3 to M8 additive rather than structural.
 """
 
 from app.simulation.engine import WorkflowSpec
-from app.simulation.workflows import discovery, scaffold
+from app.simulation.workflows import assessment, discovery
 
 NARRATIVE: tuple[WorkflowSpec, ...] = (
     WorkflowSpec(name="discovery", factory=discovery.discovery),
-    WorkflowSpec(name="assessment", factory=scaffold.assessment),
+    WorkflowSpec(name="assessment", factory=assessment.assessment),
 )

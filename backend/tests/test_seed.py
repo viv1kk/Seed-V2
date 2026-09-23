@@ -35,6 +35,7 @@ from app.runtime import state
 from app.simulation.engine import SimulationEngine
 from app.simulation.protocol import RunStatus, Speed
 from app.simulation.workflows.registry import NARRATIVE
+from narrative import run_to_end
 
 MINIMAL = "# Layer\n\nOne line of content.\n"
 
@@ -352,12 +353,7 @@ async def test_seed_content_does_not_alter_the_run() -> None:
             state, NARRATIVE, total_duration=0.2, narrative_weight=100.0
         )
         runner.set_speed(Speed.INSTANT)
-        await runner.start()
-        while runner.status is RunStatus.RUNNING:
-            await _tick()
-        await runner.resolve_human("servicenow-incident-api", {"username": "svc"})
-        while runner.status is RunStatus.RUNNING:
-            await _tick()
+        await run_to_end(runner)
         assert runner.status is RunStatus.COMPLETE
 
         return [

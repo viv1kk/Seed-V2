@@ -48,7 +48,14 @@ const EVENT_TYPES = [
   'discovery.completed',
   'policy.decision',
   'assessment.methodology.evaluated',
+  'assessment.evidence.insufficient',
+  'assessment.evidence.revised',
   'assessment.completed',
+  'solution.proposed',
+  'solution.submitted',
+  'solution.approved',
+  'solution.rejected',
+  'approval.completed',
   'human.requested',
   'human.resolved',
 ] as const
@@ -166,6 +173,23 @@ export const useEventStore = defineStore('events', () => {
     })
   }
 
+  /**
+   * Decide on one solution (FR-AP3).
+   *
+   * The decision answers the approval request the run is parked on. The
+   * card changes when the decision comes back on the stream, not when the
+   * button is pressed, so the screen never shows a decision the system
+   * did not record.
+   */
+  async function decide(solutionId: string, decision: 'approve' | 'reject'): Promise<boolean> {
+    const response = await fetch(`/api/solutions/${encodeURIComponent(solutionId)}/decision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decision }),
+    })
+    return response.ok
+  }
+
   return {
     events,
     connection,
@@ -177,5 +201,6 @@ export const useEventStore = defineStore('events', () => {
     resync,
     reset,
     submitHuman,
+    decide,
   }
 })

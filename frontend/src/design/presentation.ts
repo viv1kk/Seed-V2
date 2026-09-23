@@ -79,3 +79,16 @@ export function clockOf(timestamp: string): string {
 export function startsPhase(event: SystemEvent, previous: SystemEvent | undefined): boolean {
   return previous === undefined || previous.phase !== event.phase
 }
+
+/**
+ * A proportion as a percentage, to one decimal where it has one.
+ *
+ * One formatter for every surface, so a figure reads the same on a card,
+ * in the review and in the stream: 0.903 is 90.3% everywhere, never 90%
+ * in one place and 90.3% in another.
+ */
+export function percentOf(value: number | null | undefined): string {
+  return value === null || value === undefined
+    ? '—'
+    : `${(value * 100).toFixed(1).replace(/\.0$/, '')}%`
+}

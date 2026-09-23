@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import AssessmentStage from './AssessmentStage.vue'
 import EnvironmentStage from './EnvironmentStage.vue'
 import type { LayerSummary } from '../stores/seed'
 import { useSystemStore, type Phase } from '../stores/system'
@@ -11,18 +12,15 @@ const system = useSystemStore()
  * What each phase puts on the stage.
  *
  * The pane changes; the workspace around it does not (NFR-A3, §13). Init
- * shows what the seed loader actually registered, and Discovery the
- * environment graph as System State holds it. The other three state what
- * belongs there, and the milestone that builds each one replaces the
- * corresponding branch rather than the layout.
+ * shows what the seed loader actually registered, Discovery the
+ * environment graph as System State holds it, and Assessment the solutions
+ * and the decisions on them. The other two state what belongs there, and
+ * the milestone that builds each one replaces the corresponding branch
+ * rather than the layout.
  */
-type Pending = Exclude<Phase, 'INIT' | 'DISCOVERY'>
+type Pending = Exclude<Phase, 'INIT' | 'DISCOVERY' | 'ASSESSMENT'>
 
 const PENDING: Record<Pending, { title: string; note: string }> = {
-  ASSESSMENT: {
-    title: 'Assessment',
-    note: 'Each methodology is shown against the evidence discovery found, with its feasibility and the limitations behind it.',
-  },
   IMPLEMENTATION: {
     title: 'Build',
     note: 'The build pipeline is shown here, with each stage progressing through pending, building, testing and complete.',
@@ -38,7 +36,7 @@ const layers = computed<LayerSummary[]>(
 )
 
 const pending = computed(() =>
-  system.phase === 'INIT' || system.phase === 'DISCOVERY'
+  system.phase === 'INIT' || system.phase === 'DISCOVERY' || system.phase === 'ASSESSMENT'
     ? null
     : PENDING[system.phase as Pending],
 )
@@ -51,6 +49,9 @@ const pending = computed(() =>
          initialized and idle, so the screen after planting is not empty. -->
     <!-- Discovery: the environment, growing as it is found (FR-D3). -->
     <EnvironmentStage v-if="system.phase === 'DISCOVERY'" :environment="system.environment" />
+
+    <!-- Assessment: what can be done, and a person deciding (FR-A7). -->
+    <AssessmentStage v-else-if="system.phase === 'ASSESSMENT'" />
 
     <template v-else-if="!pending">
       <header class="head">

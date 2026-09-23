@@ -43,6 +43,7 @@ from app.runtime import state as process_state
 from app.simulation.engine import SimulationEngine
 from app.simulation.protocol import RunStatus, Speed
 from app.simulation.workflows.registry import NARRATIVE
+from narrative import run_to_end
 
 #: The value of each fact under which nothing restrictive fires. A witness
 #: starts here and overrides only what its rule tests, so the rule under
@@ -273,12 +274,7 @@ async def _run_narrative() -> SystemState:
     state.transition(LifecycleState.INITIALIZED)
     runner = SimulationEngine(state, NARRATIVE, total_duration=0.2, narrative_weight=100.0)
     runner.set_speed(Speed.INSTANT)
-    await runner.start()
-    while runner.status is RunStatus.RUNNING:
-        await asyncio.sleep(0.01)
-    await runner.resolve_human("servicenow-incident-api", {"username": "svc"})
-    while runner.status is RunStatus.RUNNING:
-        await asyncio.sleep(0.01)
+    await run_to_end(runner)
     assert runner.status is RunStatus.COMPLETE
     return state
 

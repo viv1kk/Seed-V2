@@ -158,6 +158,86 @@ interface EnvironmentDelta {
   summary: DiscoverySummary | null
 }
 
+/** FR-A3. */
+export type Grade = 'HIGH' | 'MEDIUM' | 'PARTIAL' | 'LOW'
+
+export type Standing = 'sufficient' | 'limited' | 'incomplete' | 'missing'
+
+export interface EvidenceField {
+  dataset: string
+  label: string
+  system: string | null
+  field: string
+  completeness: number
+}
+
+export interface RequirementAssessment {
+  concept: string
+  description: string
+  standing: Standing
+  coverage: number | null
+  weakest: EvidenceField | null
+  fields: EvidenceField[]
+}
+
+export interface Improvement {
+  concept: string
+  action: string
+  target: string
+  from: Grade
+  to: Grade
+}
+
+/** One methodology's assessment, with everything FR-A4 asks for. */
+export interface Assessment {
+  id: string
+  methodologyId: string
+  name: string
+  purpose: string
+  feasibility: Grade
+  dataSufficiency: number
+  coverage: { located: number; required: number }
+  requirements: RequirementAssessment[]
+  limitations: string[]
+  declaredLimitations: string[]
+  improvements: Improvement[]
+  recommendation: string
+  process: string[]
+  /** FR-A10: these are simulated demo values, and say so. */
+  simulated: boolean
+}
+
+/** FR-AP2. */
+export type SolutionStatus =
+  | 'PROPOSED'
+  | 'AWAITING_APPROVAL'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'BUILDING'
+  | 'READY'
+  | 'RUNNING'
+
+export interface Solution {
+  id: string
+  methodologyId: string
+  assessmentId: string
+  name: string
+  description: string
+  status: SolutionStatus
+  dashboardId: string | null
+}
+
+/** A person's decision, with the evidence it was made on (FR-AP3). */
+export interface Approval {
+  id: string
+  solutionId: string
+  decision: 'APPROVED' | 'REJECTED'
+  feasibility: Grade | null
+  dataSufficiency: number | null
+  rule: string
+  decidedAt: number
+}
+
 export interface StateSnapshot {
   sequence: number
   lifecycle: LifecycleState
@@ -167,9 +247,9 @@ export interface StateSnapshot {
   seed: Record<string, unknown> | null
   /** Empty until discovery begins. */
   environment: Environment | Record<string, never>
-  assessments: Record<string, unknown>[]
-  solutions: Record<string, unknown>[]
-  approvals: Record<string, unknown>[]
+  assessments: Assessment[]
+  solutions: Solution[]
+  approvals: Approval[]
   implementations: Record<string, unknown>[]
   runtime: Record<string, unknown>
 }
@@ -199,6 +279,11 @@ export const useSystemStore = defineStore('system', () => {
    */
   const environment = ref<Environment | null>(null)
 
+  /** Assessments, solutions and decisions, folded the same way (FR-L5). */
+  const assessments = ref<Assessment[]>([])
+  const solutions = ref<Solution[]>([])
+  const approvals = ref<Approval[]>([])
+
   /** The sequence number the snapshot is current as of. */
   const baseline = ref(0)
 
@@ -210,6 +295,9 @@ export const useSystemStore = defineStore('system', () => {
     baseline.value = next.sequence
     environment.value =
       'nodes' in next.environment ? structuredClone(next.environment as Environment) : null
+    assessments.value = structuredClone(next.assessments)
+    solutions.value = structuredClone(next.solutions)
+    approvals.value = structuredClone(next.approvals)
   }
 
   function upsert<T extends { id: string }>(records: T[], record: T): void {
@@ -278,6 +366,15 @@ export const useSystemStore = defineStore('system', () => {
     if (event.payload.environment) {
       foldEnvironment(event.payload.environment as EnvironmentDelta)
     }
+    for (const record of (event.payload.assessments ?? []) as Assessment[]) {
+      upsert(assessments.value, record)
+    }
+    for (const record of (event.payload.solutions ?? []) as Solution[]) {
+      upsert(solutions.value, record)
+    }
+    for (const record of (event.payload.approvals ?? []) as Approval[]) {
+      upsert(approvals.value, record)
+    }
     switch (event.type) {
       case 'lifecycle.transition':
         lifecycle.value = event.payload.to as LifecycleState
@@ -309,6 +406,9 @@ export const useSystemStore = defineStore('system', () => {
     phase,
     blockedOn,
     environment,
+    assessments,
+    solutions,
+    approvals,
     baseline,
     fetchSnapshot,
     apply,

@@ -55,6 +55,23 @@ export const useOperatorStore = defineStore('operator', () => {
   const setSpeed = (next: Speed) => send('/api/operator/speed', { speed: next })
   const skipPhase = () => send('/api/operator/skip')
 
+  /**
+   * Revise one profiled field's completeness (M7's rehearsal proof).
+   *
+   * Every assessment resting on the field is regraded by the backend, and
+   * the result arrives on the stream like any other change.
+   */
+  async function reviseEvidence(dataset: string, field: string, completeness: number): Promise<void> {
+    await fetch(
+      `/api/environment/sources/${encodeURIComponent(dataset)}/fields/${encodeURIComponent(field)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completeness }),
+      },
+    )
+  }
+
   function togglePanel(): void {
     panelVisible.value = !panelVisible.value
   }
@@ -67,6 +84,7 @@ export const useOperatorStore = defineStore('operator', () => {
     start,
     setSpeed,
     skipPhase,
+    reviseEvidence,
     togglePanel,
   }
 })

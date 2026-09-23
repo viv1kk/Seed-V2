@@ -8,8 +8,19 @@ rather than on the first request (A-1).
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from app.api import events, health, human, operator, protection, seed, state
+from app.api import (
+    environment,
+    events,
+    health,
+    human,
+    operator,
+    protection,
+    seed,
+    solutions,
+    state,
+)
 from app.domain.lifecycle import IllegalTransition
+from app.domain.solutions import IllegalSolutionTransition
 from app.knowledge.seed_loader import SeedRejected
 from app.simulation.protocol import EngineError
 
@@ -26,6 +37,8 @@ app.include_router(protection.router, prefix="/api", tags=["protection"])
 app.include_router(events.router, prefix="/api", tags=["events"])
 app.include_router(operator.router, prefix="/api", tags=["operator"])
 app.include_router(human.router, prefix="/api", tags=["human"])
+app.include_router(solutions.router, prefix="/api", tags=["solutions"])
+app.include_router(environment.router, prefix="/api", tags=["environment"])
 
 
 @app.exception_handler(EngineError)
@@ -37,6 +50,11 @@ async def engine_refusal(_: object, error: EngineError) -> JSONResponse:
 @app.exception_handler(IllegalTransition)
 async def illegal_transition(_: object, error: IllegalTransition) -> JSONResponse:
     """The state machine refused the move, and it names what it would allow."""
+    return JSONResponse(status_code=409, content={"detail": str(error)})
+
+
+@app.exception_handler(IllegalSolutionTransition)
+async def illegal_solution_transition(_: object, error: IllegalSolutionTransition) -> JSONResponse:
     return JSONResponse(status_code=409, content={"detail": str(error)})
 
 

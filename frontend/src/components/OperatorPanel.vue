@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useEventStore } from '../stores/events'
 import { useOperatorStore, type Speed } from '../stores/operator'
@@ -39,6 +39,32 @@ const SHORTCUTS: Record<string, () => void | Promise<void>> = {
   '@': () => operator.setSpeed('2x'), // Shift+2
   ')': () => operator.setSpeed('instant'), // Shift+0
   D: () => theme.toggle(),
+}
+
+/**
+ * Evidence revision, for rehearsal: M7's proof that feasibility is
+ * computed. Pick a profiled field, set its completeness, and every
+ * assessment resting on it is regraded by the backend.
+ */
+const profiledFields = computed(() =>
+  (system.environment?.dataSources ?? []).flatMap((source) =>
+    source.fields.map((field) => ({
+      key: `${source.id}|${field.name}`,
+      dataset: source.id,
+      field: field.name,
+      label: `${source.label}.${field.name}`,
+      completeness: field.completeness,
+    })),
+  ),
+)
+const revising = ref('')
+const revisedPercent = ref(90)
+
+function reviseEvidence(): void {
+  const target = profiledFields.value.find((field) => field.key === revising.value)
+  if (target) {
+    void operator.reviseEvidence(target.dataset, target.field, revisedPercent.value / 100)
+  }
 }
 
 const SPEEDS: { value: Speed; label: string; hint: string }[] = [
@@ -123,6 +149,32 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         </button>
         <button type="button" class="action" title="Shift+R" @click="events.reset()">
           Reset
+        </button>
+      </div>
+    </div>
+
+    <div v-if="profiledFields.length" class="group">
+      <span class="label">Evidence</span>
+      <div class="row">
+        <select v-model="revising" class="input" aria-label="Profiled field">
+          <option value="" disabled>Profiled field</option>
+          <option v-for="field in profiledFields" :key="field.key" :value="field.key">
+            {{ field.label }} · {{ Math.round(field.completeness * 1000) / 10 }}%
+          </option>
+        </select>
+      </div>
+      <div class="row">
+        <input
+          v-model.number="revisedPercent"
+          class="input narrow"
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          aria-label="Completeness percent"
+        />
+        <button type="button" class="action" :disabled="!revising" @click="reviseEvidence()">
+          Revise completeness
         </button>
       </div>
     </div>
@@ -219,6 +271,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .action:hover {
   color: var(--text-primary);
   border-color: var(--border-strong);
+}
+
+.action:disabled {
+  opacity: 0.5;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  color: var(--text-primary);
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.input.narrow {
+  flex: 0 0 4.5rem;
 }
 
 .action[data-active='true'] {

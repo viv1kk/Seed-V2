@@ -43,22 +43,9 @@ from app.environment.model import Environment, NodeKind, NodeSpec, NodeStatus, O
 from app.protection.engine import Decision, authorize
 from app.protection.rules import Action, ActionRequest, Effect, Identity
 from app.simulation.beats import AwaitHuman, Beat, Workflow
+from app.simulation.workflows.gate import proceed
 
 CREDENTIAL_REQUEST = "servicenow-incident-api"
-
-
-class PolicyRefused(RuntimeError):
-    """An action the narrative needed was not allowed."""
-
-
-def _proceed(decision: Decision) -> Decision:
-    """Continue only on an ALLOW (PR-082)."""
-    if decision.effect is not Effect.ALLOW:
-        raise PolicyRefused(
-            f"{decision.action.label} on {decision.resource} was {decision.effect} "
-            f"under {decision.rule}. Discovery does not proceed without an ALLOW."
-        )
-    return decision
 
 
 def _label(system_id: str) -> str:
@@ -150,7 +137,7 @@ def _profile(state: SystemState, env: Environment, system_id: str) -> int:
         if not mapped:
             continue
         noun = "dataset" if len(mapped) == 1 else "datasets"
-        _proceed(
+        proceed(
             _read(
                 state,
                 system_id,
@@ -181,8 +168,8 @@ def _found_and_enumerated(
     surfaces = _surfaces(system_id)
 
     env.reveal(system_id, *(s.id for s in surfaces))
-    _proceed(_authenticate(state, system_id))
-    _proceed(_enumerate(state, system_id))
+    proceed(_authenticate(state, system_id))
+    proceed(_enumerate(state, system_id))
     env.set_status(NodeStatus.VALIDATED, system_id, *(s.id for s in surfaces))
     found = [d for s in surfaces for d in _datasets(s.id)]
     env.reveal(*(d.id for d in found))
@@ -265,7 +252,7 @@ def discovery(state: SystemState) -> Workflow:
     )
     yield Beat(weight=2, label="ServiceNow reachability")
 
-    _proceed(
+    proceed(
         authorize(
             state,
             ActionRequest(
@@ -308,7 +295,7 @@ def discovery(state: SystemState) -> Workflow:
     # gone. The shape of the submission is recorded, never its values
     # (FR-H5).
     state.transition(LifecycleState.DISCOVERING)
-    _proceed(
+    proceed(
         authorize(
             state,
             ActionRequest(
@@ -319,7 +306,7 @@ def discovery(state: SystemState) -> Workflow:
             ),
         )
     )
-    _proceed(_authenticate(state, servicenow))
+    proceed(_authenticate(state, servicenow))
     env.set_status(NodeStatus.VALIDATED, servicenow, api, cmdb)
     env.record(
         type="discovery.credentials.accepted",
@@ -329,7 +316,7 @@ def discovery(state: SystemState) -> Workflow:
     )
     yield Beat(weight=3, floor=2.0, label="credentials accepted")
 
-    _proceed(_enumerate(state, servicenow))
+    proceed(_enumerate(state, servicenow))
     tables = [*_datasets(api), *_datasets(cmdb)]
     env.reveal(*(t.id for t in tables))
     env.record(
@@ -410,7 +397,7 @@ def discovery(state: SystemState) -> Workflow:
     )
     yield Beat(weight=5, floor=3.0, label="timeout")
 
-    _proceed(_authenticate(state, lms))
+    proceed(_authenticate(state, lms))
     env.set_status(NodeStatus.VALIDATED, lms, vendor_api)
     env.record(
         type="discovery.endpoint.recovered",
@@ -423,7 +410,7 @@ def discovery(state: SystemState) -> Workflow:
     )
     yield Beat(weight=4, floor=2.0, label="recovery")
 
-    _proceed(_enumerate(state, lms))
+    proceed(_enumerate(state, lms))
     catalogue = _datasets(vendor_api)
     env.reveal(*(d.id for d in catalogue))
     env.record(
@@ -451,7 +438,7 @@ def discovery(state: SystemState) -> Workflow:
     legacy = "legacy"
     (export,) = _datasets(legacy)
     env.reveal(legacy, export.id, status=NodeStatus.DETECTED, origin=Origin.ADMINISTRATOR)
-    _proceed(
+    proceed(
         _read(
             state,
             legacy,

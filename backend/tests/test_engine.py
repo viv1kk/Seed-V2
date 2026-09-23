@@ -34,6 +34,7 @@ from app.simulation.protocol import (
     UnknownRequest,
 )
 from app.simulation.workflows.registry import NARRATIVE
+from narrative import finish
 
 REQUEST = "servicenow-incident-api"
 TINY_REQUEST = "tiny-request"
@@ -132,11 +133,15 @@ async def drive(
     request_id: str,
     submission: dict[str, Any] | None = None,
 ) -> None:
-    """Start, answer the one request, and run to the end."""
+    """Start, answer the credential request, and run to the end.
+
+    The narrative also parks for each solution's decision, and those are
+    approved on the way (`narrative.finish`).
+    """
     await runner.start()
     await settle(runner)
     await runner.resolve_human(request_id, submission or {})
-    await settle(runner)
+    await finish(runner, credentials=submission)
 
 
 # -- The seam ---------------------------------------------------------

@@ -22,6 +22,7 @@ graph, every time the graph changes. Nothing anywhere states how many
 systems, data sources or datasets there are.
 """
 
+import copy
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -190,7 +191,7 @@ class Environment:
         self.definition = definition
         self._touched: list[str] = []
         self._new_edges: list[dict[str, Any]] = []
-        self._new_sources: list[dict[str, Any]] = []
+        self._touched_sources: list[str] = []
 
         if not state.environment:
             state.environment = {
@@ -300,7 +301,33 @@ class Environment:
             ],
         }
         self.state.environment["dataSources"].append(record)
-        self._new_sources.append(record)
+        self._touched_sources.append(spec.id)
+
+    def source(self, dataset_id: str) -> dict[str, Any] | None:
+        return next(
+            (s for s in self.state.environment["dataSources"] if s["id"] == dataset_id), None
+        )
+
+    def revise(self, dataset_id: str, field: str, completeness: float) -> float:
+        """Change one profiled field's completeness, returning the old figure.
+
+        This is how the computed feasibility is shown to be computed: move
+        the evidence and the grade moves with it (FR-A2). The revision is
+        carried on the next event like any other change to the graph.
+        """
+        if not 0.0 <= completeness <= 1.0:
+            raise ValueError("Completeness is a proportion between 0 and 1.")
+        source = self.source(dataset_id)
+        if source is None:
+            raise KeyError(f"{dataset_id} has not been profiled.")
+        target = next((f for f in source["fields"] if f["name"] == field), None)
+        if target is None:
+            raise KeyError(f"{dataset_id} has no profiled field {field}.")
+        previous = target["completeness"]
+        target["completeness"] = completeness
+        if dataset_id not in self._touched_sources:
+            self._touched_sources.append(dataset_id)
+        return previous
 
     def _link(self, edge: EdgeSpec) -> None:
         if any(existing["id"] == edge.id for existing in self._edges):
@@ -345,12 +372,18 @@ class Environment:
             "canvas": self.state.environment["canvas"],
             "nodes": [dict(self.node(node_id) or {}) for node_id in self._touched],
             "edges": list(self._new_edges),
-            "dataSources": list(self._new_sources),
+            # Deep, because a source's fields are revised in place and an
+            # event already recorded must never change with them (FR-E7).
+            "dataSources": [
+                copy.deepcopy(source)
+                for i in self._touched_sources
+                if (source := self.source(i))
+            ],
             "summary": summary,
         }
         self._touched.clear()
         self._new_edges.clear()
-        self._new_sources.clear()
+        self._touched_sources.clear()
         return self.state.record(
             type=type,
             category=category,

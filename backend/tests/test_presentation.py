@@ -26,6 +26,7 @@ from app.domain.state import BlockedOn, RequestKind, RequestOption, SystemState
 from app.simulation.engine import SimulationEngine
 from app.simulation.protocol import RunStatus, Speed
 from app.simulation.workflows.registry import NARRATIVE
+from narrative import run_to_end
 
 
 def classify(type: str, category: Category, severity: Severity = Severity.INFO) -> Presentation:
@@ -104,7 +105,16 @@ async def test_every_event_the_narrative_emits_classifies_as_intended() -> None:
         "discovery.completed": Presentation.ACTIVITY,
         "policy.decision": Presentation.ACTIVITY,
         "assessment.methodology.evaluated": Presentation.ACTIVITY,
+        # The first insufficiency the narrative produces: License
+        # Optimization's unit cost. Not a fault, and nobody is being asked.
+        "assessment.evidence.insufficient": Presentation.INSUFFICIENT,
         "assessment.completed": Presentation.ACTIVITY,
+        "solution.proposed": Presentation.ACTIVITY,
+        "solution.submitted": Presentation.ACTIVITY,
+        # A person's decision, whichever way it went.
+        "solution.approved": Presentation.DECISION,
+        "solution.rejected": Presentation.DECISION,
+        "approval.completed": Presentation.ACTIVITY,
         "human.requested": Presentation.DECISION,
         "human.resolved": Presentation.DECISION,
     }
@@ -116,12 +126,7 @@ async def test_every_event_the_narrative_emits_classifies_as_intended() -> None:
     )
     runner.set_speed(Speed.INSTANT)
 
-    await runner.start()
-    while runner.status is RunStatus.RUNNING:
-        await asyncio.sleep(0.01)
-    await runner.resolve_human("servicenow-incident-api", {"username": "svc"})
-    while runner.status is RunStatus.RUNNING:
-        await asyncio.sleep(0.01)
+    await run_to_end(runner, decisions={"license-optimization": "reject"})
     assert runner.status is RunStatus.COMPLETE
 
     emitted = {event.type for event in state.events.all()}

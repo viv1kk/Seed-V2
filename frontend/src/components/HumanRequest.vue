@@ -41,6 +41,15 @@ const isCredentials = computed(() => props.request.kind === 'credentials')
 const hasOptions = computed(() => props.request.options.length > 0)
 
 /**
+ * An approval is answered on the solution cards, beside the evidence each
+ * decision rests on (FR-A7, FR-A8). This surface still appears, because
+ * the system is waiting on a person and says so (FR-H1), but it offers no
+ * button of its own: a single Approve here would approve nothing in
+ * particular.
+ */
+const answeredElsewhere = computed(() => props.request.kind === 'approval' && !hasOptions.value)
+
+/**
  * Submit and forget.
  *
  * Credential fields are cleared before the request settles, so the values
@@ -123,11 +132,20 @@ async function submit(chosen?: string): Promise<void> {
     </div>
 
     <div class="foot">
-      <button v-if="!hasOptions" type="submit" class="submit" :disabled="submitting">
+      <button
+        v-if="!hasOptions && !answeredElsewhere"
+        type="submit"
+        class="submit"
+        :disabled="submitting"
+      >
         {{ submitting ? 'Working…' : action }}
       </button>
       <span v-if="isCredentials" class="note">
         Values are used for the handshake and discarded. Nothing is stored.
+      </span>
+      <span v-else-if="answeredElsewhere" class="note">
+        Approve or reject each solution on its card. Every decision is recorded with the evidence
+        it was made on.
       </span>
       <span v-else class="note">The decision is recorded in the audit log.</span>
     </div>

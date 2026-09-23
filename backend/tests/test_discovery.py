@@ -274,8 +274,10 @@ def test_an_unexpected_refusal_stops_discovery() -> None:
     refused = Decision(
         effect=Effect.DENY, rule="PR-000", action=Action.READ, resource="x", reason="test"
     )
-    with pytest.raises(workflow.PolicyRefused):
-        workflow._proceed(refused)
+    from app.simulation.workflows.gate import PolicyRefused, proceed
+
+    with pytest.raises(PolicyRefused):
+        proceed(refused)
 
 
 # -- Computed counts (FR-D9, FR-D10) ----------------------------------
