@@ -4131,3 +4131,65 @@ something to fake. It is raised for a ruling.
 injection. It is a dashed outline with a ⤳ mark, and it is deliberately
 neither a grade colour nor the fault colour. M21 designs it properly
 (R-14 is about the tree, but the same restraint applies).
+
+### Follow-up · the routing problem made visible (D-12 ruling, option 2)
+
+**Ruling, 2026-09-24.** Make PR-033's refusal a real routing problem
+rather than leaving the flag invisible in the narrative.
+
+**What changed.**
+
+- `environment/acme.py`: ServiceNow's `sys_security_log` now declares
+  what its fields hold: `application` and `sys_created_on`, both
+  carrying `application-usage`. That is Application Portfolio
+  Rationalization's usage signal.
+  - I chose APR rather than License Optimization's `product-usage`
+    because OQ-6's refused request reads "sign-in counts per
+    application, application identifier and timestamp". That is an
+    application usage signal, not licence consumption.
+  - The table stays unmapped and a security table, so the request
+    facts, PR-033's DENY and the PR-031 overrule are all unchanged.
+- `seeds/adaptation.md`: one paragraph after the application concepts
+  table says the security log carries a usage signal that PR-033
+  refuses. No heading was added, so FR-S5's counts are unchanged.
+- `knowledge/routing.py`: the docstring now says concepts are read from
+  the dataset's field profile, which is wider than what is mapped for
+  reading.
+
+**What does not move.** The security log is never profiled, because
+Discovery profiles mapped datasets only. So no grade, sufficiency or
+Discovery count changes. The narrative still reads "Discovery complete:
+5 systems, 6 data sources, 17 datasets (16 profiled, 1 excluded by
+policy). Evidence located for 3 of 3 methodologies". The grades are
+still HIGH, PARTIAL and MEDIUM.
+
+**What does.** Application Portfolio Rationalization now carries one
+routing problem: `application-usage` from `sys_security_log`, refused
+under PR-033. Its card reads "Routing problem: 1 source out of reach",
+and its drawer lists "Usage signals per application, with distinct
+actors · sys_security_log · Refused under PR-033". It is MEDIUM
+potential with a blocked path to part of its evidence, which is exactly
+D-12's point.
+
+**Tests.** Three assertions in `test_routing.py`, all written in M16,
+assumed that the scripted run had no routing problem. That fact changed
+with this ruling:
+
+- `test_the_scripted_run_raises_no_routing_problem` is replaced by
+  `test_the_scripted_run_flags_the_refused_usage_signal`. It asserts
+  APR's single PR-033 entry, none for the other two, and unchanged
+  grades.
+- Two other tests now compare against that baseline, or filter to the
+  dataset they change.
+
+No test from before Phase R changed. `pytest`: 431 passed.
+
+**Live.** Confirmed on a fresh server: the API, the card and the drawer
+all show APR's PR-033 routing problem, and Discovery's messages are
+unchanged. The first live attempt read an old server that an earlier
+stop had missed. It is recorded in the working notes and was not a code
+fault.
+
+**Check by hand.** Open Application Portfolio Rationalization's review
+and read the Routing problem section. Then decide whether the seed
+paragraph's wording suits the Adaptation document.

@@ -128,6 +128,11 @@ skipped.
 | Criticality | ServiceNow | cmdb_ci_appl.business_criticality |
 | Capability | Legacy Application Registry | capability column of the supplied export |
 
+ServiceNow's sys_security_log also carries a usage signal: application
+sign-ins, with the application and the time. It is a security table and is
+not mapped. Reading it is refused whatever the columns (PR-033), so the
+signal exists but cannot reach the analysis.
+
 ## Retrieval
 
 ### Procedures

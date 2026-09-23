@@ -94,8 +94,15 @@ NODES: tuple[NodeSpec, ...] = (
     _dataset("servicenow.sys_user", "sys_user", 130, "servicenow.incident-api",
              F("active", "leaver-record", 1.0),
              F("last_login_time", "leaver-record", 0.913)),
+    # Sign-in events do carry a usage signal: which application, and when.
+    # The table is still outside the mapping, because it is a security
+    # table, so PR-033 refuses it whatever the columns (OQ-6). That makes
+    # the refusal a routing problem for Application Portfolio
+    # Rationalization: evidence it needs, present and out of reach (D-12).
     _dataset("servicenow.sys_security_log", "sys_security_log", 160, "servicenow.incident-api",
-             detail="Authentication events. Not in the concept mapping.",
+             F("application", "application-usage", 0.99),
+             F("sys_created_on", "application-usage", 1.0),
+             detail="Authentication events: application sign-ins. A security table, unmapped.",
              mapped=False, security_table=True),
     NodeSpec("servicenow.cmdb", NodeKind.SERVICE, "CMDB", SURFACE_X, 223,
              parent="servicenow", detail="Configuration items, through the same Table API"),

@@ -57,19 +57,29 @@ def routing(environment: dict[str, Any], methodology: str) -> list[dict[str, Any
 # -- The scripted run --------------------------------------------------
 
 
-@pytest.mark.asyncio
-async def test_the_scripted_run_raises_no_routing_problem() -> None:
-    """Recorded for D-12: no methodology carries the flag in the narrative.
+#: The one routing problem the narrative raises (D-12, ruled after M16).
+PR_033 = ("application-usage", "servicenow.sys_security_log", "refused", "PR-033")
 
-    PR-033 refuses ServiceNow's security log, the candidate D-12 named. The
-    log is outside the concept mapping, so it carries nothing any
-    methodology requires, and its refusal is not a routing problem.
+
+def facts(found: list[dict[str, Any]]) -> list[tuple[str, str, str, str | None]]:
+    return [(r["concept"], r["dataset"], r["reason"], r["rule"]) for r in found]
+
+
+@pytest.mark.asyncio
+async def test_the_scripted_run_flags_the_refused_usage_signal() -> None:
+    """PR-033's refusal is the narrative's routing problem, and its only one.
+
+    ServiceNow's security log holds application sign-ins, a usage signal
+    Application Portfolio Rationalization requires. Policy refuses the
+    table whatever the columns (OQ-6), so the evidence exists and cannot
+    reach the analysis. The grades are the ones the narrative always had.
     """
     state = await discovered()
-    assert all(a["routing"] == [] for a in state.assessments)
+    by_id = {a["id"]: a for a in state.assessments}
 
-    log = node(state.environment, "servicenow.sys_security_log")
-    assert log["excludedBy"] == "PR-033"
+    assert facts(by_id[APR]["routing"]) == [PR_033]
+    assert by_id[TAD]["routing"] == [] and by_id[LO]["routing"] == []
+    assert [by_id[m]["feasibility"] for m in (TAD, LO, APR)] == ["HIGH", "PARTIAL", "MEDIUM"]
 
 
 # -- Change the fact, the flag moves -----------------------------------
@@ -84,7 +94,7 @@ async def test_a_carrier_in_error_raises_the_flag(environment: dict[str, Any]) -
         ("reassignment-history", "unreachable", "servicenow.metric_instance")
     ]
     assert routing(environment, LO) == []
-    assert routing(environment, APR) == []
+    assert facts(routing(environment, APR)) == [PR_033]
 
 
 @pytest.mark.asyncio
@@ -112,7 +122,7 @@ async def test_a_policy_refusal_raises_the_flag_citing_the_rule(
 ) -> None:
     node(environment, "servicenow.cmdb_ci_appl")["excludedBy"] = "PR-032"
 
-    found = routing(environment, APR)
+    found = [r for r in routing(environment, APR) if r["dataset"] == "servicenow.cmdb_ci_appl"]
     assert {r["concept"] for r in found} == {"ownership", "criticality"}
     assert {(r["reason"], r["rule"]) for r in found} == {("refused", "PR-032")}
 

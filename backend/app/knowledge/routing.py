@@ -18,10 +18,13 @@ is authored:
 - *Exists* means the dataset has been found: it is a node in the graph.
   A dataset nobody has found yet is not a routing problem, because it is
   not yet known to exist (G-2).
-- *Carries a required concept* is read from the Adaptation layer's
-  concept mapping, the same field-to-concept mapping a profile reports.
-  A dataset outside that mapping carries nothing a methodology requires,
-  whatever policy decided about it.
+- *Carries a required concept* is read from the dataset's field profile
+  in the environment definition, which says what each field holds. That
+  is wider than what is mapped for reading. ServiceNow's security log is
+  unmapped, and it still holds application sign-ins, a usage signal,
+  which is exactly why refusing it is a routing problem. A dataset whose
+  fields carry no required concept flags nothing, whatever policy
+  decided about it.
 - *Cannot reach the analysis* is one of three facts. Policy refused the
   dataset, which the graph records with the deciding rule. The dataset,
   or the surface or system it is read through, is in error. Or one of
