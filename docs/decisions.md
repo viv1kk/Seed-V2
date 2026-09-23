@@ -261,6 +261,8 @@ excluded.
 | OQ-4 | Does the activity stream need virtualisation? | **Provisionally no**, given OQ-7's duration. Confirm by measurement at M13.                       |
 | OQ-6 | Which actions trigger the DENY and ESCALATE   | **DENY:** reading ServiceNow's security log as a usage signal (PR-033). **ESCALATE:** deploying the assessed solutions (PR-053). Settled at M5. |
 | —    | Lifecycle phase names                         | **`INIT`, `DISCOVERY`, `ASSESSMENT`, `IMPLEMENTATION`, `RUNTIME`**, as built. §27 of the project notes sketches the last as `DEPLOYMENT`; it is `RUNTIME` because V1 deploys nothing real (§30) and the phase is about running solutions (FR-L8). Ruled after M8. |
+| OQ-1 | Exact chart inventory per dashboard           | **KPIs on top, then treemaps, bar charts and line charts, then a focused subset table and the full record table below. Colour identifies the anomaly pattern or class, the same colour on every chart.** Inventory per dashboard in "What OQ-1 and OQ-2 mean" below. Ruled before M9. |
+| OQ-2 | Drill-down hierarchies for the two smaller solutions | **License Optimization:** products, vendor, product, utilisation class, assignment. **Application Portfolio Rationalization:** portfolio, business unit, disposition, application, usage records. Both end at records with evidence (FR-EV6). Ruled before M9. |
 
 ### What OQ-7's answer costs
 
@@ -290,9 +292,113 @@ These are M6 concerns. Raising the total at rehearsal is one number
 
 | ID   | Question                                            | Needed by |
 | ---- | --------------------------------------------------- | --------- |
-| OQ-1 | Exact chart inventory per dashboard                  | M9        |
-| OQ-2 | Drill-down hierarchies for the two smaller solutions | M9        |
 | OQ-3 | Accent colour and typeface                           | M12       |
+
+OQ-1 and OQ-2 were closed before M9; see §4 and below.
+
+### What OQ-1 and OQ-2 mean
+
+The direction given was: headline numbers up top; treemaps, bar charts
+and line charts; a table of all the raw data below, with smaller tables
+on a subset of columns where they help; genuinely analytical, so a viewer
+can drill from many anomaly clusters into one; and colour coding that
+identifies the clusters across every chart.
+
+*One layout, three dashboards.* Every dashboard is the same four bands,
+declared in its descriptor (D-1): a KPI row; a chart grid whose first
+chart spans the width; a focused table on a subset of columns; and the
+full record table for the current filter context, paginated and sortable,
+at the bottom. The evidence panel opens beside them when a cluster or a
+record is selected (FR-EV7). Every band follows the one filter context
+(FR-EV1), so the record table is always the rows behind the figures above
+it.
+
+*The mark vocabulary is deliberately small:* `kpi`, `line`, `bar`
+(vertical or horizontal, optionally stacked), `treemap` and `table`. M9's
+schema must express exactly these well, rather than many kinds thinly.
+This is the answer to R-6: craft goes into the few marks the dashboards
+actually use.
+
+*Colour identifies, it does not decorate.* A categorical dimension that
+carries meaning, such as anomaly pattern, utilisation class or
+disposition, is bound to fixed colour slots in the descriptor, so a value
+has the same colour on the treemap, in the stacked bars, on the line, in
+the table's colour chip and in the evidence panel. Normal, non-anomalous
+records are always the neutral colour, so anomalies stand out without a
+legend. Once a view is filtered to one pattern, its clusters are coloured
+from a cluster palette in the same way, so the clusters of one pattern can
+be told apart on every chart. The slots resolve to design tokens (D-5),
+never hex; M9 adds the categorical tokens for both themes and M12 tunes
+them.
+
+**Ticket Anomaly Detection (deep, M10).** Five planted anomaly patterns,
+each with its own colour: *reassignment loop*, *resolution stall*,
+*reopen churn*, *priority mismatch* and *volume burst*. Several clusters
+are planted within each pattern, around thirty in all, so there are always
+multiple clusters to drill into.
+
+- KPIs: total tickets, anomalous tickets, anomaly rate, median resolution
+  time, clusters detected.
+- Line: ticket volume and anomalous tickets over time. Click or brush for
+  a time range.
+- Treemap: anomalies by pattern, then assignment group, then cluster, sized
+  by ticket count and coloured by pattern. The main route from many
+  clusters to one.
+- Bar, horizontal and stacked by pattern: anomalies by assignment group.
+- Bar, stacked by pattern: anomalies by priority.
+- Line, one line per pattern: anomaly trend.
+- Bar: resolution time distribution, anomalous against baseline.
+- Focused table: clusters, with pattern chip, group, tickets, observed,
+  baseline, deviation and excess hours. A row opens the cluster and its
+  evidence.
+- Record table: every ticket in the filter context, with number, opened,
+  priority, category, group, reassignments, resolution hours, pattern chip,
+  cluster and score. A row opens the ticket's evidence.
+- Hierarchy (§55): all tickets, month, pattern, assignment group, cluster,
+  ticket, evidence.
+
+**License Optimization (M11).** Colour is the utilisation class: active,
+underused, unused, and leaver (an access finding).
+
+- KPIs: licences entitled, assigned, active, unused or underused, and
+  recoverable cost. Cost is stated for priced products only, with the
+  unpriced share named. This is section 20's insufficiency reaching the
+  dashboard: the 64% unit-price completeness withholds cost where there is
+  no price, never estimating it (PR-074).
+- Treemap: vendor, then product, sized by entitlement and coloured by
+  utilisation class.
+- Bar, horizontal: entitlement against assignment against active use per
+  product. The gap is the finding.
+- Line: active users over time per product, against the entitlement.
+- Bar: recoverable cost by product. Unpriced products are shown as
+  withheld, not as zero.
+- Focused table: optimisation candidates per product.
+- Record table: assignments, with user, product, assigned, last activity,
+  days inactive, class and leaver flag.
+- Hierarchy: all products, vendor, product, utilisation class, assignment,
+  evidence.
+
+**Application Portfolio Rationalization (M11).** Colour is the
+disposition: retain, consolidate, replace, retire, and unresolved.
+Unresolved covers applications with no usage instrumentation, which are
+never reported as unused.
+
+- KPIs: applications, retire candidates, consolidation candidates, annual
+  cost, unresolved.
+- Treemap: business capability, then application, sized by cost and
+  coloured by disposition.
+- Bar, stacked by disposition: applications per business unit.
+- Line: monthly distinct users by disposition.
+- Bar, horizontal: cost per active user for the costliest applications.
+- Focused table: retire and consolidate candidates, with owner, users,
+  cost and dependencies.
+- Record table: the application inventory.
+- Hierarchy (§33): portfolio, business unit, disposition, application,
+  usage records, evidence.
+
+The two smaller dashboards have four charts each, within FR-AN7's
+"roughly 3--4", and both tables, because the record table is part of the
+common layout rather than an extra.
 
 ### What OQ-6's answer means
 

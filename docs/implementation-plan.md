@@ -521,10 +521,10 @@ rather than a constraint.
 
 | ID   | Question | Needed by |
 | ---- | -------- | --------- |
-| OQ-1 | Exact chart inventory per dashboard | **M9** (moved earlier: it defines the D-1 schema) |
-| OQ-2 | Drill-down hierarchies for the two smaller solutions | M9 |
 | OQ-3 | Accent colour and typeface | M12 |
-| OQ-6 | Which actions trigger the required DENY and ESCALATE | M5 |
 
-Closed: OQ-4 (provisionally no virtualisation), OQ-5 (no cache),
-OQ-7 (4--5 minutes). See `decisions.md` §4.
+Closed: OQ-1 (chart inventory: KPIs, treemap, bar, line, subset and
+record tables, colour bound to pattern), OQ-2 (the two smaller
+hierarchies), OQ-4 (provisionally no virtualisation), OQ-5 (no cache),
+OQ-6 (DENY PR-033, ESCALATE PR-053), OQ-7 (4--5 minutes). See
+`decisions.md` §4 and §5.
