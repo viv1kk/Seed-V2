@@ -80,7 +80,7 @@ def assessment(state: SystemState) -> Workflow:
             type="assessment.methodology.evaluated",
             category=Category.ANALYSIS,
             message=(
-                f"{methodology.name}: feasibility {result['feasibility']}. Evidence "
+                f"{methodology.name}: potential {result['feasibility']}. Evidence "
                 f"{located} of {result['coverage']['required']}, data sufficiency "
                 f"{percent(result['dataSufficiency'])}%."
             ),
@@ -135,7 +135,7 @@ def assessment(state: SystemState) -> Workflow:
         ActionRequest(
             action=Action.DEPLOY,
             resource="Analytical services for the assessed methodologies",
-            purpose="Implement and deploy the Agent Components the assessment found feasible.",
+            purpose="Implement and deploy the Agent Components the assessment proposed.",
         ),
     )
     if decision.effect is Effect.DENY:

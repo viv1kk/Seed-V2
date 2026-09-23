@@ -50,7 +50,7 @@ const sufficiency = computed(() => percentOf(props.assessment?.dataSufficiency))
 
     <dl v-if="assessment" class="figures">
       <div class="figure">
-        <dt>Feasibility</dt>
+        <dt>Potential</dt>
         <dd class="grade" :data-grade="grade">
           <span class="meter" aria-hidden="true">
             <span

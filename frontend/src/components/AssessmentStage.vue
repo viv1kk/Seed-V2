@@ -97,7 +97,7 @@ async function decide(solutionId: string, decision: 'approve' | 'reject'): Promi
         </span>
       </div>
       <p class="note">
-        {{ basis }} Feasibility is computed from field completeness; figures are simulated demo
+        {{ basis }} Potential is computed from field completeness; figures are simulated demo
         values.
       </p>
     </header>

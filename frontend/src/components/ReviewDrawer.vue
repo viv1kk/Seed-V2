@@ -18,7 +18,7 @@ const emit = defineEmits<{ close: []; decide: [decision: 'approve' | 'reject'] }
  * The assessment behind a solution, opened beside the cards rather than
  * in place of them (FR-A8, §25).
  *
- * It answers the three questions FR-A9 names --- why this is feasible,
+ * It answers the three questions FR-A9 names --- why the value is within reach,
  * how the methodology works, what limits it --- and then says what would
  * improve it (FR-A6), each improvement with the grade it would produce.
  * Every figure is read from the assessment the backend computed; none is
@@ -66,7 +66,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       <p class="purpose">{{ assessment.purpose }}</p>
       <dl class="headline">
         <div>
-          <dt>Feasibility</dt>
+          <dt>Potential</dt>
           <dd class="grade" :data-grade="assessment.feasibility">{{ assessment.feasibility }}</dd>
         </div>
         <div>
@@ -82,7 +82,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
     <div class="body">
       <section class="section">
-        <h3 class="section-title">Why this is feasible</h3>
+        <h3 class="section-title">Why the value is within reach</h3>
         <ul class="requirements">
           <li
             v-for="requirement in assessment.requirements"
@@ -163,7 +163,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         </button>
       </template>
       <p v-else-if="approval" class="decided">
-        {{ approval.decision === 'APPROVED' ? 'Approved' : 'Rejected' }} on feasibility
+        {{ approval.decision === 'APPROVED' ? 'Approved' : 'Rejected' }} on potential
         {{ approval.feasibility }}, under {{ approval.rule }}. The decision is recorded with the
         evidence it was made on.
       </p>

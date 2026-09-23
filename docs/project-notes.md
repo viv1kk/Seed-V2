@@ -3749,3 +3749,70 @@ so the test suite and the build were not rerun.
 
 **Check by hand.** Nothing further. M13 carries the colour check for
 all four grades in both themes.
+
+### M13 · Feasibility displayed as Potential
+
+**What changed.** Exactly the display list M12 agreed, and nothing M12
+classified as load-bearing.
+
+- Labels. "Feasibility" becomes "Potential" on the card, in the drawer,
+  in the ready list and in the assessment and discovery notes. The
+  drawer's section "Why this is feasible" becomes "Why the value is
+  within reach". The discovery verdict "Appears feasible" becomes
+  "Evidence located".
+- Stream messages. "{name}: potential {grade}", "approved …, on
+  potential {grade}", "Potential moved:" and "No potential grade
+  changed." The regrade format "{name} {from} to {to}" is kept, because
+  `test_assessment.py:201` asserts it.
+- The deployment request's purpose reads "…the Agent Components the
+  assessment proposed."
+- The four `RECOMMENDATIONS` values are rewritten to D-12's meanings. The
+  keys are unchanged.
+- `seeds/adaptation.md`: `## Feasibility` becomes `## Potential`, and
+  the table now shows the computed grades, HIGH, PARTIAL and MEDIUM, with
+  the limiting factors assessment reports. It previously said "Yes, Yes,
+  Partially". The heading count FR-S5 displays is unchanged.
+- One comment, `ReviewDrawer.vue:21`, which names the section title.
+
+**Kept.** The `feasibility`, `appearsFeasible` and `recommendation`
+keys, the `Grade` values, `grade_of`, the `[data-grade]` and
+`data-feasible` selectors, the module name, and every other comment.
+
+**Files.** `backend/app/knowledge/feasibility.py`,
+`knowledge/solutions.py`, `simulation/workflows/assessment.py`;
+`frontend/src/components/SolutionCard.vue`, `ReviewDrawer.vue`,
+`RuntimeStage.vue`, `AssessmentStage.vue`, `EnvironmentStage.vue`;
+`seeds/adaptation.md`.
+
+**Gates.** `pytest` gives 417 passed with no test edited. Typecheck and
+build pass. Live checks:
+
+- Discovery's summary shows "Evidence located" for all three
+  methodologies.
+- The full event log of the run has 115 events and none mentions
+  "feasib". The screen showed none at the discovery summary, at
+  assessment with the drawer open, in the protection panel, or at the
+  Life stage.
+- For the silent-failure check (R-13), Application Portfolio
+  Rationalization was driven to LOW by revising four fields to 40%, then
+  restored to MEDIUM. All four grades were read with their computed
+  colours on the card and in the drawer, in both themes. The two surfaces
+  agree:
+  - dark: HIGH `rgb(63,178,122)`, MEDIUM `rgb(232,235,240)`, PARTIAL
+    `rgb(215,154,58)`, LOW `rgb(111,120,133)`;
+  - light: HIGH `rgb(27,127,75)`, MEDIUM `rgb(18,21,27)`, PARTIAL
+    `rgb(169,106,0)`, LOW `rgb(90,97,114)`.
+- All three approvals were made through the interface. The drawer then
+  reads "Approved on potential HIGH, under PR-053."
+
+**Check by hand.**
+
+1. Read the four recommendation texts in the drawer as content, as the
+   plan asks. Note that the drawer's section title, "Why the value is
+   within reach", also heads a LOW assessment, where the value is not
+   within reach. M21 may want a grade-aware title.
+2. Read the rewritten `## Potential` section of `seeds/adaptation.md`.
+3. The discovery verdict for missing evidence ("Evidence missing",
+   `data-feasible='false'`) is unchanged, but the scripted run never
+   shows it. The selector was not edited.
+

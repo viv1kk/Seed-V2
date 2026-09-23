@@ -238,8 +238,8 @@ seed-v2/
 | M9 Analytics core            | —      | Built | `149a710` |
 | M10 Ticket Anomaly dashboard | —      | Built | `08fc371` |
 | M11 Display vocabulary       | RENAME | Built | `58b03cb` |
-| M12 Feasibility reference audit | RENAME (audit) | Built | |
-| M13 Feasibility displayed as Potential | RENAME | Not started | |
+| M12 Feasibility reference audit | RENAME (audit) | Built | `9436189` |
+| M13 Feasibility displayed as Potential | RENAME | Built | |
 | M14 Seeding and Life panes   | MOVE   | Not started | |
 | M15 Declared stack at Planting | NEW  | Not started | |
 | M16 Routing-problem flag     | NEW    | Not started | |

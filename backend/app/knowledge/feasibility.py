@@ -57,12 +57,13 @@ class Grade(StrEnum):
 
 
 RECOMMENDATIONS: dict[Grade, str] = {
-    Grade.HIGH: "Proceed.",
-    Grade.MEDIUM: "Proceed. The limitations are stated with the evidence and do not "
-    "prevent a conclusion.",
-    Grade.PARTIAL: "Proceed with reduced scope. Conclusions that rest on incomplete "
-    "evidence are reported as insufficient until it improves.",
-    Grade.LOW: "Do not proceed until the missing evidence is supplied.",
+    Grade.HIGH: "Strong value. Proceed: the Agent Component can deliver its full findings.",
+    Grade.MEDIUM: "Value, with stated limits. Proceed: the findings hold, and the limits "
+    "are named beside them.",
+    Grade.PARTIAL: "Needs deeper modelling. Proceed with reduced scope: findings that rest "
+    "on incomplete evidence are withheld until the data improves or the model is extended.",
+    Grade.LOW: "Not yet modellable. Evidence the methodology needs is missing. Do not "
+    "proceed until it is supplied.",
 }
 
 

@@ -139,11 +139,11 @@ def decide(state: SystemState, solution_id: Any, verdict: Any, rule: str) -> dic
 
     grade = evidence.get("feasibility", "unassessed")
     if target is SolutionStatus.APPROVED:
-        message = f"{record['name']} approved for implementation, on feasibility {grade}."
+        message = f"{record['name']} approved for implementation, on potential {grade}."
         kind = "solution.approved"
     else:
         message = (
-            f"{record['name']} rejected, on feasibility {grade}. "
+            f"{record['name']} rejected, on potential {grade}. "
             "The decision is recorded and is final."
         )
         kind = "solution.rejected"
@@ -185,9 +185,9 @@ def revise_evidence(
         f"{percent(completeness)}% complete, was {percent(previous)}%."
     )
     if changes:
-        message += " Feasibility moved: " + "; ".join(changes) + "."
+        message += " Potential moved: " + "; ".join(changes) + "."
     elif revised:
-        message += " No feasibility grade changed."
+        message += " No potential grade changed."
     event = env.record(
         type="assessment.evidence.revised",
         category=Category.VALIDATION,

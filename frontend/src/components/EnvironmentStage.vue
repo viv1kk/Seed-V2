@@ -120,11 +120,11 @@ function standingOf(entry: { status: NodeStatus; origin: string }): {
                 evidence {{ methodology.located }}/{{ methodology.required }}
               </span>
               <span class="methodology-verdict">
-                {{ methodology.appearsFeasible ? 'Appears feasible' : 'Evidence missing' }}
+                {{ methodology.appearsFeasible ? 'Evidence located' : 'Evidence missing' }}
               </span>
             </li>
           </ul>
-          <p class="note">Feasibility is graded in assessment, against field completeness.</p>
+          <p class="note">Potential is graded in assessment, against field completeness.</p>
         </section>
 
         <section class="legend" aria-label="Legend">

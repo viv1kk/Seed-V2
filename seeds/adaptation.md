@@ -215,14 +215,17 @@ are surfaced rather than rediscovered.
 | The Legacy Application Registry has no endpoint | Its data is administrator-supplied and its freshness is the export date |
 | Reassignment history is retained for 13 months | A 12-month window is supported; anything longer is not |
 
-## Feasibility
+## Potential
 
-Adaptation reports what each Core methodology can be run on in this
-environment. Feasibility is a statement about evidence coverage, not a
-prediction of the result.
+Adaptation reports how much of each Core methodology's value is within
+reach in this environment. Potential is a statement about evidence
+coverage, not a prediction of the result. It is graded from the field
+completeness Discovery profiles: HIGH is strong value, MEDIUM is value
+with stated limits, PARTIAL needs deeper modelling, and LOW is not yet
+modellable.
 
-| Methodology | Feasible | Limiting factor |
+| Methodology | Potential | Limiting factor |
 | --- | --- | --- |
-| Ticket Anomaly Detection | Yes | None. All required evidence is present and authoritative. |
-| License Optimization | Yes | Usage signal coverage must be confirmed per product before an unconsumed classification is reported. |
-| Application Portfolio Rationalization | Partially | Usage instrumentation is incomplete and the inventory conflict is unresolved. Retirement dispositions are withheld for uninstrumented applications. |
+| Ticket Anomaly Detection | HIGH | None. Every required concept is sufficient. Tickets lacking a category (1.3%) or subcategory (5.8%) are stated as limitations. |
+| License Optimization | PARTIAL | Unit price is 64% complete (`contract_item.unit_price`). Recoverable cost is withheld for unpriced products, never estimated. |
+| Application Portfolio Rationalization | MEDIUM | Ownership (71%), cost allocation (78%), capability (82%) and business criticality (88%) are limited. The findings hold, with those limits named beside them. |

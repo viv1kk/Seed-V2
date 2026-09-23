@@ -82,7 +82,7 @@ async function run(solutionId: string): Promise<void> {
               Rejected at approval. Not implemented.
             </template>
             <template v-else-if="item.build">
-              <span>Feasibility {{ item.grade }}</span>
+              <span>Potential {{ item.grade }}</span>
               <span>
                 {{ item.build.summary.passed }} of {{ item.build.summary.total }} tests passed
               </span>
