@@ -20,10 +20,11 @@ const events = useEventStore()
  * over to Agent One VW itself.
  *
  * It is watered by tool requests: every capability request the
- * protection engine evaluates is one drop (FR-G3). An allowed request
- * soaks into the soil. A refused one is held above the ground and stays
- * there, a request that fed nothing. Nothing here stands for a model
- * call, because none occurs (FR-G4, NFR-D1).
+ * protection engine evaluates waters it or is refused (FR-G3). An allowed
+ * request soaks in: the soil and roots tint blue for a moment, and the
+ * tree glows as it grows a little. A refused one is held above the ground
+ * and stays there, a request that fed nothing. Nothing here stands for a
+ * model call, because none occurs (FR-G4, NFR-D1).
  *
  * What is drawn is a pure function of the event log, `growthOf(events)`,
  * so a tree rebuilt from a replay is the tree that grew live, and two
@@ -212,9 +213,17 @@ const targets = computed<Targets>(() => {
   // the height and girth come with the build, when it becomes a tree.
   const height =
     (g.sprouted ? 14 : 0) + systems * 9 + methods * 16 + branches * 38 + Math.min(parts, 18) * 1.2
-  t.height = Math.min(height, 250)
+  // Every request that waters the tree adds a little to it, so each
+  // watering is seen to feed growth (FR-G3). Counted from the log.
+  const allowed = Math.min(g.waterings.filter((w) => w.effect !== 'DENY').length, 30)
+  t.height = g.sprouted ? Math.min(height, 250) + allowed * 0.4 : 0
   t.width = g.sprouted
-    ? 2 + systems * 0.3 + methods * 0.6 + branches * 3.4 + Math.min(parts, 18) * 0.2
+    ? 2 +
+      systems * 0.3 +
+      methods * 0.6 +
+      branches * 3.4 +
+      Math.min(parts, 18) * 0.2 +
+      allowed * 0.03
     : 0
 
   g.systems.forEach((_, i) => (t[`leaf:system:${i}`] = 1))
@@ -223,7 +232,7 @@ const targets = computed<Targets>(() => {
   t.stemLeaves = 1 - 0.85 * (Math.min(branches, 3) / 3)
   // The crown fills out with every Agent Component and every part built,
   // and carries two leaves for each part.
-  t.crown = branches > 0 ? 16 + branches * 9 + Math.min(parts, 18) * 1.2 : 0
+  t.crown = branches > 0 ? 16 + branches * 9 + Math.min(parts, 18) * 1.2 + allowed * 0.12 : 0
   for (let k = 0; k < Math.min(parts, 18) * 2; k++) t[`crownLeaf:${k}`] = 1
   g.branches.forEach((branch, i) => {
     t[`branch:${i}`] = 56 + branch.leaves.length * 18
@@ -341,15 +350,16 @@ const trunk = computed(() => {
   const top = GROUND - h
   const lean = Math.min(h / 60, 3)
   const tw = Math.max(w * 0.2, 0.7)
-  // The base flares a little where it meets the roots.
+  // The base runs below the surface to the seed, where the roots start,
+  // and flares a little there, so stem and roots are one plant.
   const flare = w * 0.18
   return (
-    `M${CX - w / 2 - flare} ${GROUND + 2} ` +
+    `M${CX - w / 2 - flare} ${SEED_Y} ` +
     `Q${CX - w / 2} ${GROUND} ${CX - w / 2} ${GROUND - h * 0.12} ` +
     `C${CX - w / 2} ${GROUND - h * 0.5} ${CX - tw - lean} ${top + h * 0.25} ${CX - tw} ${top} ` +
     `L${CX + tw} ${top} ` +
     `C${CX + tw + lean} ${top + h * 0.25} ${CX + w / 2} ${GROUND - h * 0.5} ${CX + w / 2} ${GROUND - h * 0.12} ` +
-    `Q${CX + w / 2} ${GROUND} ${CX + w / 2 + flare} ${GROUND + 2} Z`
+    `Q${CX + w / 2} ${GROUND} ${CX + w / 2 + flare} ${SEED_Y} Z`
   )
 })
 
@@ -590,17 +600,6 @@ const fibres = computed(() => {
   }).filter((fibre) => fibre.grown > STARTED)
 })
 
-/** Allowed and escalated requests soak in: one dot each, in the soil. */
-const absorbed = computed(() =>
-  growth.value.waterings
-    .filter((w) => w.effect !== 'DENY')
-    .map((w, i) => ({
-      ...w,
-      x: CX - 124 + (i % 28) * 9,
-      y: GROUND + 12 + Math.min(Math.floor(i / 28), 2) * 8,
-    })),
-)
-
 /** Refused requests: held above the ground, beside the tree. */
 const refused = computed(() =>
   growth.value.waterings
@@ -608,32 +607,43 @@ const refused = computed(() =>
     .map((w, i) => ({ ...w, x: CX - 150 + i * 18 })),
 )
 
-const watered = computed(() => absorbed.value.length)
+/** Allowed and escalated requests: the ones that watered the tree. */
+const watered = computed(() => growth.value.waterings.length - refused.value.length)
 
-/** The drop falling now, if the latest request arrived on its own. */
-const CALM_GAP_MS = 250
-const falling = ref<{ sequence: number; effect: string; x: number } | null>(null)
-let lastArrival = 0
+/**
+ * Watering, seen as it happens (FR-G3).
+ *
+ * Each request the protection engine lets through sends a pulse through
+ * the plant: the soil and roots take a blue tint for a moment, and the
+ * tree glows while it grows a little. The pulse lasts just over a second,
+ * long enough to register without holding the eye. A burst of requests
+ * reads as one longer watering rather than a flicker: a new pulse starts
+ * only once the last one has run. No pulse plays for what a reload
+ * replays, or under reduced motion.
+ *
+ * The pulse alternates between two names so that a pulse straight after
+ * another restarts its animation.
+ */
+const PULSE_MS = 1100
+const pulse = ref<'a' | 'b' | null>(null)
+let pulsedAt = -Infinity
+let pulseTimer = 0
 let primed = false
 watch(
-  () => growth.value.waterings.length,
+  watered,
   (count, before) => {
     const now = performance.now()
-    const calm =
-      primed && before !== undefined && count === before + 1 && now - lastArrival >= CALM_GAP_MS
-    lastArrival = now
+    const fresh = primed && before !== undefined && count > before
     primed = true
-    const latest = growth.value.waterings[count - 1]
-    if (!calm || !latest || reduced) return
-    const deny = latest.effect === 'DENY'
-    falling.value = {
-      sequence: latest.sequence,
-      effect: latest.effect,
-      x: deny ? refused.value[refused.value.length - 1].x : CX + 24,
-    }
+    if (!fresh || reduced || now - pulsedAt < PULSE_MS) return
+    pulsedAt = now
+    pulse.value = pulse.value === 'a' ? 'b' : 'a'
+    window.clearTimeout(pulseTimer)
+    pulseTimer = window.setTimeout(() => (pulse.value = null), PULSE_MS)
   },
   { immediate: true },
 )
+onBeforeUnmount(() => window.clearTimeout(pulseTimer))
 
 /** What the tree is now, in the process's own terms. */
 const STAGES = {
@@ -665,7 +675,7 @@ const caption = computed(() => {
 </script>
 
 <template>
-  <figure class="tree" :aria-label="`Growth: ${caption.stage}`">
+  <figure class="tree" :aria-label="`Growth: ${caption.stage}`" :data-pulse="pulse">
     <figcaption class="caption">
       <span class="stage">{{ caption.stage }}</span>
       <span class="detail mono">
@@ -763,6 +773,14 @@ const caption = computed(() => {
         :fill="`url(#${ids.soil})`"
         :mask="`url(#${ids.mask})`"
       />
+      <rect
+        class="soak"
+        :x="SOIL_X"
+        :y="GROUND"
+        :width="SOIL_W"
+        :height="SOIL_DEPTH"
+        :mask="`url(#${ids.mask})`"
+      />
       <rect :x="SOIL_X" :y="GROUND - 1" :width="SOIL_W" height="2" :fill="`url(#${ids.line})`" />
       <g
         v-for="fibre in fibres"
@@ -842,19 +860,6 @@ const caption = computed(() => {
       </g>
       <ellipse v-if="v('seed') > 0" class="seed" :cx="CX" :cy="SEED_Y" rx="7" ry="4.5" />
 
-      <!-- Water that soaked in, one dot per allowed request (FR-G3). -->
-      <circle
-        v-for="drop in absorbed"
-        :key="drop.sequence"
-        class="water"
-        :data-effect="drop.effect"
-        :cx="drop.x"
-        :cy="drop.y"
-        r="2.2"
-      >
-        <title>{{ drop.label }} ({{ drop.rule }})</title>
-      </circle>
-
       <!-- Refused requests: held above the ground; they fed nothing. -->
       <g v-for="drop in refused" :key="drop.sequence" class="refused">
         <title>Refused under {{ drop.rule }}: {{ drop.label }}. It watered nothing.</title>
@@ -862,83 +867,25 @@ const caption = computed(() => {
         <line :x1="drop.x - 8" :x2="drop.x + 8" :y1="GROUND - 8" :y2="GROUND - 8" />
       </g>
 
-      <!-- The crown behind, then the trunk and its stem leaves, then the
+      <g class="plant">
+        <!-- The crown behind, then the trunk and its stem leaves, then the
            branches of the build with their twigs and foliage, and the
            crown's leaves over all of it. -->
-      <circle
-        v-for="(disc, d) in crown.discs"
-        :key="`crown${d}`"
-        class="canopy deep"
-        :cx="disc.cx"
-        :cy="disc.cy"
-        :r="disc.r"
-      />
-      <g v-if="trunk">
-        <path class="trunk" :d="trunk" :style="{ fill: wood.trunk }" />
-        <path :d="trunk" :fill="`url(#${ids.bark})`" :opacity="wood.furrows" />
-        <path :d="trunk" :fill="`url(#${ids.shade})`" />
-      </g>
-      <use
-        v-for="leaf in stemLeaves"
-        :key="leaf.key"
-        class="leaf"
-        :href="`#${ids.leaf}`"
-        :transform="leaf.transform"
-      >
-        <title>{{ leaf.label }}</title>
-      </use>
-      <g v-for="branch in branches" :key="branch.key" class="branch">
-        <title>{{ branch.label }}</title>
-        <path
-          v-if="branch.path"
-          class="twig"
-          :d="branch.path"
-          :stroke-width="branch.width"
-          :style="{ stroke: wood.branch }"
-        />
-        <g v-for="twig in branch.twigs" :key="twig.key">
-          <path
-            v-if="twig.d"
-            class="twig"
-            :d="twig.d"
-            stroke-width="1.4"
-            :style="{ stroke: wood.twig }"
-          />
-          <circle
-            v-for="(disc, d) in twig.tuft"
-            :key="`f${d}`"
-            class="canopy"
-            :cx="disc.cx"
-            :cy="disc.cy"
-            :r="disc.r"
-          />
-          <use
-            v-for="leaf in twig.leaves"
-            :key="leaf.key"
-            class="leaf"
-            :data-tone="leaf.tone"
-            :href="`#${ids.leaf}`"
-            :transform="leaf.transform"
-          />
-        </g>
         <circle
-          v-for="(disc, d) in branch.cluster"
-          :key="`c${d}`"
-          class="canopy"
+          v-for="(disc, d) in crown.discs"
+          :key="`crown${d}`"
+          class="canopy deep"
           :cx="disc.cx"
           :cy="disc.cy"
           :r="disc.r"
         />
+        <g v-if="trunk">
+          <path class="trunk" :d="trunk" :style="{ fill: wood.trunk }" />
+          <path :d="trunk" :fill="`url(#${ids.bark})`" :opacity="wood.furrows" />
+          <path :d="trunk" :fill="`url(#${ids.shade})`" />
+        </g>
         <use
-          v-for="leaf in branch.clusterLeaves"
-          :key="leaf.key"
-          class="leaf"
-          :data-tone="leaf.tone"
-          :href="`#${ids.leaf}`"
-          :transform="leaf.transform"
-        />
-        <use
-          v-for="leaf in branch.leaves"
+          v-for="leaf in stemLeaves"
           :key="leaf.key"
           class="leaf"
           :href="`#${ids.leaf}`"
@@ -946,34 +893,84 @@ const caption = computed(() => {
         >
           <title>{{ leaf.label }}</title>
         </use>
-      </g>
-      <use
-        v-for="leaf in crown.leaves"
-        :key="leaf.key"
-        class="leaf"
-        :data-tone="leaf.tone"
-        :href="`#${ids.leaf}`"
-        :transform="leaf.transform"
-      />
-      <g v-for="branch in branches" :key="`fruit-${branch.key}`">
-        <circle
-          v-if="branch.fruit.r > 0.2"
-          class="fruit"
-          :cx="branch.fruit.x"
-          :cy="branch.fruit.y"
-          :r="branch.fruit.r"
+        <g v-for="branch in branches" :key="branch.key" class="branch">
+          <title>{{ branch.label }}</title>
+          <path
+            v-if="branch.path"
+            class="twig"
+            :d="branch.path"
+            :stroke-width="branch.width"
+            :style="{ stroke: wood.branch }"
+          />
+          <g v-for="twig in branch.twigs" :key="twig.key">
+            <path
+              v-if="twig.d"
+              class="twig"
+              :d="twig.d"
+              stroke-width="1.4"
+              :style="{ stroke: wood.twig }"
+            />
+            <circle
+              v-for="(disc, d) in twig.tuft"
+              :key="`f${d}`"
+              class="canopy"
+              :cx="disc.cx"
+              :cy="disc.cy"
+              :r="disc.r"
+            />
+            <use
+              v-for="leaf in twig.leaves"
+              :key="leaf.key"
+              class="leaf"
+              :data-tone="leaf.tone"
+              :href="`#${ids.leaf}`"
+              :transform="leaf.transform"
+            />
+          </g>
+          <circle
+            v-for="(disc, d) in branch.cluster"
+            :key="`c${d}`"
+            class="canopy"
+            :cx="disc.cx"
+            :cy="disc.cy"
+            :r="disc.r"
+          />
+          <use
+            v-for="leaf in branch.clusterLeaves"
+            :key="leaf.key"
+            class="leaf"
+            :data-tone="leaf.tone"
+            :href="`#${ids.leaf}`"
+            :transform="leaf.transform"
+          />
+          <use
+            v-for="leaf in branch.leaves"
+            :key="leaf.key"
+            class="leaf"
+            :href="`#${ids.leaf}`"
+            :transform="leaf.transform"
+          >
+            <title>{{ leaf.label }}</title>
+          </use>
+        </g>
+        <use
+          v-for="leaf in crown.leaves"
+          :key="leaf.key"
+          class="leaf"
+          :data-tone="leaf.tone"
+          :href="`#${ids.leaf}`"
+          :transform="leaf.transform"
         />
+        <g v-for="branch in branches" :key="`fruit-${branch.key}`">
+          <circle
+            v-if="branch.fruit.r > 0.2"
+            class="fruit"
+            :cx="branch.fruit.x"
+            :cy="branch.fruit.y"
+            :r="branch.fruit.r"
+          />
+        </g>
       </g>
-
-      <!-- The drop falling now: live, calm arrivals only. -->
-      <path
-        v-if="falling"
-        :key="`fall-${falling.sequence}`"
-        class="falling"
-        :data-effect="falling.effect"
-        :d="`M${falling.x} 50 q6 9 0 14 q-6 -5 0 -14 z`"
-        @animationend="falling = null"
-      />
 
       <text class="tally" :x="CX" y="490" text-anchor="middle">
         Watered by {{ watered }} tool
@@ -1103,17 +1100,6 @@ svg {
   fill: var(--growth-bud);
 }
 
-.water {
-  fill: var(--growth-water);
-}
-
-/* Escalated: it reached a person rather than soaking straight in. */
-.water[data-effect='ESCALATE'] {
-  fill: none;
-  stroke: var(--growth-water);
-  stroke-width: 1.1;
-}
-
 .refused path {
   fill: none;
   stroke: var(--text-muted);
@@ -1123,17 +1109,6 @@ svg {
   stroke: var(--text-muted);
 }
 
-.falling {
-  fill: var(--growth-water);
-  animation: fall 700ms var(--ease-out) both;
-}
-
-.falling[data-effect='DENY'] {
-  fill: none;
-  stroke: var(--text-muted);
-  animation-name: held;
-}
-
 .tally {
   fill: var(--text-muted);
   font-family: var(--font-mono);
@@ -1141,37 +1116,79 @@ svg {
   letter-spacing: 0.04em;
 }
 
-@keyframes fall {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  20% {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-    transform: translateY(318px);
+/* Watering: a blue tint through the soil and roots, and a glow on the
+   plant as it grows a little. Two identical animations, so a pulse
+   straight after another restarts. */
+.soak {
+  fill: var(--growth-water);
+  opacity: 0;
+}
+
+.tree[data-pulse='a'] .soak {
+  animation: soak-a 1100ms var(--ease-out);
+}
+
+.tree[data-pulse='b'] .soak {
+  animation: soak-b 1100ms var(--ease-out);
+}
+
+.tree[data-pulse='a'] .root {
+  animation: root-a 1100ms var(--ease-out);
+}
+
+.tree[data-pulse='b'] .root {
+  animation: root-b 1100ms var(--ease-out);
+}
+
+.tree[data-pulse='a'] .plant {
+  animation: glow-a 1100ms var(--ease-out);
+}
+
+.tree[data-pulse='b'] .plant {
+  animation: glow-b 1100ms var(--ease-out);
+}
+
+@keyframes soak-a {
+  25% {
+    opacity: 0.28;
   }
 }
 
-/* A refused drop stops at the barrier and fades there. */
-@keyframes held {
-  from {
-    opacity: 0;
+@keyframes soak-b {
+  25% {
+    opacity: 0.28;
   }
+}
+
+@keyframes root-a {
+  25% {
+    stroke: var(--growth-root-wet);
+  }
+}
+
+@keyframes root-b {
+  25% {
+    stroke: var(--growth-root-wet);
+  }
+}
+
+@keyframes glow-a {
   30% {
-    opacity: 1;
+    filter: drop-shadow(0 0 6px var(--growth-glow));
   }
-  to {
-    opacity: 0;
-    transform: translateY(290px);
+}
+
+@keyframes glow-b {
+  30% {
+    filter: drop-shadow(0 0 6px var(--growth-glow));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .falling {
-    display: none;
+  .tree[data-pulse] .soak,
+  .tree[data-pulse] .root,
+  .tree[data-pulse] .plant {
+    animation: none;
   }
 }
 </style>

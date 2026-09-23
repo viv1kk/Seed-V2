@@ -931,7 +931,9 @@ log describes, so growth reads as smooth at any speed. Reduced motion,
 and a reload, go straight to that state.
 
 *Watering is unchanged* (FR-G3, FR-G4): each evaluated capability
-request is a drop, and a refused one is held above the ground.
+request is a drop, and a refused one is held above the ground. *Changed
+by D-19:* an allowed request no longer leaves a drop in the soil. It
+sends a pulse through the plant instead.
 
 *Its look* (after review, 2026-09-24). The roots are earth brown, apart
 from the green above ground. The soil is a warm tint at the surface that
@@ -980,7 +982,19 @@ pure function of the log:
 - **Roots.** Each layer's root carries eight laterals, each with four
   fine hairs and with nodules along it. Six finer fibres grow between
   the main roots once they begin to bush out. Roots stay below the
-  surface.
+  surface. The stem runs down to the seed, where the roots begin, so the
+  plant is one piece.
+- **Watering** (after review, 2026-09-24). An allowed request no longer
+  leaves a drop in the soil. It sends a pulse through the plant: the
+  soil and roots take a blue tint, and the tree glows while it grows a
+  little. The pulse lasts 1.1 seconds, long enough to register without
+  holding the eye. A burst of requests reads as one longer watering: a
+  new pulse starts only once the last has run. The growth is counted
+  from the log, so it stays deterministic. The pulse plays live only,
+  never for a replay and never under reduced motion. A refused request
+  is still held above the ground (FR-G4).
+- **The Growth control** drops the tree over the whole Life pane below
+  the header. What lies beneath stays mounted.
 
 
 ### 7.2 Requirement amendments

@@ -65,9 +65,11 @@
   --growth-leaf-deep: #4f7a5c;
   --growth-leaf-light: #93bd8a;
   --growth-root: #8a6443;
+  --growth-root-wet: #5f7fae;
   --growth-nodule: #b58d63;
   --growth-bud: #8a6fb8;
   --growth-water: #4f86cf;
+  --growth-glow: rgb(111 190 150 / 75%);
   --growth-soil: #d8c6ad;
   --growth-surface: #a88b68;
   --growth-guide: #d5d9e0;
@@ -163,9 +165,11 @@
   --growth-leaf-deep: #3f6a4d;
   --growth-leaf-light: #82b27a;
   --growth-root: #b08a64;
+  --growth-root-wet: #86a8dc;
   --growth-nodule: #d2ab7e;
   --growth-bud: #a58fd6;
   --growth-water: #6d9be0;
+  --growth-glow: rgb(140 220 170 / 70%);
   --growth-soil: #3a2e22;
   --growth-surface: #6e5842;
   --growth-guide: #2a313b;

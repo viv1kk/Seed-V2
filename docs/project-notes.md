@@ -4522,3 +4522,48 @@ project's `.venv` interpreter.
    green to bark as the build proceeds.
 2. At the hand-over, open and close **Growth ▾** in the Life header.
 3. Judge the leaf cover and the root density in both themes.
+
+### Follow-up · watering pulse, stem and roots joined, Growth fills the pane
+
+**Requested, 2026-09-24:**
+
+- the Growth control covers the whole panel;
+- the stem and roots are joined;
+- watering is shown as a blue tint through the ground and roots while
+  the tree glows and grows a little, not as drops on the ground.
+
+These are recorded under D-19 and FR-G3.
+
+**What changed.**
+
+- **Growth** (`views/LifeView.vue`) now overlays the Life pane's body,
+  everything below the header, and is revealed top first. What lies
+  beneath stays mounted.
+- **The join** (`components/GrowthTree.vue`): the trunk runs below the
+  surface to the seed, where the roots start, and flares there.
+- **Watering:**
+  - The drops in the soil and the falling drop are gone.
+  - Each allowed request sets a 1.1-second pulse on the figure: a
+    water-blue tint over the soil and a wet-blue stroke on the roots
+    (`--growth-root-wet`), with a drop-shadow glow on the plant
+    (`--growth-glow`).
+  - In a burst, a new pulse starts only once the last one has run.
+  - Each allowed request adds a little height, girth and crown, capped
+    at 30 requests and counted from the log, so the tree grows as it
+    glows.
+  - Refused requests are still held above the ground.
+
+**Gates.** pytest gives 430 passed. The one failure is the known 200 ms
+timing test, flaky under load and ruled not a problem. Typecheck and
+build pass. Live, on an isolated copy of the app:
+
+- A pulse was caught mid-run, with the soil tint at opacity 0.23 and the
+  roots at `rgb(141, 163, 199)`. It had cleared a second later.
+- No drops are in the soil.
+- Growth covers the pane body exactly.
+- The trunk and the roots both start at y 381.
+- Replay and Reset gave identical trees (5 of 5).
+- The M14 walkthrough passes 31 of 31.
+
+**Check by hand.** Watch a run at 1x: each allowed request should read
+as a soft blue soak and a glow.

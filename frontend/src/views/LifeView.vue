@@ -84,14 +84,17 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
       </button>
     </header>
 
-    <!-- The grown tree, dropped open from the header after the hand-over. -->
-    <Transition name="drop">
-      <div v-if="complete && treeOpen" id="life-growth" class="growth">
-        <GrowthTree />
-      </div>
-    </Transition>
-
     <div class="body">
+      <!-- The grown tree, dropped open from the header after the hand-over.
+           It covers the whole pane, over Agent One VW rather than in place
+           of it: what lies beneath stays mounted, so a dashboard keeps its
+           filter context while the tree is open (NFR-A7). -->
+      <Transition name="drop">
+        <div v-if="complete && treeOpen" id="life-growth" class="growth">
+          <GrowthTree />
+        </div>
+      </Transition>
+
       <div v-show="!shown" class="holder">
         <!-- The seed growing while seeding runs, then the hand-over to what
              it grew. One gives way to the other (D-18). -->
@@ -120,7 +123,7 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
 <style scoped>
 .life {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
   height: 100%;
   min-height: 0;
@@ -147,6 +150,7 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
 }
 
 .body {
+  position: relative;
   min-width: 0;
   min-height: 0;
 }
@@ -208,22 +212,24 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
 }
 
 .growth {
-  height: clamp(18rem, 48vh, 30rem);
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   overflow: hidden;
   background: var(--surface-base);
-  border-bottom: 1px solid var(--border-subtle);
 }
 
+/* It drops down from the header, revealed top first. */
 .drop-enter-active,
 .drop-leave-active {
   transition:
-    height var(--duration-slow) var(--ease-out),
+    clip-path var(--duration-slow) var(--ease-out),
     opacity var(--duration-slow) var(--ease-out);
 }
 
 .drop-enter-from,
 .drop-leave-to {
-  height: 0;
+  clip-path: inset(0 0 100% 0);
   opacity: 0;
 }
 

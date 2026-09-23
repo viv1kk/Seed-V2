@@ -315,7 +315,7 @@ Added by the Seeding and Life rework (D-15).
 | ------ | ----------- |
 | FR-G1  | ~~In the Seeding pane, a growth tree replaces the lifecycle strip as the progress indicator.~~ While seeding runs, a growth tree stands in the Life pane and grows vertically with the process: seed at Planting, sapling at Discovery, small plant at Assessment, tree with branches and leaves at Implementation. It names its current stage and phase. The lifecycle strip remains the Seeding pane's phase indicator (A-10, D-18). |
 | FR-G2  | The tree grows one segment per completed lifecycle step, driven by events (FR-E1). |
-| FR-G3  | Each capability request the protection engine evaluates triggers one watering step. A denied request waters nothing. |
+| FR-G3  | Each capability request the protection engine evaluates triggers one watering step. A denied request waters nothing. An allowed one is seen live as a brief pulse, a blue tint through the soil and roots while the tree glows and grows a little (D-19). |
 | FR-G4  | No part of the tree claims a gen-AI or model call, because none occurs (NFR-D1). Watering is attributed to tool requests. |
 | FR-G5  | The tree's state is a function of the event log. Replaying the log reproduces it exactly (FR-E7), and two runs from Reset end with the same tree (NFR-D4). |
 | FR-G6  | The tree is hand-built SVG (NFR-L3). |
