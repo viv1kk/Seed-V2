@@ -36,6 +36,15 @@ const planted = computed(() => system.lifecycle !== 'UNINITIALIZED')
  */
 const workspace = computed(() => planted.value || dashboard.rehearsal !== null)
 
+/**
+ * The lifecycle state as the bar shows it. The raw state name, except the
+ * closing of the seeding phase, which the screen calls Cleanup (D-11's
+ * convention: the code keeps its name).
+ */
+const lifecycleLabel = computed(() =>
+  system.lifecycle === 'CLOSING_SEEDING' ? 'CLEANUP' : system.lifecycle,
+)
+
 onMounted(() => events.connect())
 onBeforeUnmount(() => events.disconnect())
 
@@ -64,7 +73,7 @@ watch(planted, (now) => {
 
         <LayoutControl :disabled="!planted" />
 
-        <span class="lifecycle mono">{{ system.lifecycle }}</span>
+        <span class="lifecycle mono">{{ lifecycleLabel }}</span>
       </header>
 
       <div class="panes" :data-layout="layout.layout">

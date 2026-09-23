@@ -984,6 +984,14 @@ pure function of the log:
   the main roots once they begin to bush out. Roots stay below the
   surface. The stem runs down to the seed, where the roots begin, so the
   plant is one piece.
+- **Roots that grow** (after review, 2026-09-24). The roots grow with the
+  plant, as real roots do. Planting puts out only a radicle, a short
+  first root per layer. Each system reached, methodology assessed and
+  part built pushes them further, and a lateral appears only once its
+  root has grown past it. The roots reach further than the drawing lets
+  the eye follow. They fade into the soil around the seed, wider than
+  deep, and are slightly blurred, so they read as growing on out of view
+  rather than ending.
 - **Watering** (after review, 2026-09-24). An allowed request no longer
   leaves a drop in the soil. It sends a pulse through the plant: the
   soil and roots take a blue tint, and the tree glows while it grows a
@@ -1038,8 +1046,14 @@ husk at the foot of the stem. The husk shrinks with each clean-up step
 and is gone once the seed is consumed. The caption reads "Shedding the
 seed" during closing and "Standing on its own" after it.
 
-*In the Seeding pane.* The Implementation stage ends with a "Closing the
-seeding phase" checklist: five entries, the four steps and the seed
+*Its name on screen* (after review, 2026-09-24). The screen calls
+closing **Cleanup**: the checklist is "Cleanup, after implementation",
+and the bar reads `CLEANUP` while it runs. The code keeps
+`CLOSING_SEEDING`, as D-11 keeps other internal names. The confirmation
+keeps FR-C1's label, "Run — clean up and close seeding".
+
+*In the Seeding pane.* The Implementation stage ends with the Cleanup
+checklist: five entries, the four steps and the seed
 consumed. Each shows its decision and rule once it is done. The Activity
 stream marks where the clean-up begins with a CLEANUP divider.
 

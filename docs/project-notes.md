@@ -4671,3 +4671,58 @@ of the app (11 of 11):
    and seed.
 2. Restart your own app server first: the one on port 8000 predates
    these backend changes.
+
+### Follow-up · roots that grow and fade, and Cleanup by name
+
+**Requested, 2026-09-24, after M18:**
+
+- roots slightly blurred, so they appear to grow on out of view and be
+  cut off by it;
+- roots that grow with the plant rather than appearing whole at
+  planting;
+- a new name for "Closing the seeding phase";
+- a report that cleanup was not working.
+
+**Cleanup not working.** The app server on port 8000 had been started
+before M18. It served none of PR-090 to PR-096, so the run went straight
+from Implementation to Ready. The server was restarted. The cleanup also
+sat below the build lanes, out of view, so it could pass unseen. It is
+now scrolled into view when the confirmation is asked for and when
+cleanup begins.
+
+**What changed.**
+
+- **Roots** (`components/GrowthTree.vue`):
+  - A `rootReach` target replaces `rootSpread`. It starts as a radicle
+    at planting, 8% of each main root, and grows with the systems,
+    methodologies and parts to 1 late in the build.
+  - A lateral grows only once its root has passed the point it leaves
+    from, with its hairs and nodules just behind. The fibres follow the
+    main roots.
+  - The roots are about 35% longer. They are drawn in one bed, clipped
+    at the surface, masked by a radial fade centred on the seed (wider
+    than deep), and given a 0.55 Gaussian blur.
+- **The name.**
+  - The checklist reads "Cleanup, after implementation".
+  - The bar shows `CLEANUP` for `CLOSING_SEEDING`, in `App.vue`.
+  - The tree's caption reads "Cleanup".
+  - The prompt and the opening event speak of cleanup.
+  - Internal names are unchanged.
+- **Scroll** (`components/ClosingSteps.vue`): the checklist is scrolled
+  into view at the confirmation and at the start of cleanup.
+
+**Gates.** `pytest` gives 473 passed, with the 200 ms timing test
+deselected. Typecheck and build pass. Live, on an isolated copy of the
+app:
+
+- At planting only a radicle shows: dashoffset 0.92, no laterals.
+- The roots lengthen through the sapling (0.84, 3 laterals) and the
+  small plant (0.77, 11 laterals).
+- They are fully out by the build's end, with 45 laterals, 6 fibres and
+  33 nodules.
+- The bed is masked and blurred.
+- The checklist is titled Cleanup and scrolled into view, and the bar
+  reads `CLEANUP`.
+- Cleanup hands over to Life.
+- The M18 check passes 12 of 12, replay and Reset 5 of 5, and the M14
+  walkthrough 31 of 31.

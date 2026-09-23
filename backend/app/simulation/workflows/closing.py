@@ -94,8 +94,8 @@ def closing(state: SystemState) -> Workflow:
             kind=RequestKind.CONFIRMATION,
             request_id=CLOSE_REQUEST,
             prompt=(
-                "Seeding is complete. Close it: clean up after the build, retire the tools that "
-                "built Agent One VW, and hand over to Life."
+                "Implementation is complete. Now clean up after it: discard the tools that built "
+                "Agent One VW, consume the seed, and hand over to Life."
             ),
             access=(
                 "Consolidate the working notes, release scratch space, promote interfaces to "
@@ -120,8 +120,8 @@ def closing(state: SystemState) -> Workflow:
         type="seeding.closing.started",
         category=Category.DECISION,
         message=(
-            "Closing the seeding phase. Four clean-up steps, each decided by the protection "
-            "engine; the seed files are not touched."
+            "Cleanup begins. The tools that built Agent One VW are discarded in four steps, "
+            "each decided by the protection engine; the seed files are not touched."
         ),
         payload={"steps": STEPS},
     )

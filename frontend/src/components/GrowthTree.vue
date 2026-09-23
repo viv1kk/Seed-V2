@@ -47,11 +47,13 @@ const SOIL_W = 440
 /**
  * The main roots, one per layer: out to the left, straight down, out to
  * the right. Each is a curve from the seed, given by its end and its bend.
+ * They reach further than the eye is let follow them: the soil fades them
+ * out before their tips, so they read as growing on out of view.
  */
 const MAIN_ROOTS: { end: [number, number]; bend: [number, number] }[] = [
-  { end: [-92, 50], bend: [-34, 34] },
-  { end: [6, 86], bend: [-12, 46] },
-  { end: [96, 46], bend: [38, 30] },
+  { end: [-124, 68], bend: [-44, 44] },
+  { end: [8, 116], bend: [-16, 60] },
+  { end: [130, 62], bend: [50, 40] },
 ]
 
 /**
@@ -60,12 +62,12 @@ const MAIN_ROOTS: { end: [number, number]; bend: [number, number] }[] = [
  * come in as the roots bush out.
  */
 const FIBRES: { end: [number, number]; bend: [number, number] }[] = [
-  { end: [-58, 72], bend: [-16, 40] },
-  { end: [-128, 24], bend: [-52, 14] },
-  { end: [54, 76], bend: [18, 42] },
-  { end: [130, 20], bend: [56, 12] },
-  { end: [-26, 80], bend: [-6, 44] },
-  { end: [30, 82], bend: [10, 46] },
+  { end: [-76, 94], bend: [-20, 52] },
+  { end: [-166, 32], bend: [-66, 18] },
+  { end: [70, 98], bend: [22, 54] },
+  { end: [170, 28], bend: [72, 16] },
+  { end: [-34, 104], bend: [-8, 56] },
+  { end: [40, 106], bend: [12, 58] },
 ]
 
 const LATERAL_ANGLE = (48 * Math.PI) / 180
@@ -112,6 +114,8 @@ function spaced(count: number, from: number, to: number): number[] {
 }
 
 interface Lateral {
+  /** How far along its root the lateral leaves it, 0 to 1. */
+  at: number
   d: string
   hairs: string[]
   nodules: { x: number; y: number; r: number }[]
@@ -147,7 +151,7 @@ function rootOf(
       const { at: point } = quad(at, middle, lateral.end, s)
       return { x: point.x, y: point.y, r: 1.3 + ((j + n) % 3) * 0.35 }
     })
-    return { d: lateral.d, hairs, nodules }
+    return { at: t, d: lateral.d, hairs, nodules }
   })
   return { d: `M${p0.x} ${p0.y} Q${c.x} ${c.y} ${p1.x} ${p1.y}`, laterals }
 }
@@ -206,10 +210,13 @@ const targets = computed<Targets>(() => {
   // begins, and pulled away when closing retires them.
   t.stake = g.staked ? 1 : 0
   g.roots.forEach((_, i) => (t[`root:${i}`] = 1))
-  // The roots bush out as the plant above them grows: a few laterals at
-  // planting, the whole system once the build is well under way.
-  const progress = systems + methods * 2 + branches * 3 + parts
-  t.rootSpread = g.roots.length > 0 ? 0.25 + 0.75 * Math.min(1, progress / 30) : 0
+  // The roots grow with the plant above them, as real roots do. Planting
+  // puts out only a radicle, a short first root per layer. Each system
+  // reached, methodology assessed and part built pushes them further, and
+  // they reach the edge of sight once the build is well under way. They
+  // keep going past it, faded into the soil.
+  const progress = (g.sprouted ? 3 : 0) + systems + methods * 2 + branches * 3 + parts
+  t.rootReach = g.roots.length > 0 ? 0.08 + 0.92 * Math.min(1, progress / 36) : 0
   // How far the stem has aged from green shoot to bark: a little with each
   // system and methodology, most of it with the build.
   t.age = g.sprouted
@@ -329,6 +336,9 @@ const ids = {
   bark: 'growth-bark',
   shade: 'growth-shade',
   underground: 'growth-underground',
+  rootFade: 'growth-root-fade',
+  rootMask: 'growth-root-mask',
+  rootBlur: 'growth-root-blur',
 }
 
 /**
@@ -594,12 +604,17 @@ const branches = computed(() =>
  */
 const STARTED = 0.01
 
-function reveal(system: { d: string; laterals: Lateral[] }, grown: number, spread: number) {
-  const steps = spread * (system.laterals.length + 1)
+/**
+ * A root drawn as far as it has grown: the root itself to `reach`, and each
+ * lateral once the root has grown past the point it leaves from, its hairs
+ * and nodules just behind it.
+ */
+function reveal(system: { d: string; laterals: Lateral[] }, reach: number) {
+  const along = (from: number) => Math.min(1, Math.max(0, (reach - from) / 0.14))
   return system.laterals
     .map((lateral, j) => {
-      const own = grown * Math.min(1, Math.max(0, steps - j))
-      const hairs = grown * Math.min(1, Math.max(0, steps - j - 1))
+      const own = along(lateral.at)
+      const hairs = along(lateral.at + 0.12)
       return {
         key: j,
         d: lateral.d,
@@ -618,33 +633,34 @@ function reveal(system: { d: string; laterals: Lateral[] }, grown: number, sprea
  * between them.
  */
 const roots = computed(() => {
-  const spread = v('rootSpread')
-  const girth = 1.8 + Math.min(v('width'), 12) * 0.2
+  const reach = v('rootReach')
+  const girth = 1.2 + reach * 0.8 + Math.min(v('width'), 12) * 0.2
   return growth.value.roots.map((root, i) => {
     const system = ROOT_SYSTEM[i % ROOT_SYSTEM.length]
-    const grown = v(`root:${i}`)
+    const grown = v(`root:${i}`) * reach
     return {
       key: root.label,
       label: `${root.label} layer`,
       d: system.d,
       grown,
       girth,
-      laterals: reveal(system, grown, spread),
+      laterals: reveal(system, grown),
     }
   })
 })
 
 const fibres = computed(() => {
   if (growth.value.roots.length === 0) return []
-  const spread = v('rootSpread')
+  const reach = v('rootReach')
   return FIBRE_SYSTEM.map((system, f) => {
-    // Each fibre starts once the roots have begun to bush out.
-    const grown = Math.min(1, Math.max(0, (spread - 0.3 - f * 0.08) / 0.25))
+    // Each fibre starts once the main roots are well out, and grows on
+    // behind them.
+    const grown = Math.min(1, Math.max(0, (reach - 0.3 - f * 0.06) / 0.6))
     return {
       key: `fibre${f}`,
       d: system.d,
       grown,
-      laterals: reveal(system, grown, grown),
+      laterals: reveal(system, grown),
     }
   }).filter((fibre) => fibre.grown > STARTED)
 })
@@ -711,7 +727,7 @@ const caption = computed(() => {
   if (g.consumed || g.closing) {
     return {
       stage: g.consumed ? 'Standing on its own' : 'Shedding the seed',
-      phase: 'Closing seeding',
+      phase: 'Cleanup',
       detail: g.consumed
         ? 'seed consumed, build tools retired'
         : `${g.cleaned} of 4 clean-up steps done`,
@@ -813,6 +829,34 @@ const caption = computed(() => {
         <clipPath :id="ids.underground">
           <rect x="0" :y="GROUND + 0.5" width="520" :height="SOIL_DEPTH + 40" />
         </clipPath>
+        <!-- The roots fade into the soil around the seed, wider than
+             deep, and are softened a little: they go on growing out of
+             sight rather than ending where the drawing does. -->
+        <radialGradient
+          :id="ids.rootFade"
+          gradientUnits="userSpaceOnUse"
+          :cx="CX"
+          :cy="SEED_Y"
+          r="92"
+          :gradientTransform="`translate(${CX} ${SEED_Y}) scale(1.75 1) translate(${-CX} ${-SEED_Y})`"
+        >
+          <stop offset="0" stop-color="#fff" stop-opacity="1" />
+          <stop offset="0.5" stop-color="#fff" stop-opacity="1" />
+          <stop offset="0.8" stop-color="#fff" stop-opacity="0.4" />
+          <stop offset="1" stop-color="#fff" stop-opacity="0" />
+        </radialGradient>
+        <mask :id="ids.rootMask">
+          <rect
+            x="0"
+            :y="GROUND"
+            width="520"
+            :height="SOIL_DEPTH + 40"
+            :fill="`url(#${ids.rootFade})`"
+          />
+        </mask>
+        <filter :id="ids.rootBlur" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="0.55" />
+        </filter>
         <mask :id="ids.mask">
           <rect
             :x="SOIL_X"
@@ -844,80 +888,77 @@ const caption = computed(() => {
       />
       <rect :x="SOIL_X" :y="GROUND - 1" :width="SOIL_W" height="2" :fill="`url(#${ids.line})`" />
       <g
-        v-for="fibre in fibres"
-        :key="fibre.key"
-        class="roots fibre"
+        class="rootbed"
         :clip-path="`url(#${ids.underground})`"
+        :mask="`url(#${ids.rootMask})`"
+        :filter="`url(#${ids.rootBlur})`"
       >
-        <path
-          class="root"
-          :d="fibre.d"
-          stroke-width="1.1"
-          pathLength="1"
-          stroke-dasharray="1"
-          :stroke-dashoffset="1 - fibre.grown"
-        />
-        <template v-for="lateral in fibre.laterals" :key="lateral.key">
+        <g v-for="fibre in fibres" :key="fibre.key" class="roots fibre">
           <path
-            class="root lateral"
-            :d="lateral.d"
+            class="root"
+            :d="fibre.d"
+            stroke-width="1.1"
             pathLength="1"
             stroke-dasharray="1"
-            :stroke-dashoffset="1 - lateral.grown"
+            :stroke-dashoffset="1 - fibre.grown"
           />
-          <path
-            v-for="(hair, h) in lateral.hairs"
-            :key="h"
-            class="root hair"
-            :d="hair"
-            pathLength="1"
-            stroke-dasharray="1"
-            :stroke-dashoffset="1 - lateral.hairGrown"
-          />
-        </template>
-      </g>
-      <g
-        v-for="root in roots"
-        :key="root.key"
-        class="roots"
-        :clip-path="`url(#${ids.underground})`"
-      >
-        <title>{{ root.label }}</title>
-        <path
-          class="root"
-          :d="root.d"
-          :stroke-width="root.girth"
-          pathLength="1"
-          stroke-dasharray="1"
-          :stroke-dashoffset="1 - root.grown"
-        />
-        <template v-for="lateral in root.laterals" :key="lateral.key">
-          <path
-            class="root lateral"
-            :d="lateral.d"
-            pathLength="1"
-            stroke-dasharray="1"
-            :stroke-dashoffset="1 - lateral.grown"
-          />
-          <path
-            v-for="(hair, h) in lateral.hairs"
-            :key="h"
-            class="root hair"
-            :d="hair"
-            pathLength="1"
-            stroke-dasharray="1"
-            :stroke-dashoffset="1 - lateral.hairGrown"
-          />
-          <template v-for="(nodule, n) in lateral.nodules" :key="`n${n}`">
-            <circle
-              v-if="nodule.r > 0.2"
-              class="nodule"
-              :cx="nodule.x"
-              :cy="nodule.y"
-              :r="nodule.r"
+          <template v-for="lateral in fibre.laterals" :key="lateral.key">
+            <path
+              class="root lateral"
+              :d="lateral.d"
+              pathLength="1"
+              stroke-dasharray="1"
+              :stroke-dashoffset="1 - lateral.grown"
+            />
+            <path
+              v-for="(hair, h) in lateral.hairs"
+              :key="h"
+              class="root hair"
+              :d="hair"
+              pathLength="1"
+              stroke-dasharray="1"
+              :stroke-dashoffset="1 - lateral.hairGrown"
             />
           </template>
-        </template>
+        </g>
+        <g v-for="root in roots" :key="root.key" class="roots">
+          <title>{{ root.label }}</title>
+          <path
+            class="root"
+            :d="root.d"
+            :stroke-width="root.girth"
+            pathLength="1"
+            stroke-dasharray="1"
+            :stroke-dashoffset="1 - root.grown"
+          />
+          <template v-for="lateral in root.laterals" :key="lateral.key">
+            <path
+              class="root lateral"
+              :d="lateral.d"
+              pathLength="1"
+              stroke-dasharray="1"
+              :stroke-dashoffset="1 - lateral.grown"
+            />
+            <path
+              v-for="(hair, h) in lateral.hairs"
+              :key="h"
+              class="root hair"
+              :d="hair"
+              pathLength="1"
+              stroke-dasharray="1"
+              :stroke-dashoffset="1 - lateral.hairGrown"
+            />
+            <template v-for="(nodule, n) in lateral.nodules" :key="`n${n}`">
+              <circle
+                v-if="nodule.r > 0.2"
+                class="nodule"
+                :cx="nodule.x"
+                :cy="nodule.y"
+                :r="nodule.r"
+              />
+            </template>
+          </template>
+        </g>
       </g>
       <ellipse v-if="v('seed') > 0" class="seed" :cx="CX" :cy="SEED_Y" rx="7" ry="4.5" />
 
@@ -941,7 +982,7 @@ const caption = computed(() => {
           :r="disc.r"
         />
         <g v-if="stake" class="stake" :opacity="stake.opacity" :transform="stake.transform">
-          <title>The build tools, retired when seeding closes</title>
+          <title>The build tools, discarded at cleanup</title>
           <path class="pole" :d="stake.pole" />
           <path v-for="(tie, i) in stake.ties" :key="i" class="tie" :d="tie" />
         </g>

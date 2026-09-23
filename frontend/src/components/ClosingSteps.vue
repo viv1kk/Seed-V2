@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { useEventStore } from '../stores/events'
 import { useSystemStore } from '../stores/system'
@@ -8,7 +8,10 @@ const events = useEventStore()
 const system = useSystemStore()
 
 /**
- * Closing the seeding phase, as a process (D-16, FR-C3).
+ * Cleanup: closing the seeding phase, as a process (D-16, FR-C3).
+ *
+ * "Cleanup" is the screen's name for it; the code keeps `CLOSING_SEEDING`,
+ * as it keeps other names the screen displays differently (D-11).
  *
  * Once the build is done, the tools that built Agent One VW are cleaned up
  * after: the working notes consolidated, the scratch space purged, the
@@ -66,12 +69,27 @@ const visible = computed(() =>
 )
 
 const waiting = computed(() => system.lifecycle === 'IMPLEMENTATION_COMPLETE')
+
+/**
+ * The checklist sits below the build lanes, out of view once they fill
+ * the stage. When the confirmation is asked for, and again when cleanup
+ * begins, it is brought into view, so the clean-up is seen as it happens.
+ */
+const section = ref<HTMLElement | null>(null)
+watch(
+  () => [waiting.value, started.value],
+  async ([asking, running], before) => {
+    if (before === undefined || !(asking || running)) return
+    await nextTick()
+    section.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  },
+)
 </script>
 
 <template>
-  <section v-if="visible" class="closing" aria-label="Closing the seeding phase">
+  <section v-if="visible" ref="section" class="closing" aria-label="Cleanup">
     <header class="head">
-      <h3 class="title">Closing the seeding phase</h3>
+      <h3 class="title">Cleanup <span class="subtitle">after implementation</span></h3>
       <p class="note">
         <template v-if="waiting">
           Built and validated. Confirm to clean up after the build: the tools that built Agent One
@@ -134,6 +152,14 @@ const waiting = computed(() => system.lifecycle === 'IMPLEMENTATION_COMPLETE')
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.subtitle {
+  margin-left: var(--space-2);
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .note {
