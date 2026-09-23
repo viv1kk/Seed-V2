@@ -237,8 +237,8 @@ seed-v2/
 | M8 Implementation and run    | —      | Built | `dabd605` |
 | M9 Analytics core            | —      | Built | `149a710` |
 | M10 Ticket Anomaly dashboard | —      | Built | `08fc371` |
-| M11 Display vocabulary       | RENAME | Built | |
-| M12 Feasibility reference audit | RENAME (audit) | Not started | |
+| M11 Display vocabulary       | RENAME | Built | `58b03cb` |
+| M12 Feasibility reference audit | RENAME (audit) | Built | |
 | M13 Feasibility displayed as Potential | RENAME | Not started | |
 | M14 Seeding and Life panes   | MOVE   | Not started | |
 | M15 Declared stack at Planting | NEW  | Not started | |
@@ -524,53 +524,136 @@ contract*. Replace the preliminary inventory with the verified one here,
 and have it reviewed before M13 begins. A reference that is both display
 and load-bearing counts as load-bearing.
 
-*Preliminary inventory, taken while planning (2026-09-23):*
+*Verified inventory, taken 2026-09-23 against the code at `58b03cb`
+(after M11). It replaces the preliminary inventory taken while
+planning.*
 
-**Load-bearing: contract.** These are payload keys shared by the
-backend and the frontend. All are kept, per D-11.
+`feasib` occurs on 65 lines: 31 in `backend/app`, 12 in `backend/tests`,
+19 in `frontend/src` and 3 in `seeds/`. The tables below also cover the
+grade references that do not contain the word but carry the same risk:
+the `Grade` values, `grade_of`, `RECOMMENDATIONS`, the improvement
+grades and the grade selectors. Every line is in exactly one table.
+
+**Differences from the preliminary inventory.**
+
+- One more contract consumer: the `Approval` type's `feasibility` field
+  (`stores/system.ts:235`).
+- A new class, **tested**. `test_assessment.py:201` asserts the regrade
+  text "License Optimization PARTIAL to HIGH", which
+  `knowledge/solutions.py:178` builds. The preliminary claim that no
+  test asserts on feasibility display text holds for the word itself. It
+  does not hold for this format.
+- One more display string: the deployment request's purpose,
+  "…the assessment found feasible" (`workflows/assessment.py:138`). The
+  protection panel shows it, and no rule reads it (`protection/rules.py:16-20`).
+- The `recommendation` key, which the preliminary inventory left out, is
+  contract. A test asserts that its value is non-empty.
+- The `Grade` type is at `stores/system.ts:161`, not `:162`.
+- `ReviewDrawer.vue` has grade selectors for HIGH, PARTIAL and LOW only.
+  MEDIUM takes the base `dd` colour, `--text-primary`. That is the same
+  colour `SolutionCard.vue:205` sets explicitly for MEDIUM, so the two
+  surfaces agree. M13's colour check covers all four grades on both.
+
+**Load-bearing: contract.** Payload keys shared by the backend and the
+frontend. All are kept, per D-11.
 
 | Reference | Produced | Consumed |
 | --------- | -------- | -------- |
-| `feasibility` on each assessment | `knowledge/feasibility.py:142` | `stores/system.ts:197`; `SolutionCard.vue:40`, `ReviewDrawer.vue:70`, `RuntimeStage.vue:30`; asserted in `test_assessment.py:66,133,219,388` |
-| `feasibility` on each approval record | `knowledge/solutions.py:133` | `ReviewDrawer.vue:167`; asserted in `test_assessment.py:231` |
-| `appearsFeasible` in the discovery summary | `environment/model.py:453` | `stores/system.ts:136`, `EnvironmentStage.vue:116,123`; counted at `workflows/discovery.py:467`; asserted in `test_discovery.py:332,344` |
-| `from` and `to` grades on improvements | `knowledge/feasibility.py:206-207` | `stores/system.ts:187-188` |
+| `feasibility` on each assessment | `knowledge/feasibility.py:142` | `stores/system.ts:197`; `SolutionCard.vue:40`, `ReviewDrawer.vue:70`, `RuntimeStage.vue:30`; read by `workflows/assessment.py:83,114` and `knowledge/solutions.py:140,177-178`; asserted in `test_assessment.py:66,133,219,388` |
+| `feasibility` on each approval record | `knowledge/solutions.py:133` | `stores/system.ts:235`; `ReviewDrawer.vue:167`; asserted in `test_assessment.py:231` |
+| `appearsFeasible` in the discovery summary | `environment/model.py:453` | `stores/system.ts:136`; `EnvironmentStage.vue:116,123`; counted at `workflows/discovery.py:467`; asserted in `test_discovery.py:332,344` |
+| `from` and `to` grades on improvements | `knowledge/feasibility.py:206-207` | `stores/system.ts:187-188`; `ReviewDrawer.vue:128-129` |
+| `recommendation` on each assessment | `knowledge/feasibility.py:149` | `ReviewDrawer.vue:137`; asserted non-empty in `test_assessment.py:138` |
 
-**Load-bearing: logic.**
+**Load-bearing: logic.** Kept.
 
 | Reference | Where | Note |
 | --------- | ----- | ---- |
-| `Grade` values HIGH, MEDIUM, PARTIAL, LOW | `feasibility.py:52-56`; `stores/system.ts:162` | Keep. D-12 changes their meaning on screen, not their values |
+| Module name `knowledge/feasibility.py` | imported at `knowledge/builds.py:37`, `knowledge/solutions.py:29`, `workflows/assessment.py:34`, `test_assessment.py:25` | Keep. Renaming the module is churn with no visible effect |
+| `Grade` values HIGH, MEDIUM, PARTIAL, LOW | `feasibility.py:52-56`; `stores/system.ts:161` | Keep. D-12 changes their meaning on screen, not their values |
 | `grade_of` thresholds | `feasibility.py:84-93` | Keep. The computation is unchanged (FR-A11) |
-| `RECOMMENDATIONS` | `feasibility.py:59-66` | **Keys** are logic and stay. **Values** are display copy and M13 rewrites them |
-| Regrade diff | `knowledge/solutions.py:177-178` | Keep the comparison. Its messages at `:188` and `:190` are display |
+| `RECOMMENDATIONS` | `feasibility.py:59-66` | **Keys** are logic and stay. **Values** are display copy, and M13 rewrites them |
+| Regrade comparison | `knowledge/solutions.py:177` | Keep |
+| Grade list in the assessment summary | `workflows/assessment.py:114` | Keep. It reads the key, and the message it builds shows the grades without the word |
+| Local count `feasible` | `workflows/discovery.py:467` | Keep. A local variable. The message it feeds (`:474`) is already neutral |
 | Grade segment fill | `SolutionCard.vue:28,60` | Keep |
+
+**Load-bearing: tested.** An edit here fails the unedited suite.
+
+| Reference | Where | Test |
+| --------- | ----- | ---- |
+| Regrade text `"{name} {from} to {to}"` | `knowledge/solutions.py:178` | `test_assessment.py:201`. Keep the format. Only the prefix at `:188` is display |
+| A recommendation exists for every grade | `feasibility.py:59-66` values | `test_assessment.py:138`. The rewritten values must stay non-empty |
 
 **Load-bearing: silent failure.** Breaking these produces no type error
 and fails no test (R-13).
 
 | Reference | Where |
 | --------- | ----- |
-| CSS selectors on grade values, `[data-grade='…']` | `SolutionCard.vue:201-213`, `ReviewDrawer.vue:259-267` |
+| CSS selectors on grade values, `[data-grade='…']` | `SolutionCard.vue:201-215` (all four); `ReviewDrawer.vue:259-269` (HIGH, PARTIAL, LOW) |
 | `data-feasible` attribute and its selector | `EnvironmentStage.vue:116,332` |
 
-**Display only.** M13 changes these.
+**Display only. M13 changes these.** The wording below was reviewed and
+agreed on 2026-09-23. Only the recommendation texts are rewritten in
+substance, and M13 still reviews them as content.
 
-| Reference | Where |
-| --------- | ----- |
-| Labels and titles | `SolutionCard.vue:53`; `ReviewDrawer.vue:69,85,166`; `RuntimeStage.vue:85`; `AssessmentStage.vue:100`; `EnvironmentStage.vue:123,127` |
-| Backend event messages | `workflows/assessment.py:83,114,138`; `knowledge/solutions.py:142,146,188,190` (`workflows/discovery.py:474` is already neutral) |
-| Recommendation texts | values of `RECOMMENDATIONS`, `feasibility.py:60-65` |
-| Seed content | `seeds/adaptation.md:218-224`. The heading is counted by FR-S5's summary |
+| Where | Now | Proposed |
+| ----- | --- | -------- |
+| `SolutionCard.vue:53` | Feasibility | Potential |
+| `ReviewDrawer.vue:69` | Feasibility | Potential |
+| `ReviewDrawer.vue:85` | Why this is feasible | Why the value is within reach |
+| `ReviewDrawer.vue:166` | …on feasibility {grade}… | …on potential {grade}… |
+| `RuntimeStage.vue:85` | Feasibility {grade} | Potential {grade} |
+| `AssessmentStage.vue:100` | Feasibility is computed from field completeness… | Potential is computed from field completeness… |
+| `EnvironmentStage.vue:123` | Appears feasible | Evidence located |
+| `EnvironmentStage.vue:127` | Feasibility is graded in assessment, against field completeness. | Potential is graded in assessment, against field completeness. |
+| `workflows/assessment.py:83` | {name}: feasibility {grade}. | {name}: potential {grade}. |
+| `workflows/assessment.py:138` | …the Agent Components the assessment found feasible. | …the Agent Components the assessment proposed. |
+| `knowledge/solutions.py:142` | …approved for implementation, on feasibility {grade}. | …on potential {grade}. |
+| `knowledge/solutions.py:146` | …rejected, on feasibility {grade}. | …on potential {grade}. |
+| `knowledge/solutions.py:188` | Feasibility moved: | Potential moved: |
+| `knowledge/solutions.py:190` | No feasibility grade changed. | No potential grade changed. |
+| `feasibility.py:60` HIGH | Proceed. | Strong value. Proceed: the Agent Component can deliver its full findings. |
+| `feasibility.py:61-62` MEDIUM | Proceed. The limitations are stated with the evidence and do not prevent a conclusion. | Value, with stated limits. Proceed: the findings hold, and the limits are named beside them. |
+| `feasibility.py:63-64` PARTIAL | Proceed with reduced scope. Conclusions that rest on incomplete evidence are reported as insufficient until it improves. | Needs deeper modelling. Proceed with reduced scope: findings that rest on incomplete evidence are withheld until the data improves or the model is extended. |
+| `feasibility.py:65` LOW | Do not proceed until the missing evidence is supplied. | Not yet modellable. Evidence the methodology needs is missing. Do not proceed until it is supplied. |
+| `seeds/adaptation.md:218` | `## Feasibility` | `## Potential`. The heading count FR-S5 displays is unchanged |
+| `seeds/adaptation.md:220-222` | Adaptation reports what each Core methodology can be run on… Feasibility is a statement about evidence coverage… | Adaptation reports how much of each Core methodology's value is within reach in this environment. Potential is a statement about evidence coverage… |
+| `seeds/adaptation.md:224` | Column "Feasible" | Column "Potential". See finding 1 |
 
 **Comments and docstrings.** These have no function. Update them only
-where they explain display behaviour. Examples: `feasibility.py:1-27`,
-`knowledge/solutions.py:12`, `SolutionCard.vue:21`,
-`ReviewDrawer.vue:21-23`, `OperatorPanel.vue:46`.
+where they explain display behaviour. M13 updates one of them:
+`ReviewDrawer.vue:21`, which names the section title ("why this is
+feasible"). It keeps the rest, which describe the computation, and the
+computation is still feasibility in the code vocabulary (R-12):
+`api/environment.py:5`, `domain/solutions.py:3`,
+`environment/model.py:94,314,413`, `feasibility.py:1,17,23,180`,
+`methodologies.py:12`, `seed_loader.py:9`, `knowledge/solutions.py:12`,
+`workflows/assessment.py:4`, `OperatorPanel.vue:46`.
 
-No test asserts on feasibility **display** text. All test references are
-to keys, grades and the module, so M13 can be verified by the unedited
-suite.
+**Tests.** The other test lines are names and docstrings:
+`test_assessment.py:4,88,123` and `test_discovery.py:335`. They are
+kept, because no test is edited before M18.
+
+**Findings, agreed 2026-09-23.** These are not classifications, but
+the audit surfaced them. Both proposals were accepted.
+
+1. **The seed's table disagrees with the computed grades.** In
+   `adaptation.md:224-228`, License Optimization is "Yes" and
+   Application Portfolio Rationalization is "Partially". The computation
+   grades them PARTIAL (unit price 64% complete) and MEDIUM. The limiting
+   factors named in the table are also not the ones the computation
+   finds. FR-S6 means the table drives nothing, but it is the document a
+   sceptical viewer opens (FR-S1). Proposal for M13: the Potential
+   column shows the computed grades, HIGH, PARTIAL and MEDIUM, and the
+   limiting factors match what assessment reports.
+2. **The deployment purpose** is not in the preliminary inventory. The
+   wording proposed above drops the claim rather than rephrasing it,
+   because "found potential in" reads badly.
+
+No test asserts on the word "feasibility" in any display text. The one
+display-adjacent assertion is the regrade format above, and the proposed
+changes keep it. M13 can therefore be verified by the unedited suite.
 
 *Discharges:* nothing directly. It gates M13 (R-13).
 *Exit:* every occurrence is classified, and the list of what M13 will

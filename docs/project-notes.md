@@ -3709,3 +3709,43 @@ as the count of client systems (FR-N4).
 passes from `IMPLEMENTATION_COMPLETE` to `READY_TO_RUN` in the same
 beat. Until M18 adds closing, FR-W3's Both default at
 `IMPLEMENTATION_COMPLETE` would only flash before Life only takes over.
+
+### M12 · Feasibility references, classified
+
+**What changed.** No code. The preliminary inventory in M12's block of
+`implementation-plan.md` was re-verified against the code after M11 and
+replaced. `feasib` occurs on 65 lines across `backend/app`,
+`backend/tests`, `frontend/src` and `seeds/`. Each line is classified
+once, as contract, logic, tested, silent failure, display or comment.
+The grade references that do not contain the word are classified too.
+
+The audit found five differences from the preliminary inventory:
+
+- A new **tested** class. `test_assessment.py:201` asserts the regrade
+  format "License Optimization PARTIAL to HIGH", so that format is kept.
+- Two more contract items: `Approval.feasibility` in the store, and the
+  `recommendation` key, whose non-empty value a test asserts.
+- One more display string: the deployment request's purpose.
+- `ReviewDrawer.vue` has no MEDIUM selector. MEDIUM inherits
+  `--text-primary`, the same colour the card sets, so nothing needs
+  fixing.
+- The `Grade` type sits one line earlier than the plan said.
+
+**Agreed for M13.** The display wording table, the four recommendation
+drafts, and two findings:
+
+- The seed's `## Feasibility` table becomes a Potential column showing
+  the computed grades, HIGH, PARTIAL and MEDIUM, with limiting factors
+  matching what assessment reports. Today it says "Yes, Yes, Partially",
+  and its limiting factors are not the ones the computation finds.
+- The deployment purpose drops "found feasible" and reads "…the Agent
+  Components the assessment proposed."
+
+**Files.** `docs/implementation-plan.md` (M12's inventory, and the
+Status table, which also gains M11's hash) and this log.
+
+**Gate.** Your review of the audit, given 2026-09-23. No code changed,
+so the test suite and the build were not rerun.
+
+**Check by hand.** Nothing further. M13 carries the colour check for
+all four grades in both themes.
