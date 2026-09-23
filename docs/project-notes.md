@@ -3900,14 +3900,12 @@ because neither is in M14's rework list.
 1. **After a live plant, the Planting stage shows no layer summary.**
    `StagePane` reads the layers from the snapshot, and planting from the
    interface never refreshes the snapshot. The summary appears only
-   after a reload. M15 changes the Planting stage anyway, so it is the
-   natural place to fix this. Waiting for a ruling.
+   after a reload. Fixed before M15; see the follow-up below.
 2. **Back, then closing a running dashboard, leaves it open as a
    rehearsal.** The dashboard store's `popstate` handler sets
    `rehearsal` from the URL, so after the browser's Back the closed run
    falls through to a rehearsal of the same dashboard. A second click on
-   back closes it. The fix belongs in `stores/dashboard.ts` (M10).
-   Waiting for a ruling.
+   back closes it. Fixed before M15; see the follow-up below.
 
 **Check by hand.**
 
@@ -3955,3 +3953,53 @@ themes.
 
 **Check by hand.** In light theme, confirm that HIGH (dark green) and
 MEDIUM (olive) are distinct enough at a glance. M21 tunes the palette.
+
+### Follow-up · the two pre-existing bugs M14 found
+
+Fixed before M15, at your direction.
+
+**1. The Planting stage showed no layer summary after a live plant.**
+`StagePane` read the layers from the snapshot, and planting from the
+interface never refreshed the snapshot. The fix follows the store's own
+rule, that state is folded from events (FR-E5):
+
+- `seed.loaded` already carried each layer's title, heading count and
+  section count. It now also carries `topics`, an additive payload key.
+- The system store gains a `seed` field. It is adopted from a snapshot
+  and folded from `seed.loaded`, and `StagePane` reads it. Every
+  connected client now shows the plant without a reload, not only the
+  one that planted.
+- New test: `test_the_plant_event_carries_the_summary_the_planting_stage_shows`
+  in `test_seed.py` holds the event's per-layer figures equal to the
+  snapshot's. No existing assertion was edited.
+
+**2. Closing a running dashboard after the browser's Back left it open
+as a rehearsal.** The dashboard store's `popstate` handler set
+`rehearsal` from the URL. A running dashboard's URL names it too, so a
+Back during a run marked it as a rehearsal, and closing the run then
+fell through to that rehearsal. The handler now changes `rehearsal` only
+when one is already open or when no dashboard is open. Back and Forward
+still open and close a real rehearsal.
+
+**Files.** `backend/app/api/seed.py`, `backend/tests/test_seed.py`;
+`frontend/src/stores/system.ts`, `stores/dashboard.ts`,
+`components/StagePane.vue`.
+
+**Gates.**
+
+- `pytest` gives 418 passed. The first run after the change reported one
+  failure and printed only the count. Four reruns passed, so it did not
+  reproduce. The suite has timing-sensitive tests in
+  `test_analytics.py`, `test_discovery.py`, `test_engine.py` and
+  `test_presentation.py`. Watch for a recurrence.
+- Typecheck and build pass.
+- Live: the M14 driver now passes 31 of 31, including both checks that
+  failed before.
+- Rehearsal history still works. A rehearsal opened from the operator
+  panel drilled one step; Back popped the step; a second Back closed the
+  rehearsal; and Forward reopened it.
+
+**Check by hand.** Plant from the seed screen and confirm the Planting
+stage lists the three layers at once. Run a component, drill in, press
+the browser's Back, then press "← Agent Components". The list should
+appear at the first click.

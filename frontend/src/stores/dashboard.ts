@@ -480,7 +480,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   window.addEventListener('popstate', () => {
     const location = readUrl()
-    rehearsal.value = location.dashboard
+    // Back and Forward can open or close a rehearsal. They must not turn
+    // a running dashboard into one: its URL names it too, and a run
+    // closed after a Back would otherwise stay open as a rehearsal.
+    if (rehearsal.value !== null || solutionId.value === null) {
+      rehearsal.value = location.dashboard
+    }
     if (location.dashboard && location.dashboard === solutionId.value) {
       pushed = Math.max(0, pushed - 1)
       steps.value = location.steps

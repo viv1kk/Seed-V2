@@ -293,6 +293,21 @@ export interface Runtime {
   runs: Run[]
 }
 
+/** One registered seed layer, as the Planting stage shows it (FR-S5). */
+export interface RegisteredLayer {
+  layer: string
+  filename: string
+  title: string | null
+  sections: number
+  topics: number
+  headingCount: number
+}
+
+/** A layer as `seed.loaded` reports it; `headings` is the count. */
+interface SeedLoadedLayer extends Omit<RegisteredLayer, 'headingCount'> {
+  headings: number
+}
+
 export interface StateSnapshot {
   sequence: number
   lifecycle: LifecycleState
@@ -343,6 +358,9 @@ export const useSystemStore = defineStore('system', () => {
   const implementations = ref<Implementation[]>([])
   const runtime = ref<Runtime>({ active: null, runs: [] })
 
+  /** The registered seed, as the Planting stage summarises it (FR-S5). */
+  const seed = ref<RegisteredLayer[]>([])
+
   /** The sequence number the snapshot is current as of. */
   const baseline = ref(0)
 
@@ -352,6 +370,14 @@ export const useSystemStore = defineStore('system', () => {
     phase.value = next.phase
     blockedOn.value = next.blockedOn
     baseline.value = next.sequence
+    seed.value = ((next.seed?.layers ?? []) as RegisteredLayer[]).map((layer) => ({
+      layer: layer.layer,
+      filename: layer.filename,
+      title: layer.title,
+      sections: layer.sections,
+      topics: layer.topics,
+      headingCount: layer.headingCount,
+    }))
     environment.value =
       'nodes' in next.environment ? structuredClone(next.environment as Environment) : null
     assessments.value = structuredClone(next.assessments)
@@ -444,6 +470,18 @@ export const useSystemStore = defineStore('system', () => {
       runtime.value = event.payload.runtime as Runtime
     }
     switch (event.type) {
+      case 'seed.loaded':
+        // The plant carries its own summary, so a client that planted, or
+        // watched someone else plant, shows it without a reload (FR-E5).
+        seed.value = (event.payload.layers as SeedLoadedLayer[]).map((layer) => ({
+          layer: layer.layer,
+          filename: layer.filename,
+          title: layer.title,
+          sections: layer.sections,
+          topics: layer.topics,
+          headingCount: layer.headings,
+        }))
+        break
       case 'lifecycle.transition':
         lifecycle.value = event.payload.to as LifecycleState
         phase.value = event.phase
@@ -470,6 +508,7 @@ export const useSystemStore = defineStore('system', () => {
 
   return {
     snapshot,
+    seed,
     lifecycle,
     phase,
     blockedOn,

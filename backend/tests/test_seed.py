@@ -275,6 +275,23 @@ def test_the_plant_records_what_was_parsed(client: TestClient) -> None:
     assert all(entry["headings"] > 0 for entry in layers)
 
 
+def test_the_plant_event_carries_the_summary_the_planting_stage_shows(
+    client: TestClient,
+) -> None:
+    """A client that watched the plant needs no reload to show it (FR-E5, FR-S5).
+
+    The Planting stage shows sections, topics and headings per layer. The
+    event carries all three, matching the snapshot's registered seed.
+    """
+    response = client.post("/api/seed/initialize", json={"layers": read_bundled()})
+    registered = response.json()["seed"]["layers"]
+
+    loaded = state.events.all()[0].payload["layers"]
+    assert [
+        (e["layer"], e["sections"], e["topics"], e["headings"]) for e in loaded
+    ] == [(r["layer"], r["sections"], r["topics"], r["headingCount"]) for r in registered]
+
+
 def test_an_incomplete_seed_leaves_the_system_untouched(client: TestClient) -> None:
     response = client.post(
         "/api/seed/initialize", json={"layers": {"core": MINIMAL, "adaptation": MINIMAL}}

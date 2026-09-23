@@ -117,6 +117,7 @@ async def initialize(upload: SeedUpload) -> StateSnapshot:
                     "title": entry.title,
                     "headings": entry.heading_count,
                     "sections": entry.sections,
+                    "topics": entry.topics,
                 }
                 for entry in summary.layers
             ]

@@ -4,7 +4,6 @@ import { computed } from 'vue'
 import AssessmentStage from './AssessmentStage.vue'
 import EnvironmentStage from './EnvironmentStage.vue'
 import ImplementationStage from './ImplementationStage.vue'
-import type { LayerSummary } from '../stores/seed'
 import { useSystemStore } from '../stores/system'
 
 const system = useSystemStore()
@@ -19,9 +18,7 @@ const system = useSystemStore()
  * (§27). The build stays on this stage once the system runs: what is
  * ready to run lives in the Life pane (D-14).
  */
-const layers = computed<LayerSummary[]>(
-  () => (system.snapshot?.seed?.layers as LayerSummary[] | undefined) ?? [],
-)
+const layers = computed(() => system.seed)
 </script>
 
 <template>
