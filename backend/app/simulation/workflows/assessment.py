@@ -58,7 +58,7 @@ def _count(n: int, noun: str) -> str:
 def assessment(state: SystemState) -> Workflow:
     """DISCOVERY_COMPLETE to AWAITING_APPROVAL, and every solution decided."""
     state.transition(LifecycleState.ASSESSING)
-    yield Beat(weight=3, label="assessment begins")
+    yield Beat(weight=2, label="assessment begins")
 
     for methodology in METHODOLOGIES:
         result = assess(methodology, state.environment)
@@ -109,7 +109,7 @@ def assessment(state: SystemState) -> Workflow:
                     "coverage": requirement["coverage"],
                 },
             )
-        yield Beat(weight=9, label=f"assessed {methodology.name}")
+        yield Beat(weight=5, label=f"assessed {methodology.name}")
 
     grades = ", ".join(f"{a['name']} {a['feasibility']}" for a in state.assessments)
     count = len(state.assessments)
@@ -125,7 +125,7 @@ def assessment(state: SystemState) -> Workflow:
         message=f"{_count(len(proposed), 'solution')} proposed, each with its assessment.",
         payload={"solutions": [dict(s) for s in proposed]},
     )
-    yield Beat(weight=6, label="solutions proposed")
+    yield Beat(weight=3, label="solutions proposed")
 
     # The ESCALATE of FR-P6 (OQ-6). Deployment is consequential, so the
     # system asks rather than proceeds, and the escalation is what the
@@ -157,7 +157,7 @@ def assessment(state: SystemState) -> Workflow:
         ),
         payload={"solutions": submitted, "rule": decision.rule},
     )
-    yield Beat(weight=6, label="submitted for approval")
+    yield Beat(weight=3, label="submitted for approval")
 
     total = len(submitted)
     while pending := awaiting(state):
@@ -192,4 +192,4 @@ def assessment(state: SystemState) -> Workflow:
         message=f"Every solution decided: {approved} approved, {rejected} rejected.",
         payload={"approved": approved, "rejected": rejected},
     )
-    yield Beat(weight=4, label="decisions recorded")
+    yield Beat(weight=2, label="decisions recorded")

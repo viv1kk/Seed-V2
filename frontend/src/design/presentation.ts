@@ -92,3 +92,13 @@ export function percentOf(value: number | null | undefined): string {
     ? '—'
     : `${(value * 100).toFixed(1).replace(/\.0$/, '')}%`
 }
+
+/**
+ * A simulated duration, as a test runner would print it: 1840 ms reads
+ * "1.84 s", 21 ms reads "21 ms". From a second up it matches
+ * `builds.seconds` in the backend, so a total reads the same in the stream
+ * and on the pipeline.
+ */
+export function secondsOf(ms: number): string {
+  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(2)} s`
+}

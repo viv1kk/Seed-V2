@@ -56,6 +56,15 @@ const EVENT_TYPES = [
   'solution.approved',
   'solution.rejected',
   'approval.completed',
+  'implementation.started',
+  'implementation.build.started',
+  'implementation.component.built',
+  'implementation.tests.passed',
+  'solution.ready',
+  'implementation.completed',
+  'deployment.ready',
+  'solution.started',
+  'solution.closed',
   'human.requested',
   'human.resolved',
 ] as const
@@ -190,6 +199,26 @@ export const useEventStore = defineStore('events', () => {
     return response.ok
   }
 
+  /**
+   * Run a ready solution, or return from it (FR-L8).
+   *
+   * As with a decision, the screen follows the stream rather than the
+   * button: the dashboard opens when the lifecycle arrives at RUNNING.
+   */
+  async function runSolution(solutionId: string): Promise<boolean> {
+    const response = await fetch(`/api/solutions/${encodeURIComponent(solutionId)}/run`, {
+      method: 'POST',
+    })
+    return response.ok
+  }
+
+  async function closeSolution(solutionId: string): Promise<boolean> {
+    const response = await fetch(`/api/solutions/${encodeURIComponent(solutionId)}/close`, {
+      method: 'POST',
+    })
+    return response.ok
+  }
+
   return {
     events,
     connection,
@@ -202,5 +231,7 @@ export const useEventStore = defineStore('events', () => {
     reset,
     submitHuman,
     decide,
+    runSolution,
+    closeSolution,
   }
 })

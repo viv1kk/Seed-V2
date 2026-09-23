@@ -238,6 +238,61 @@ export interface Approval {
   decidedAt: number
 }
 
+/** FR-I2, in order. */
+export type ComponentStatus = 'PENDING' | 'BUILDING' | 'TESTING' | 'VALIDATED' | 'COMPLETE'
+
+export type Stage = 'ingestion' | 'normalization' | 'analysis' | 'api' | 'dashboard'
+
+export interface BuildComponent {
+  id: string
+  stage: Stage
+  name: string
+  generated: string
+  status: ComponentStatus
+}
+
+export type Suite = 'unit' | 'integration' | 'validation'
+
+/** One named test, with its outcome and simulated timing (FR-I4). */
+export interface TestCase {
+  id: string
+  suite: Suite
+  /** The component it tests; null for a test of the whole pipeline. */
+  component: string | null
+  name: string
+  note: string | null
+  status: 'pending' | 'passed' | 'failed'
+  durationMs: number
+}
+
+/** One solution's build, as System State holds it. */
+export interface Implementation {
+  id: string
+  solutionId: string
+  name: string
+  status: 'PENDING' | 'BUILDING' | 'COMPLETE'
+  approval: { id: string; rule: string; decidedAt: number } | null
+  sources: { id: string; label: string }[]
+  datasets: { id: string; label: string; system: string | null }[]
+  components: BuildComponent[]
+  tests: TestCase[]
+  summary: { total: number; passed: number; failed: number; durationMs: number }
+  simulated: boolean
+}
+
+export interface Run {
+  id: string
+  solutionId: string
+  startedAt: number
+  closedAt: number | null
+}
+
+/** Which solution is running, and every run so far (FR-L8). */
+export interface Runtime {
+  active: string | null
+  runs: Run[]
+}
+
 export interface StateSnapshot {
   sequence: number
   lifecycle: LifecycleState
@@ -250,8 +305,8 @@ export interface StateSnapshot {
   assessments: Assessment[]
   solutions: Solution[]
   approvals: Approval[]
-  implementations: Record<string, unknown>[]
-  runtime: Record<string, unknown>
+  implementations: Implementation[]
+  runtime: Runtime | Record<string, never>
 }
 
 /**
@@ -284,6 +339,10 @@ export const useSystemStore = defineStore('system', () => {
   const solutions = ref<Solution[]>([])
   const approvals = ref<Approval[]>([])
 
+  /** Builds and runs, folded the same way (FR-L5). */
+  const implementations = ref<Implementation[]>([])
+  const runtime = ref<Runtime>({ active: null, runs: [] })
+
   /** The sequence number the snapshot is current as of. */
   const baseline = ref(0)
 
@@ -298,6 +357,9 @@ export const useSystemStore = defineStore('system', () => {
     assessments.value = structuredClone(next.assessments)
     solutions.value = structuredClone(next.solutions)
     approvals.value = structuredClone(next.approvals)
+    implementations.value = structuredClone(next.implementations)
+    runtime.value =
+      'runs' in next.runtime ? structuredClone(next.runtime as Runtime) : { active: null, runs: [] }
   }
 
   function upsert<T extends { id: string }>(records: T[], record: T): void {
@@ -375,6 +437,12 @@ export const useSystemStore = defineStore('system', () => {
     for (const record of (event.payload.approvals ?? []) as Approval[]) {
       upsert(approvals.value, record)
     }
+    for (const record of (event.payload.implementations ?? []) as Implementation[]) {
+      upsert(implementations.value, record)
+    }
+    if (event.payload.runtime) {
+      runtime.value = event.payload.runtime as Runtime
+    }
     switch (event.type) {
       case 'lifecycle.transition':
         lifecycle.value = event.payload.to as LifecycleState
@@ -409,6 +477,8 @@ export const useSystemStore = defineStore('system', () => {
     assessments,
     solutions,
     approvals,
+    implementations,
+    runtime,
     baseline,
     fetchSnapshot,
     apply,

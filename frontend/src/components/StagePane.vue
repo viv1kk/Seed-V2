@@ -3,8 +3,10 @@ import { computed } from 'vue'
 
 import AssessmentStage from './AssessmentStage.vue'
 import EnvironmentStage from './EnvironmentStage.vue'
+import ImplementationStage from './ImplementationStage.vue'
+import RuntimeStage from './RuntimeStage.vue'
 import type { LayerSummary } from '../stores/seed'
-import { useSystemStore, type Phase } from '../stores/system'
+import { useSystemStore } from '../stores/system'
 
 const system = useSystemStore()
 
@@ -13,32 +15,12 @@ const system = useSystemStore()
  *
  * The pane changes; the workspace around it does not (NFR-A3, §13). Init
  * shows what the seed loader actually registered, Discovery the
- * environment graph as System State holds it, and Assessment the solutions
- * and the decisions on them. The other two state what belongs there, and
- * the milestone that builds each one replaces the corresponding branch
- * rather than the layout.
+ * environment graph as System State holds it, Assessment the solutions
+ * and the decisions on them, Implementation the build pipelines (§27),
+ * and Runtime the solutions ready to run (§30).
  */
-type Pending = Exclude<Phase, 'INIT' | 'DISCOVERY' | 'ASSESSMENT'>
-
-const PENDING: Record<Pending, { title: string; note: string }> = {
-  IMPLEMENTATION: {
-    title: 'Build',
-    note: 'The build pipeline is shown here, with each stage progressing through pending, building, testing and complete.',
-  },
-  RUNTIME: {
-    title: 'Runtime',
-    note: 'The delivered solutions run here, as interactive dashboards over the analytical datasets.',
-  },
-}
-
 const layers = computed<LayerSummary[]>(
   () => (system.snapshot?.seed?.layers as LayerSummary[] | undefined) ?? [],
-)
-
-const pending = computed(() =>
-  system.phase === 'INIT' || system.phase === 'DISCOVERY' || system.phase === 'ASSESSMENT'
-    ? null
-    : PENDING[system.phase as Pending],
 )
 </script>
 
@@ -53,7 +35,13 @@ const pending = computed(() =>
     <!-- Assessment: what can be done, and a person deciding (FR-A7). -->
     <AssessmentStage v-else-if="system.phase === 'ASSESSMENT'" />
 
-    <template v-else-if="!pending">
+    <!-- Implementation: the approved solutions, built (FR-I1). -->
+    <ImplementationStage v-else-if="system.phase === 'IMPLEMENTATION'" />
+
+    <!-- Runtime: what was built, ready to run (FR-I6). -->
+    <RuntimeStage v-else-if="system.phase === 'RUNTIME'" />
+
+    <template v-else>
       <header class="head">
         <h2 class="title">Seed</h2>
         <p class="note">
@@ -81,13 +69,6 @@ const pending = computed(() =>
       </ul>
     </template>
 
-    <!-- Every other phase, until the milestone that fills it. -->
-    <template v-else>
-      <header class="head">
-        <h2 class="title">{{ pending.title }}</h2>
-        <p class="note">{{ pending.note }}</p>
-      </header>
-    </template>
   </section>
 </template>
 

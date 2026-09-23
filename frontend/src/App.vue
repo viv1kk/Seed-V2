@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 
 import OperatorPanel from './components/OperatorPanel.vue'
+import DashboardView from './views/DashboardView.vue'
 import SeedView from './views/SeedView.vue'
 import WorkspaceView from './views/WorkspaceView.vue'
 import { useEventStore } from './stores/events'
@@ -22,6 +23,13 @@ const system = useSystemStore()
  */
 const planted = computed(() => system.lifecycle !== 'UNINITIALIZED')
 
+/**
+ * A running solution's dashboard is shown in front of the workspace. The
+ * workspace is hidden, not unmounted (NFR-A3): returning finds it exactly
+ * as it was left, stream scrolled where it was (FR-L8).
+ */
+const running = computed(() => system.lifecycle === 'RUNNING')
+
 onMounted(() => events.connect())
 onBeforeUnmount(() => events.disconnect())
 
@@ -36,8 +44,9 @@ watch(planted, (now) => {
 
 <template>
   <div class="shell">
-    <WorkspaceView v-if="planted" />
+    <WorkspaceView v-if="planted" v-show="!running" />
     <SeedView v-else />
+    <DashboardView v-if="running" />
 
     <!-- Hidden by default, and available on both screens, because the
          sample-seed shortcut is reached from the seed screen (FR-S7). -->

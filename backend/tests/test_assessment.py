@@ -254,9 +254,10 @@ async def test_the_run_waits_until_every_solution_has_a_decision() -> None:
     await settle(runner)
 
     assert runner.status is RunStatus.COMPLETE
+    # Approved solutions go on to be built (M8); the rejection is final.
     assert {s["id"]: s["status"] for s in state.solutions} == {
-        TAD: "APPROVED",
-        LO: "APPROVED",
+        TAD: "READY",
+        LO: "READY",
         APR: "REJECTED",
     }
     assert [(a["solutionId"], a["decision"]) for a in state.approvals] == [
@@ -265,17 +266,20 @@ async def test_the_run_waits_until_every_solution_has_a_decision() -> None:
         (LO, "APPROVED"),
     ]
     assert all(a["rule"] == "PR-053" for a in state.approvals)
-    completed = state.events.all()[-1]
-    assert completed.type == "approval.completed"
+    completed = next(e for e in state.events.all() if e.type == "approval.completed")
     assert completed.payload == {"approved": 2, "rejected": 1}
 
 
 @pytest.mark.asyncio
 async def test_every_solution_is_approvable_whatever_its_grade() -> None:
-    """FR-AP4: a PARTIAL grade is a stated limitation, not a blocker (FR-A5)."""
+    """FR-AP4: approvable, and runnable once approved, whatever the grade.
+
+    A PARTIAL grade is a stated limitation, not a blocker (FR-A5).
+    """
     runner = engine()
     await run_to_end(runner)
-    assert all(s["status"] == "APPROVED" for s in runner.state.solutions)
+    assert all(a["decision"] == "APPROVED" for a in runner.state.approvals)
+    assert all(s["status"] == "READY" for s in runner.state.solutions)
 
 
 @pytest.mark.asyncio
@@ -396,5 +400,5 @@ def test_decisions_and_revisions_over_http(client: TestClient) -> None:
         assert client.post(f"/api/solutions/{solution}/decision", json={"decision": "approve"}).status_code == 200
     wait_for(client, "complete")
     snapshot = client.get("/api/state").json()
-    assert [s["status"] for s in snapshot["solutions"]] == ["APPROVED"] * 3
+    assert [s["status"] for s in snapshot["solutions"]] == ["READY"] * 3
     assert len(snapshot["approvals"]) == 3

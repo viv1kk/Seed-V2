@@ -1,4 +1,4 @@
-"""Solutions: proposed from assessments, decided by a person (FR-AP1-AP3).
+"""Solutions: proposed, decided by a person, built and run (FR-AP1-AP3, FR-L8).
 
 These operations are the real part of assessment in the sense of section
 3.1 of the requirements: the solution lifecycle and its decisions are
@@ -21,6 +21,7 @@ import copy
 from typing import Any
 
 from app.domain.events import Category
+from app.domain.lifecycle import LifecycleState
 from app.domain.solutions import SolutionStatus, assert_solution_transition
 from app.domain.state import SystemState
 from app.environment.acme import ACME
@@ -209,3 +210,105 @@ def shortfalls(result: dict[str, Any]) -> list[dict[str, Any]]:
         for r in result["requirements"]
         if r["standing"] in (Standing.INCOMPLETE, Standing.MISSING)
     ]
+
+
+# -- Implementation and runtime (FR-I6, FR-L8) ---------------------------
+
+
+class NotRunnable(ValueError):
+    """A run or a return the current state does not allow."""
+
+
+def approval_of(state: SystemState, solution_id: str) -> dict[str, Any] | None:
+    """The decision a solution was approved on, if it was."""
+    return next(
+        (
+            a
+            for a in reversed(state.approvals)
+            if a["solutionId"] == solution_id and a["decision"] == SolutionStatus.APPROVED
+        ),
+        None,
+    )
+
+
+def approved(state: SystemState) -> list[dict[str, Any]]:
+    return [s for s in state.solutions if s["status"] == SolutionStatus.APPROVED]
+
+
+def begin_build(record: dict[str, Any]) -> None:
+    """APPROVED to BUILDING. Nothing unapproved can reach here (FR-AP1)."""
+    _move(record, SolutionStatus.BUILDING)
+
+
+def mark_ready(record: dict[str, Any]) -> None:
+    """BUILDING to READY. The solution's dashboard is named from here on."""
+    _move(record, SolutionStatus.READY)
+    record["dashboardId"] = record["id"]
+
+
+def runnable(state: SystemState) -> list[dict[str, Any]]:
+    return [s for s in state.solutions if s["status"] == SolutionStatus.READY]
+
+
+def run(state: SystemState, solution_id: str) -> dict[str, Any]:
+    """Run a ready solution: the system moves to RUNNING and its dashboard opens.
+
+    Every check precedes every change, so a refused run leaves the system
+    exactly as it was (FR-L3). One solution runs at a time; returning to the
+    workspace is what makes the next one runnable (FR-L8).
+    """
+    record = solution(state, solution_id)
+    if record is None:
+        raise KeyError(f"No solution {solution_id!r} has been proposed.")
+    if state.lifecycle is LifecycleState.RUNNING:
+        active = solution(state, state.runtime.get("active") or "") or {"name": "A solution"}
+        raise NotRunnable(
+            f"{active['name']} is running. Return to the workspace before running another."
+        )
+    if state.lifecycle is not LifecycleState.READY_TO_RUN:
+        raise NotRunnable(
+            f"The system is {state.lifecycle}. Solutions run once implementation is complete."
+        )
+    assert_solution_transition(record["name"], SolutionStatus(record["status"]), SolutionStatus.RUNNING)
+
+    state.transition(LifecycleState.RUNNING)
+    _move(record, SolutionStatus.RUNNING)
+    sequence = state.events.last_sequence + 1
+    runs = list(state.runtime.get("runs", []))
+    runs.append(
+        {
+            "id": f"{solution_id}@{sequence}",
+            "solutionId": solution_id,
+            "startedAt": sequence,
+            "closedAt": None,
+        }
+    )
+    state.runtime = {"active": solution_id, "runs": runs}
+    return state.record(
+        type="solution.started",
+        category=Category.HUMAN_INPUT,
+        message=f"{record['name']} is running. Its dashboard is open.",
+        payload={"solutions": [dict(record)], "runtime": copy.deepcopy(state.runtime)},
+    ).payload
+
+
+def close(state: SystemState, solution_id: str) -> dict[str, Any]:
+    """Return from a running solution to the workspace (FR-L8)."""
+    record = solution(state, solution_id)
+    if record is None:
+        raise KeyError(f"No solution {solution_id!r} has been proposed.")
+    if state.lifecycle is not LifecycleState.RUNNING or state.runtime.get("active") != solution_id:
+        raise NotRunnable(f"{record['name']} is not running.")
+
+    _move(record, SolutionStatus.READY)
+    state.transition(LifecycleState.READY_TO_RUN)
+    sequence = state.events.last_sequence + 1
+    runs = [dict(r) for r in state.runtime.get("runs", [])]
+    runs[-1]["closedAt"] = sequence
+    state.runtime = {"active": None, "runs": runs}
+    return state.record(
+        type="solution.closed",
+        category=Category.HUMAN_INPUT,
+        message=f"Returned to the workspace from {record['name']}. It remains ready to run.",
+        payload={"solutions": [dict(record)], "runtime": copy.deepcopy(state.runtime)},
+    ).payload

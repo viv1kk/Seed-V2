@@ -23,6 +23,7 @@ from app.domain.presentation import (
     presentation_of,
 )
 from app.domain.state import BlockedOn, RequestKind, RequestOption, SystemState
+from app.knowledge.solutions import close, run
 from app.simulation.engine import SimulationEngine
 from app.simulation.protocol import RunStatus, Speed
 from app.simulation.workflows.registry import NARRATIVE
@@ -115,6 +116,17 @@ async def test_every_event_the_narrative_emits_classifies_as_intended() -> None:
         "solution.approved": Presentation.DECISION,
         "solution.rejected": Presentation.DECISION,
         "approval.completed": Presentation.ACTIVITY,
+        # The build reports progress; nothing in it is a fault or a question.
+        "implementation.started": Presentation.ACTIVITY,
+        "implementation.build.started": Presentation.ACTIVITY,
+        "implementation.component.built": Presentation.ACTIVITY,
+        "implementation.tests.passed": Presentation.ACTIVITY,
+        "solution.ready": Presentation.ACTIVITY,
+        "implementation.completed": Presentation.ACTIVITY,
+        "deployment.ready": Presentation.ACTIVITY,
+        # Running a solution, and returning from it, are a person acting.
+        "solution.started": Presentation.DECISION,
+        "solution.closed": Presentation.DECISION,
         "human.requested": Presentation.DECISION,
         "human.resolved": Presentation.DECISION,
     }
@@ -128,6 +140,9 @@ async def test_every_event_the_narrative_emits_classifies_as_intended() -> None:
 
     await run_to_end(runner, decisions={"license-optimization": "reject"})
     assert runner.status is RunStatus.COMPLETE
+    # Running and returning happen after the narrative, at a person's hand.
+    run(state, "ticket-anomaly-detection")
+    close(state, "ticket-anomaly-detection")
 
     emitted = {event.type for event in state.events.all()}
     assert emitted == set(expected), emitted.symmetric_difference(expected)

@@ -22,4 +22,9 @@ TOTAL_DURATION_SECONDS = 270.0
 #: derived, because generators are lazy and cannot be measured without
 #: being run. The calibration test asserts that a full run consumes
 #: exactly this, so drift shows up as a test failure.
+#:
+#: Shares since M8: discovery 54, assessment 25, implementation 21. It
+#: describes the scripted narrative, in which every solution is approved
+#: (§83.6); a run that approves fewer is shorter by the builds it skips.
+#: Time a person spends deciding is not narrative time and is not in it.
 NARRATIVE_WEIGHT = 100.0

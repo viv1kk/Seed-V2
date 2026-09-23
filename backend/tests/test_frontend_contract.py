@@ -14,6 +14,7 @@ import pytest
 
 from app.domain.lifecycle import LifecycleState
 from app.domain.state import SystemState
+from app.knowledge.solutions import close, run
 from app.simulation.engine import SimulationEngine
 from app.simulation.protocol import RunStatus, Speed
 from app.simulation.workflows.registry import NARRATIVE
@@ -41,6 +42,9 @@ async def test_the_browser_subscribes_to_every_event_the_backend_emits() -> None
     runner.set_speed(Speed.INSTANT)
     # One rejection, so both kinds of decision are emitted.
     await run_to_end(runner, decisions={"license-optimization": "reject"})
+    # And a solution run and returned from, which the API does after the run.
+    run(state, "ticket-anomaly-detection")
+    close(state, "ticket-anomaly-detection")
 
     emitted = {event.type for event in state.events.all()} | OUTSIDE_THE_NARRATIVE
     missing = emitted - subscribed()
