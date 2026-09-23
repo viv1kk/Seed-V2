@@ -48,6 +48,7 @@
   --chart-series-7: #8a5a2b;
   --chart-series-8: #3d6f8f;
   --chart-warning: #b7791f;
+  --chart-brush: rgb(47 109 246 / 10%);
   --chart-positive: #1b7f4b;
   --chart-negative: #c0392f;
   --chart-anomaly: #d1451f;
@@ -124,6 +125,7 @@
   --chart-series-7: #c49a6c;
   --chart-series-8: #7fb0d0;
   --chart-warning: #e0a84a;
+  --chart-brush: rgb(91 140 255 / 14%);
   --chart-positive: #3fb27a;
   --chart-negative: #e5705f;
   --chart-anomaly: #ff7a4d;

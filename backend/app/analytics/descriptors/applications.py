@@ -137,9 +137,12 @@ APPLICATIONS = Dashboard(
             x="month",
             series="disposition",
             measures=[Series(measure="monthly-users", role="series-1")],
+            normalise=True,
             interaction=Interaction(click="none"),
             layout=Layout(span=6),
-            note="Unresolved applications have no usage instrumentation and draw no line.",
+            note="Each disposition as a share of its own twelve months, so a fading line shows "
+            "whatever its size. Unresolved applications have no usage instrumentation and draw "
+            "no line.",
         ),
         Chart(
             id="cost-per-user",

@@ -374,6 +374,8 @@ def test_one_pattern_selected_recolours_the_treemap_by_cluster(data) -> None:
     leaves = [c for n in view["nodes"] for g in n["children"] for c in g["children"]]
     roles = [leaf["role"] for leaf in leaves]
     assert len(set(roles)) == len(roles) == 8
+    # The pattern around them keeps its own colour.
+    assert view["nodes"][0]["role"] == ds.palettes["pattern"]["Reassignment loop"]
 
 
 def test_every_role_a_descriptor_can_name_is_a_token_in_both_themes() -> None:
@@ -610,3 +612,11 @@ def test_every_methodology_has_a_dashboard_its_solution_can_open() -> None:
     from app.knowledge.methodologies import METHODOLOGIES
 
     assert [m.id for m in METHODOLOGIES] == [s.dashboard.solution_id for s in SOURCES]
+
+
+def test_what_is_unknown_draws_nothing_rather_than_zero(data) -> None:
+    """Uninstrumented applications have no usage: no line, not a line at 0."""
+    view = run(data[APR], FilterContext(), ["usage"])["views"]["usage"]
+    assert "Unresolved" not in [s["key"] for s in view["series"]]
+    for series in view["series"]:
+        assert sum(series["values"]) == pytest.approx(1.0)

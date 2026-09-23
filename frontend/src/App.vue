@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, watch } from 'vue'
 
 import OperatorPanel from './components/OperatorPanel.vue'
-import DashboardView from './views/DashboardView.vue'
 import SeedView from './views/SeedView.vue'
 import WorkspaceView from './views/WorkspaceView.vue'
+import { useDashboardStore } from './stores/dashboard'
 import { useEventStore } from './stores/events'
 import { useSeedStore } from './stores/seed'
 import { useSystemStore } from './stores/system'
 
+// Loaded when first opened: the charting library is the dashboard's alone,
+// and the workspace should not wait for it.
+const DashboardView = defineAsyncComponent(() => import('./views/DashboardView.vue'))
+
+const dashboard = useDashboardStore()
 const events = useEventStore()
 const seed = useSeedStore()
 const system = useSystemStore()
@@ -30,6 +35,17 @@ const planted = computed(() => system.lifecycle !== 'UNINITIALIZED')
  */
 const running = computed(() => system.lifecycle === 'RUNNING')
 
+/**
+ * Which dashboard is showing, if any: the running solution's, or one
+ * opened from a link for rehearsal, which needs no run to reach (D-3).
+ */
+const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() => {
+  if (running.value && system.runtime.active) {
+    return { id: system.runtime.active, mode: 'running' }
+  }
+  return dashboard.rehearsal ? { id: dashboard.rehearsal, mode: 'rehearsal' } : null
+})
+
 onMounted(() => events.connect())
 onBeforeUnmount(() => events.disconnect())
 
@@ -44,9 +60,9 @@ watch(planted, (now) => {
 
 <template>
   <div class="shell">
-    <WorkspaceView v-if="planted" v-show="!running" />
-    <SeedView v-else />
-    <DashboardView v-if="running" />
+    <WorkspaceView v-if="planted" v-show="!shown" />
+    <SeedView v-else v-show="!shown" />
+    <DashboardView v-if="shown" :key="shown.id" :solution-id="shown.id" :mode="shown.mode" />
 
     <!-- Hidden by default, and available on both screens, because the
          sample-seed shortcut is reached from the seed screen (FR-S7). -->

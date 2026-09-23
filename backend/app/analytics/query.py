@@ -191,7 +191,8 @@ def aggregate(
     column = grouped[measure.column]
     return {
         "countIf": column.sum,
-        "sum": column.sum,
+        # A group with nothing but missing values sums to unknown, not nought.
+        "sum": lambda: column.sum(min_count=1),
         "mean": column.mean,
         "median": column.median,
         "distinct": column.nunique,
@@ -276,12 +277,16 @@ class Engine:
             s_column = self._column(chart.series)
             table = aggregate(rows, measure, self.dashboard, [x_column, s_column])
             table = table.unstack(s_column) if len(table) else pd.DataFrame()
-            if measure.agg in ("count", "countIf", "sum"):
+            if measure.agg in ("count", "countIf"):
                 # A combination with no rows is a count of nought, not a gap.
+                # A sum is left unknown: nothing summed is not nought summed.
                 table = table.fillna(0)
             present = set(table.columns.astype(str)) if len(table.columns) else set()
             for key in [v for v in self.dataset.domains[chart.series] if v in present]:
                 values = table[key]
+                if values.isna().all():
+                    # Nothing known about this series: it draws no line.
+                    continue
                 values.index = values.index.astype(str)
                 series.append(
                     {
@@ -324,7 +329,7 @@ class Engine:
         if chart.normalise:
             for s in series:
                 total = s["values"].sum()
-                s["values"] = s["values"] / total if total else s["values"] * 0
+                s["values"] = s["values"] / total if total else s["values"] * np.nan
         if chart.sort == "value":
             weight = {k: 0.0 for k in keys}
             for s in series:
@@ -401,8 +406,10 @@ class Engine:
         base = {"id": chart.id, "mark": "treemap", "ignored": ignored}
 
         colour = chart.colour.by if chart.colour else None
+        refined = None
         if chart.colour and chart.colour.refine and self.selection.single(chart.colour.by):
             colour = chart.colour.refine
+            refined = chart.colour.by
         base["colourBy"] = colour
         if not len(rows):
             return {**base, "nodes": [], "total": 0, "empty": True}
@@ -440,12 +447,17 @@ class Engine:
                     shade = shades.pop() if len(shades) == 1 else None
                 else:
                     shade = None
+                role = self._role(colour, shade) if shade else None
+                # Refined to a finer colour, a node above it keeps the colour
+                # it had, so the pattern stays recognisable around its clusters.
+                if role is None and refined and refined in path[: depth + 1]:
+                    role = self._role(refined, key[path.index(refined)])
                 nodes.append(
                     {
                         "key": "/".join(key),
                         "label": self._label(path[depth], value),
                         "value": plain(size),
-                        "role": self._role(colour, shade) if shade else None,
+                        "role": role,
                         "colourValue": shade,
                         "filter": {d: [v] for d, v in zip(path, key)}
                         if self._clickable(chart)

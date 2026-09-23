@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import { rehearse } from '../stores/dashboard'
 import { useEventStore } from '../stores/events'
 import { useOperatorStore, type Speed } from '../stores/operator'
 import { useSeedStore } from '../stores/seed'
@@ -66,6 +67,21 @@ function reviseEvidence(): void {
     void operator.reviseEvidence(target.dataset, target.field, revisedPercent.value / 100)
   }
 }
+
+/**
+ * Dashboards, opened straight from here for rehearsal (D-3): the analytics
+ * section can be rehearsed without replaying the narrative to reach it.
+ */
+const dashboards = ref<{ solutionId: string; title: string }[]>([])
+
+onMounted(async () => {
+  try {
+    const response = await fetch('/api/analytics')
+    if (response.ok) dashboards.value = await response.json()
+  } catch {
+    dashboards.value = []
+  }
+})
 
 const SPEEDS: { value: Speed; label: string; hint: string }[] = [
   { value: '1x', label: '1x', hint: 'Shift+1' },
@@ -175,6 +191,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         />
         <button type="button" class="action" :disabled="!revising" @click="reviseEvidence()">
           Revise completeness
+        </button>
+      </div>
+    </div>
+
+    <div v-if="dashboards.length" class="group">
+      <span class="label">Rehearse a dashboard</span>
+      <div class="row wrap">
+        <button
+          v-for="d in dashboards"
+          :key="d.solutionId"
+          type="button"
+          class="action"
+          @click="rehearse(d.solutionId)"
+        >
+          {{ d.title }}
         </button>
       </div>
     </div>

@@ -1,59 +1,103 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import ChartCard from '../components/dashboard/ChartCard.vue'
+import DataTable from '../components/dashboard/DataTable.vue'
+import DrillBar from '../components/dashboard/DrillBar.vue'
+import EvidencePanel from '../components/dashboard/EvidencePanel.vue'
+import KpiTile from '../components/dashboard/KpiTile.vue'
+import {
+  useDashboardStore,
+  type ChartSpec,
+  type KpiResult,
+  type KpiSpec,
+  type RecordsResult,
+  type SeriesChartResult,
+  type Step,
+  type SummaryResult,
+  type TableSpec,
+  type TreemapResult,
+} from '../stores/dashboard'
 import { useEventStore } from '../stores/events'
-import { useSystemStore } from '../stores/system'
 
-const system = useSystemStore()
-const events = useEventStore()
+const props = defineProps<{
+  solutionId: string
+  /** Opened by Run, or straight from a link for rehearsal (D-3). */
+  mode: 'running' | 'rehearsal'
+}>()
 
 /**
- * A running solution's dashboard (§31, §53).
+ * The one dashboard renderer (D-1).
  *
- * Shown in front of the workspace, never instead of it: the workspace
- * stays mounted underneath (NFR-A3), so returning to it is instant and
- * finds the stream and the build record exactly as they were. Which
- * solution is open is read from System State's runtime, not held here.
+ * It draws whatever descriptor the backend serves: the bands it declares,
+ * in order, each view by its mark. Every dashboard is a descriptor, not a
+ * component, the deepest one included. Nothing in this file or the
+ * components it uses names a methodology, a dimension or a measure, and a
+ * test holds that.
  *
- * The analytical views are M9 to M11's work, drawn by one generic renderer
- * from descriptors the backend serves (D-1). Until then this frame states
- * what will be shown and over what, and says plainly that it is not shown
- * yet rather than drawing placeholder charts that could be mistaken for
- * findings.
+ * It is shown in front of the workspace, which stays mounted underneath
+ * (NFR-A3), so returning finds the workspace exactly as it was left.
  */
+const dashboard = useDashboardStore()
+const events = useEventStore()
 
-const active = computed(
-  () => system.solutions.find((s) => s.id === system.runtime.active) ?? null,
-)
-const build = computed(
-  () => system.implementations.find((i) => i.id === system.runtime.active) ?? null,
-)
-const assessment = computed(
-  () => system.assessments.find((a) => a.id === active.value?.assessmentId) ?? null,
-)
-
+const evidenceOpen = ref(false)
 const leaving = ref(false)
 
+watch(
+  () => props.solutionId,
+  (id) => {
+    evidenceOpen.value = false
+    void dashboard.open(id)
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => dashboard.close())
+
+const descriptor = computed(() => dashboard.descriptor)
+
+function kpi(id: string): KpiSpec | undefined {
+  return descriptor.value?.kpis.find((k) => k.id === id)
+}
+
+function chart(id: string): ChartSpec | undefined {
+  return descriptor.value?.charts.find((c) => c.id === id)
+}
+
+function table(id: string): TableSpec | undefined {
+  return descriptor.value?.tables.find((t) => t.id === id)
+}
+
+function result<T>(id: string): T | undefined {
+  return dashboard.results[id] as T | undefined
+}
+
+function apply(step: Step): void {
+  dashboard.apply(step)
+  if (step.entityId) evidenceOpen.value = true
+}
+
+function showRecords(): void {
+  const section = descriptor.value?.sections.find((s) =>
+    s.views.some((v) => table(v)?.kind === 'records'),
+  )
+  if (section) document.getElementById(`section-${section.id}`)?.scrollIntoView({ behavior: 'smooth' })
+}
+
 async function back(): Promise<void> {
-  if (!active.value || leaving.value) {
-    return
-  }
+  if (leaving.value) return
   leaving.value = true
   try {
-    await events.closeSolution(active.value.id)
+    if (props.mode === 'running') {
+      await events.closeSolution(props.solutionId)
+    } else {
+      dashboard.close()
+    }
   } finally {
     leaving.value = false
   }
 }
-
-function onKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && !event.shiftKey) {
-    void back()
-  }
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -63,51 +107,73 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         <span aria-hidden="true">←</span> Workspace
       </button>
       <div class="identity">
-        <h1 class="name">{{ active?.name ?? 'Dashboard' }}</h1>
-        <span class="status mono">Running</span>
+        <h1 class="name">{{ descriptor?.title ?? 'Dashboard' }}</h1>
+        <span class="status mono" :data-mode="mode">{{
+          mode === 'running' ? 'Running' : 'Rehearsal'
+        }}</span>
       </div>
-      <span class="lifecycle mono">{{ system.lifecycle }}</span>
+      <p v-if="descriptor" class="subtitle">{{ descriptor.subtitle }}</p>
     </header>
 
-    <main class="body">
-      <section class="frame">
-        <p class="purpose">{{ assessment?.purpose ?? active?.description }}</p>
+    <DrillBar @evidence="evidenceOpen = !evidenceOpen" />
 
-        <dl v-if="build" class="facts">
-          <div>
-            <dt>Sources</dt>
-            <dd>{{ build.sources.map((s) => s.label).join(', ') }}</dd>
-          </div>
-          <div>
-            <dt>Datasets</dt>
-            <dd class="mono">{{ build.datasets.length }}</dd>
-          </div>
-          <div>
-            <dt>Feasibility</dt>
-            <dd class="mono">{{ assessment?.feasibility ?? '—' }}</dd>
-          </div>
-          <div>
-            <dt>Tests</dt>
-            <dd class="mono">{{ build.summary.passed }} of {{ build.summary.total }} passed</dd>
-          </div>
-        </dl>
+    <div class="stage">
+      <main class="body">
+        <p v-if="dashboard.error" class="error">{{ dashboard.error }}</p>
+        <template v-if="descriptor">
+          <section
+            v-for="section in descriptor.sections"
+            :id="`section-${section.id}`"
+            :key="section.id"
+            class="section"
+            :data-kind="section.kind"
+          >
+            <h2 v-if="section.title" class="section-title">{{ section.title }}</h2>
 
-        <div class="pending">
-          <p class="pending-title">Analytical views are not available in this build yet.</p>
-          <p class="pending-note">
-            The dashboard for {{ active?.name }} will be drawn here over its analytical dataset,
-            with drill-down from each figure to the records and evidence behind it.
+            <div v-if="section.kind === 'kpis'" class="kpis">
+              <template v-for="id in section.views" :key="id">
+                <KpiTile v-if="kpi(id)" :kpi="kpi(id)!" :result="result<KpiResult>(id)" />
+              </template>
+            </div>
+
+            <div v-else class="grid">
+              <template v-for="id in section.views" :key="id">
+                <ChartCard
+                  v-if="chart(id)"
+                  :chart="chart(id)!"
+                  :result="result<SeriesChartResult | TreemapResult>(id)"
+                  @apply="apply"
+                />
+                <DataTable
+                  v-else-if="table(id)"
+                  :table="table(id)!"
+                  :result="result<SummaryResult | RecordsResult>(id)"
+                  @apply="apply"
+                />
+              </template>
+            </div>
+          </section>
+          <p v-if="descriptor.simulated" class="simulated">
+            Every figure is aggregated from the records of a simulated demo dataset at the moment
+            it is shown. None is typed in.
           </p>
-        </div>
-      </section>
-    </main>
+        </template>
+      </main>
+
+      <EvidencePanel
+        v-if="evidenceOpen"
+        @close="evidenceOpen = false"
+        @apply="apply"
+        @records="showRecords"
+      />
+    </div>
   </div>
 </template>
 
 <style scoped>
 .dashboard {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   height: 100%;
   background: var(--surface-base);
   animation: enter var(--duration-base) var(--ease-out) both;
@@ -138,6 +204,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);
+  white-space: nowrap;
 }
 
 .back:hover:not(:disabled) {
@@ -147,9 +214,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 .identity {
   display: flex;
-  flex: 1;
   align-items: baseline;
   gap: var(--space-3);
+  white-space: nowrap;
 }
 
 .name {
@@ -169,76 +236,71 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   text-transform: uppercase;
 }
 
-.lifecycle {
+.status[data-mode='rehearsal'] {
+  color: var(--text-muted);
+}
+
+.subtitle {
+  margin: 0;
+  overflow: hidden;
   color: var(--text-muted);
   font-size: var(--text-xs);
-  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage {
+  position: relative;
+  min-height: 0;
 }
 
 .body {
-  min-height: 0;
-  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  height: 100%;
+  padding: var(--space-5) var(--space-6) var(--space-8);
   overflow-y: auto;
 }
 
-.frame {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  max-width: 72rem;
-}
-
-.purpose {
-  margin: 0;
-  max-width: 70ch;
+.section-title {
+  margin: 0 0 var(--space-3);
   color: var(--text-secondary);
-  font-size: var(--text-sm);
-  line-height: 1.6;
-}
-
-.facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-8);
-  margin: 0;
-}
-
-.facts dt {
-  color: var(--text-muted);
   font-size: var(--text-xs);
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.facts dd {
-  margin: var(--space-1) 0 0;
-  color: var(--text-primary);
-  font-size: var(--text-sm);
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-4);
 }
 
-.pending {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-10) var(--space-8);
-  background: var(--surface-sunken);
-  border: 1px dashed var(--border-default);
-  border-radius: var(--radius-md);
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4);
 }
 
-.pending-title {
+.error {
   margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  font-weight: 600;
+  color: var(--status-negative);
+  font-size: var(--text-xs);
 }
 
-.pending-note {
+.simulated {
   margin: 0;
-  max-width: 62ch;
   color: var(--text-muted);
   font-size: var(--text-xs);
-  line-height: 1.6;
+  font-style: italic;
+}
+
+@media (max-width: 64rem) {
+  .grid > * {
+    grid-column: span 12 !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

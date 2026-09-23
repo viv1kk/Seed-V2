@@ -237,6 +237,10 @@ class Column(Schema):
     format: Format = "text"
     #: Draw the value as a colour chip from this dimension's scale.
     chip: str | None = None
+    #: Only once this dimension is fixed to one value. Cluster colours
+    #: identify the clusters of one pattern; across patterns the pattern's
+    #: own colour is the one that means something.
+    chip_when: str | None = None
     align: Literal["left", "right"] = "left"
     #: For a summary column whose unit differs per row: take it from the
     #: row's finding (observed and baseline of different patterns).
@@ -416,6 +420,7 @@ class Dashboard(Schema):
                 need("dimension", d, dims, where)
             for column in t.columns:
                 need("dimension", column.chip, dims, where)
+                need("dimension", column.chip_when, dims, where)
                 if column.chip in dims and not self.dimension(column.chip).colour:
                     problems.append(f"{where}: {column.chip} has no colour scale to chip from")
             if t.kind == "summary" and not t.group_by:

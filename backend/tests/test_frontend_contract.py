@@ -49,3 +49,41 @@ async def test_the_browser_subscribes_to_every_event_the_backend_emits() -> None
     emitted = {event.type for event in state.events.all()} | OUTSIDE_THE_NARRATIVE
     missing = emitted - subscribed()
     assert not missing, f"events.ts does not subscribe to {sorted(missing)}"
+
+
+# -- The dashboard renderer is generic (D-1, FR-EV4) --------------------
+
+FRONTEND = EVENTS_STORE.parents[1]
+
+RENDERER = [
+    FRONTEND / "views" / "DashboardView.vue",
+    FRONTEND / "stores" / "dashboard.ts",
+    FRONTEND / "design" / "format.ts",
+    *sorted((FRONTEND / "charts").iterdir()),
+    *sorted((FRONTEND / "components" / "dashboard").iterdir()),
+]
+
+#: Words that would mean the renderer knows which dashboard it is drawing.
+SPECIFIC = (
+    "ticket-anomaly",
+    "license-optimization",
+    "portfolio-rationalization",
+    "ticket",
+    "licen",
+    "cluster",
+    "pattern",
+    "reassign",
+    "seat",
+    "disposition",
+    "servicenow",
+)
+
+
+def test_the_dashboard_renderer_names_no_methodology() -> None:
+    """M10's exit: the dashboard that works contains no methodology-specific
+    UI code. Ticket Anomaly Detection is a descriptor, not a component."""
+    assert len(RENDERER) >= 8
+    for path in RENDERER:
+        text = path.read_text(encoding="utf-8").lower()
+        found = [word for word in SPECIFIC if word in text]
+        assert not found, f"{path.name} mentions {found}"
