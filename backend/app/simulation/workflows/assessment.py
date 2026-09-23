@@ -122,7 +122,7 @@ def assessment(state: SystemState) -> Workflow:
     state.record(
         type="solution.proposed",
         category=Category.ANALYSIS,
-        message=f"{_count(len(proposed), 'solution')} proposed, each with its assessment.",
+        message=f"{_count(len(proposed), 'Agent Component')} proposed, each with its assessment.",
         payload={"solutions": [dict(s) for s in proposed]},
     )
     yield Beat(weight=3, label="solutions proposed")
@@ -135,7 +135,7 @@ def assessment(state: SystemState) -> Workflow:
         ActionRequest(
             action=Action.DEPLOY,
             resource="Analytical services for the assessed methodologies",
-            purpose="Implement and deploy the solutions the assessment found feasible.",
+            purpose="Implement and deploy the Agent Components the assessment found feasible.",
         ),
     )
     if decision.effect is Effect.DENY:
@@ -152,7 +152,7 @@ def assessment(state: SystemState) -> Workflow:
         type="solution.submitted",
         category=Category.DECISION,
         message=(
-            f"{_count(len(submitted), 'solution')} submitted for approval. Deployment was "
+            f"{_count(len(submitted), 'Agent Component')} submitted for approval. Deployment was "
             f"{EFFECT_VERBS[decision.effect].lower()} under {decision.rule}."
         ),
         payload={"solutions": submitted, "rule": decision.rule},
@@ -166,7 +166,7 @@ def assessment(state: SystemState) -> Workflow:
                 kind=RequestKind.APPROVAL,
                 request_id=APPROVAL_REQUEST,
                 prompt=(
-                    f"{len(pending)} of {total} solutions "
+                    f"{len(pending)} of {total} Agent Components "
                     f"await{'s' if len(pending) == 1 else ''} a decision."
                 ),
                 access="Deploy analytical services into the client environment",
@@ -189,7 +189,7 @@ def assessment(state: SystemState) -> Workflow:
     state.record(
         type="approval.completed",
         category=Category.DECISION,
-        message=f"Every solution decided: {approved} approved, {rejected} rejected.",
+        message=f"Every Agent Component decided: {approved} approved, {rejected} rejected.",
         payload={"approved": approved, "rejected": rejected},
     )
     yield Beat(weight=2, label="decisions recorded")

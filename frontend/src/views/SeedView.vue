@@ -42,7 +42,7 @@ function open(layer: Layer): void {
        answers, so the gesture reads as giving the system a foundation. -->
   <main class="seed">
     <header class="head">
-      <h1 class="title">Systems</h1>
+      <h1 class="title">Seed</h1>
       <p class="subtitle">Plant the methodology.</p>
     </header>
 

@@ -38,7 +38,7 @@ const blocked = computed(() => system.blockedOn !== null)
          and nothing an audience should not see (FR-O2). -->
     <header class="bar">
       <div class="identity">
-        <span class="name">Systems</span>
+        <span class="name">Seed</span>
         <span class="version mono">V1</span>
       </div>
 

@@ -3628,3 +3628,84 @@ Life                        run time: Agent One VW collecting, recalibrating,
 
 Seeding shows Agent One VW being **built**. Life shows it being
 **maintained**. Together they make up the whole of what the name claims.
+
+## 84.5 Phase R build log
+
+One entry per Phase R milestone, in build order. Each records what
+changed, the files touched, and what needs checking by hand. The commit
+hash for each milestone is in the Status table of
+`implementation-plan.md` §3.
+
+### M11 · Display vocabulary
+
+**What changed.** The screen now uses D-11's display vocabulary, apart
+from Feasibility, which M12 and M13 handle.
+
+- The product name is **Seed**: the page title, the seed screen's
+  heading and the workspace identity.
+- The phase labels are **Planting** and **Life**. The INIT stage's
+  heading "Seed" is now "Planting".
+- Display copy says **Agent Component** instead of "solution": the
+  approval note on the human-input surface, the review drawer's approve
+  button, the ready list's summary, and the stream messages from the
+  assessment and implementation workflows. That includes the approval
+  request's prompt ("3 of 3 Agent Components await a decision").
+- The Implementation stage is headed **Building Agent One VW**, and its
+  note calls each lane an Agent Component that is part of Agent One VW
+  (FR-N6, in part).
+
+One gap in the plan was closed. The activity stream's phase dividers
+printed the raw phase value, so `INIT` and `RUNTIME` still reached the
+screen. The labels now live in one table, `PHASE_LABELS` in
+`design/presentation.ts`. The lifecycle strip and the stream dividers
+both read it. M17's growth tree can read the same table.
+
+**Deliberately unchanged.** Nothing in M11's load-bearing table was
+touched: types, payload keys, `/api/solutions`, the `solution.*` event
+types, the `'solution-approval'` request id, the `INIT` and `RUNTIME`
+values, and the component file names. Also left alone:
+
+- The `## Systems` heading in `seeds/adaptation.md`. It lists the
+  client's systems, the same case as FR-N4, so no seed file changed.
+- API error strings that mention a solution. The frontend never shows
+  API error detail.
+- The FastAPI title `Systems V1` (`backend/app/main.py`). It appears only
+  on the `/docs` page.
+- The raw lifecycle state in the header, such as `INITIALIZED`. It is a
+  state value, not the phase label.
+- "Workspace" in the ready-list note and on the dashboard's back button.
+  M14 revisits both.
+- The word "feasible" in the deployment request's purpose. M13 changes
+  it.
+
+**Files.** `frontend/index.html`; `views/SeedView.vue`,
+`views/WorkspaceView.vue`; `components/LifecycleStrip.vue`,
+`ActivityStream.vue`, `StagePane.vue`, `HumanRequest.vue`,
+`ReviewDrawer.vue`, `ImplementationStage.vue`, `RuntimeStage.vue`;
+`design/presentation.ts`; `backend/app/simulation/workflows/assessment.py`
+and `implementation.py`.
+
+**Gates.** `pytest` gives 417 passed with no test edited. Typecheck and
+build pass. Live: the bundled seed was planted and the narrative run to
+the end. All three approvals were made through the interface, one from
+the review drawer and two from the cards, which exercises the
+`'solution-approval'` id across the boundary (R-13). Run then opened the
+Ticket Anomaly dashboard. The text on screen at the Life stage has no
+"Solution", "Runtime", "Init" or product-name "Systems". Two words
+remain, both expected: "feasibility", which M13 changes, and "systems"
+as the count of client systems (FR-N4).
+
+**Check by hand.**
+
+1. Read the renamed copy in context, especially the Implementation
+   stage's new note and the stream messages "Three Agent Components
+   proposed…" and "Every Agent Component decided…".
+2. Approve one component from the drawer and one from its card, and
+   confirm both register.
+3. Look at the lifecycle strip and the stream dividers in the light
+   theme as well as the dark one.
+
+**Carried forward to M14.** The live run confirmed that the lifecycle
+passes from `IMPLEMENTATION_COMPLETE` to `READY_TO_RUN` in the same
+beat. Until M18 adds closing, FR-W3's Both default at
+`IMPLEMENTATION_COMPLETE` would only flash before Life only takes over.

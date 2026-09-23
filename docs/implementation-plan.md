@@ -237,7 +237,7 @@ seed-v2/
 | M8 Implementation and run    | —      | Built | `dabd605` |
 | M9 Analytics core            | —      | Built | `149a710` |
 | M10 Ticket Anomaly dashboard | —      | Built | `08fc371` |
-| M11 Display vocabulary       | RENAME | Not started | |
+| M11 Display vocabulary       | RENAME | Built | |
 | M12 Feasibility reference audit | RENAME (audit) | Not started | |
 | M13 Feasibility displayed as Potential | RENAME | Not started | |
 | M14 Seeding and Life panes   | MOVE   | Not started | |

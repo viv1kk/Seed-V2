@@ -27,20 +27,20 @@ const done = computed(
   <div class="implementation">
     <header class="head">
       <div class="title-row">
-        <h2 class="title">Build</h2>
+        <h2 class="title">Building Agent One VW</h2>
         <span v-if="system.implementations.length" class="tally mono">
           {{ done }} of {{ system.implementations.length }} ready
         </span>
       </div>
       <p class="note">
-        Each approved solution is built as a pipeline over the data discovery connected, tested,
-        and validated against the evidence it was approved on. Select a component to see its
-        tests.
+        Each approved Agent Component is one part of Agent One VW, built as a pipeline over the
+        data discovery connected, tested, and validated against the evidence it was approved on.
+        Select a component to see its tests.
       </p>
     </header>
 
     <p v-if="system.implementations.length === 0" class="note">
-      No solution was approved, so there is nothing to build.
+      No Agent Component was approved, so there is nothing to build.
     </p>
     <BuildLanes v-else :implementations="system.implementations" />
 

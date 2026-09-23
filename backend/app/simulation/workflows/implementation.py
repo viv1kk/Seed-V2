@@ -83,7 +83,7 @@ def implementation(state: SystemState) -> Workflow:
             builds.plan(solution, evidence, state.environment, decision)
         )
 
-    message = f"Implementation begins. {_count(len(building), 'approved solution')} to build"
+    message = f"Implementation begins. {_count(len(building), 'approved Agent Component')} to build"
     message += f": {_names(building)}." if building else "."
     if rejected:
         verb = "was" if len(rejected) == 1 else "were"
@@ -104,7 +104,7 @@ def implementation(state: SystemState) -> Workflow:
         type="implementation.completed",
         category=Category.SUCCESS,
         message=(
-            f"Implementation complete. {_count(len(ready), 'solution')} built, tested and "
+            f"Implementation complete. {_count(len(ready), 'Agent Component')} built, tested and "
             "validated against the evidence each was approved on."
         ),
         payload={"ready": [s["id"] for s in ready]},
@@ -117,9 +117,9 @@ def implementation(state: SystemState) -> Workflow:
         type="deployment.ready",
         category=Category.SUCCESS,
         message=(
-            f"System ready. {_count(len(ready), 'solution')} ready to run."
+            f"System ready. {_count(len(ready), 'Agent Component')} ready to run."
             if ready
-            else "System ready. No solution was approved, so there is nothing to run."
+            else "System ready. No Agent Component was approved, so there is nothing to run."
         ),
         payload={"ready": [s["id"] for s in ready]},
     )

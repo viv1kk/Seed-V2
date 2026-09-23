@@ -63,8 +63,8 @@ async function run(solutionId: string): Promise<void> {
     <header class="head">
       <h2 class="title">System ready</h2>
       <p class="note">
-        {{ ready }} {{ ready === 1 ? 'solution' : 'solutions' }} implemented. Run one to open its
-        dashboard; return to the workspace to run another.
+        {{ ready }} {{ ready === 1 ? 'Agent Component' : 'Agent Components' }} implemented. Run one
+        to open its dashboard; return to the workspace to run another.
       </p>
     </header>
 

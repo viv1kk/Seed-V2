@@ -43,7 +43,7 @@ const layers = computed<LayerSummary[]>(
 
     <template v-else>
       <header class="head">
-        <h2 class="title">Seed</h2>
+        <h2 class="title">Planting</h2>
         <p class="note">
           Three layers registered. Content is fixed at initialization and does not
           change during a run.

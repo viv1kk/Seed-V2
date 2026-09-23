@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 
-import { clockOf, labelOf, presentationOf, startsPhase } from '../design/presentation'
+import {
+  PHASE_LABELS,
+  clockOf,
+  labelOf,
+  presentationOf,
+  startsPhase,
+} from '../design/presentation'
 import { useEventStore } from '../stores/events'
 
 const events = useEventStore()
@@ -50,7 +56,7 @@ watch(
     <ol ref="scroller" class="entries" @scroll.passive="onScroll">
       <template v-for="(event, index) in events.events" :key="event.sequence">
         <li v-if="startsPhase(event, events.events[index - 1])" class="divider">
-          <span class="phase">{{ event.phase }}</span>
+          <span class="phase">{{ PHASE_LABELS[event.phase].toUpperCase() }}</span>
         </li>
 
         <li

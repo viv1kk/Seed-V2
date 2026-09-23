@@ -144,8 +144,8 @@ async function submit(chosen?: string): Promise<void> {
         Values are used for the handshake and discarded. Nothing is stored.
       </span>
       <span v-else-if="answeredElsewhere" class="note">
-        Approve or reject each solution on its card. Every decision is recorded with the evidence
-        it was made on.
+        Approve or reject each Agent Component on its card. Every decision is recorded with the
+        evidence it was made on.
       </span>
       <span v-else class="note">The decision is recorded in the audit log.</span>
     </div>

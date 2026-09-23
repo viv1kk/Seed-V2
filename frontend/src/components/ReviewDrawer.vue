@@ -151,7 +151,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           :disabled="!decidable || busy"
           @click="emit('decide', 'approve')"
         >
-          Approve solution
+          Approve Agent Component
         </button>
         <button
           type="button"

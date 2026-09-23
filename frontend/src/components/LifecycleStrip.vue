@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { PHASE_LABELS as LABELS } from '../design/presentation'
 import { PHASE_ORDER, type Phase } from '../stores/system'
 
 const props = defineProps<{
@@ -8,14 +9,6 @@ const props = defineProps<{
   /** True while the system waits on a person, which is not progress. */
   blocked?: boolean
 }>()
-
-const LABELS: Record<Phase, string> = {
-  INIT: 'Init',
-  DISCOVERY: 'Discovery',
-  ASSESSMENT: 'Assessment',
-  IMPLEMENTATION: 'Implementation',
-  RUNTIME: 'Runtime',
-}
 
 const current = computed(() => PHASE_ORDER.indexOf(props.phase))
 

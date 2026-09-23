@@ -1,4 +1,5 @@
 import type { Category, Severity, SystemEvent } from '../stores/events'
+import type { Phase } from '../stores/system'
 
 /**
  * How an event is presented.
@@ -63,6 +64,20 @@ const CATEGORY_LABELS: Record<Category, string> = {
 
 export function labelOf(category: Category): string {
   return CATEGORY_LABELS[category] ?? category
+}
+
+/**
+ * What a phase is called on screen (D-11, FR-N1).
+ *
+ * The phase values are contract and keep their names; only the label
+ * the viewer reads follows the display vocabulary.
+ */
+export const PHASE_LABELS: Record<Phase, string> = {
+  INIT: 'Planting',
+  DISCOVERY: 'Discovery',
+  ASSESSMENT: 'Assessment',
+  IMPLEMENTATION: 'Implementation',
+  RUNTIME: 'Life',
 }
 
 /** Wall-clock time, to the second. The stream is read, not measured. */
