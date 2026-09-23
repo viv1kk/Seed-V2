@@ -260,6 +260,7 @@ excluded.
 | OQ-7 | Target narrative duration at 1x               | **4 to 5 minutes.** Sets the D-8 budget at roughly 270 seconds across all beats.                  |
 | OQ-4 | Does the activity stream need virtualisation? | **Provisionally no**, given OQ-7's duration. Confirm by measurement at M13.                       |
 | OQ-6 | Which actions trigger the DENY and ESCALATE   | **DENY:** reading ServiceNow's security log as a usage signal (PR-033). **ESCALATE:** deploying the assessed solutions (PR-053). Settled at M5. |
+| —    | Lifecycle phase names                         | **`INIT`, `DISCOVERY`, `ASSESSMENT`, `IMPLEMENTATION`, `RUNTIME`**, as built. §27 of the project notes sketches the last as `DEPLOYMENT`; it is `RUNTIME` because V1 deploys nothing real (§30) and the phase is about running solutions (FR-L8). Ruled after M8. |
 
 ### What OQ-7's answer costs
 
