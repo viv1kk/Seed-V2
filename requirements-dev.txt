@@ -1,0 +1,43 @@
+# Everything in requirements.txt, plus what the test suite needs.
+#   pip install -r requirements-dev.txt
+#   python -m pytest -q
+# Regenerate with:
+#   uv export --format requirements-txt --only-dev --no-hashes --no-emit-project -o requirements-dev.txt
+
+-r requirements.txt
+
+anyio==4.15.1 ; sys_platform != 'emscripten'
+    # via httpx2
+colorama==0.4.6 ; sys_platform == 'win32'
+    # via pytest
+h11==0.16.0 ; sys_platform != 'emscripten'
+    # via httpcore2
+httpcore2==2.13.0 ; sys_platform != 'emscripten'
+    # via httpx2
+httpx2==2.13.0
+httpx2-jsfetch==1.0 ; sys_platform == 'emscripten'
+    # via httpx2
+idna==3.20
+    # via
+    #   anyio
+    #   httpx2
+iniconfig==2.3.0
+    # via pytest
+packaging==26.3
+    # via pytest
+pluggy==1.6.0
+    # via pytest
+pygments==2.21.0
+    # via pytest
+pytest==9.1.1
+    # via pytest-asyncio
+pytest-asyncio==1.4.0
+truststore==0.10.4 ; sys_platform != 'emscripten'
+    # via
+    #   httpcore2
+    #   httpx2
+typing-extensions==4.16.0 ; (python_full_version < '3.15' and sys_platform != 'emscripten') or (python_full_version < '3.13' and sys_platform == 'emscripten')
+    # via
+    #   anyio
+    #   httpx2
+    #   pytest-asyncio
