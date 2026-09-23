@@ -4373,3 +4373,76 @@ arrived alone. That is two isolated drops in a whole run, not strobing.
 3. Confirm that the lost default view of the stages is acceptable. The
    Seeding pane is one click away, and it comes forward on its own for
    every question.
+
+### Follow-up · layout, scrollbars and the tree's look (after D-18 review)
+
+**Requested, 2026-09-24, after reviewing D-18:**
+
+- scrollbars styled to the theme;
+- Both no longer squeezing the Seeding pane, with the Activity rail
+  moved to a collapsible drawer at the bottom;
+- the human-input box in Discovery and Assessment no longer covering
+  the Activity rail;
+- bushier roots in their own colour, a denser and wider tree, and soil
+  that fades so the roots show.
+
+**What changed.**
+
+- **Scrollbars** (`design/base.css`, `design/tokens.css`): every
+  scrolling pane has a thin thumb drawn from the theme's line colours on
+  a clear track, in both themes. New tokens: `--scrollbar-thumb` and
+  `--scrollbar-thumb-hover`.
+- **The Seeding pane** (`views/WorkspaceView.vue`):
+  - The human-input surface now sits under the stages, inside the stage
+    column, so it never covers the Activity rail. A long request scrolls
+    within itself rather than crushing the stage.
+  - In Both, the rail docks along the bottom of the pane as a drawer of
+    fixed height, and the stages keep the pane's full width. The drawer's
+    bar has a toggle. Closed, the bar still shows the newest entry's kind
+    and message. In Seeding only, the rail stays at the side as before.
+  - The rail stays mounted in every placement, so the stream keeps its
+    state (NFR-A7).
+- **The tree** (`components/GrowthTree.vue`), still `growthOf(events)`
+  and still deterministic:
+  - **Roots** are earth brown (`--growth-root`). Each layer's main root
+    grows four laterals and eight fine hairs. They bush out as the plant
+    above them grows: a few at planting, the whole system once the build
+    is well under way. The roots thicken with the trunk.
+  - **Soil** is a warm tint (`--growth-soil`, `--growth-surface`) at the
+    surface that fades downward and at both ends, so the roots show
+    through it.
+  - **Branches** spread wider and shallower. Each part built grows a twig
+    with a small tuft and two leaves.
+  - **The crown** spreads wide, in a deeper green (`--growth-leaf-deep`),
+    and gains two leaves for every part built. The lower stem leaves
+    thin out further as the trunk matures.
+  - The drawing is wider (a 520 × 500 view) and may grow taller on
+    screen.
+- **Docs:** decisions.md, a note in D-14 on the rail in Both, and in
+  D-18 the stage table and the tree's look.
+
+**Files.** `frontend/src/design/base.css`, `design/tokens.css`,
+`views/WorkspaceView.vue`, `components/GrowthTree.vue`;
+`docs/decisions.md`, `docs/project-notes.md`.
+
+**Gates.** `pytest` gives 431 passed. Typecheck and build pass. Live, in
+dark and light:
+
+- Discovery (credentials) and Assessment (approval) were each checked in
+  Both and in Seeding only. In all four, the request box's bounds clear
+  the rail's.
+- In Both the rail is docked at the bottom. It closes to a bar that
+  shows the newest entry.
+- The tree was captured at planting, as a sapling, as a small plant,
+  mid-build and late in the build.
+- A reload at approval rebuilt the identical tree, two runs from Reset
+  grew identical trees, and the hand-over still appears at build
+  completion (5 of 5).
+- The M14 walkthrough passes 31 of 31.
+
+**Check by hand.**
+
+1. Choose Both during Discovery: the stages keep their width, and the
+   Activity drawer sits at the bottom. Close and reopen it.
+2. Scroll the Activity stream and the stages in both themes.
+3. Watch the tree grow at 1x: the roots bush out, and the crown widens.

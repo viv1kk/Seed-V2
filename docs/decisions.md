@@ -666,6 +666,15 @@ READY_TO_RUN, RUNNING                      Life only
 *Amended by D-18:* from planting until the build completes the default
 is now Life only, where the growth tree stands. The other rows hold.
 
+*The rail in Both* (after review, 2026-09-24). With both panes showing,
+a side rail of at least 22rem left the stages a sliver. In Both the
+Activity and Protection rail docks along the bottom of the Seeding pane
+as a drawer, and the stages keep the pane's full width above it. The
+drawer can be closed to a single bar, which still shows the newest
+entry, so the build stays in view. In Seeding only the rail stays beside
+the stages. In either placement the human-input surface sits under the
+stages and never covers the rail.
+
 Seeding-only is the default during the build because an empty half
 screen for four minutes wastes the stage the narrative is played on.
 The empty Life pane is still one click away, so a presenter can show
@@ -908,10 +917,10 @@ only from `READY_TO_RUN` are unchanged.
 
 | Phase | Stage | Grows by |
 | ----- | ----- | -------- |
-| Planting | Seed planted | the seed, and a root per layer |
+| Planting | Seed planted | the seed, and a root per layer; the roots bush out into laterals and fine hairs as the plant above them grows |
 | Discovery | Sapling | a small leaf per system reached |
 | Assessment | Small plant | a pair of leaves per methodology assessed |
-| Implementation | Tree | the trunk thickens and a branch grows per Agent Component, lengthening and filling out with each part built, fruiting when ready; the crown fills out with the build |
+| Implementation | Tree | the trunk thickens and a branch grows per Agent Component, lengthening, spreading wide and growing a leafy twig with each part built, fruiting when ready; the crown widens and fills with leaves as the build proceeds |
 
 Growth stays a pure function of the event log (FR-G5), and every step is
 an event (FR-G2). The drawing eases continuously towards the state the
@@ -920,6 +929,11 @@ and a reload, go straight to that state.
 
 *Watering is unchanged* (FR-G3, FR-G4): each evaluated capability
 request is a drop, and a refused one is held above the ground.
+
+*Its look* (after review, 2026-09-24). The roots are earth brown, apart
+from the green above ground. The soil is a warm tint at the surface that
+fades downward and at both ends, so the roots show through it. The tree
+spreads wider than it is tall once the build is under way.
 
 *The strip returns.* With the tree in Life, the Seeding pane has its
 lifecycle indicator back: the strip, as built in M4. A-4 is reversed,

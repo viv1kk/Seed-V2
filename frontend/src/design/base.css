@@ -30,6 +30,41 @@ button {
   cursor: pointer;
 }
 
+/* Scrollbars follow the theme: a thin thumb in the border colours on a
+   clear track, so a scrolling pane never shows the platform's default
+   grey bar against a dark surface. The standard properties cover current
+   browsers; the prefixed rules cover the ones that predate them. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
 /* Respect a viewer who has asked for less motion (NFR-V1 calm). */
 @media (prefers-reduced-motion: reduce) {
   *,
