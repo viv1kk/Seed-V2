@@ -3,12 +3,22 @@
 The application object is imported by `run.py` before it reports
 readiness, so the cost of importing dependencies is paid at launch
 rather than on the first request (A-1).
+
+The analytical datasets are generated in the startup hook, before the
+server accepts a request: the health check the launcher waits on does not
+answer until they exist, so no viewer ever waits on a first-query build
+(FR-AN1, NFR-P1).
 """
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from app.analytics.store import STORE
 from app.api import (
+    analytics,
     environment,
     events,
     health,
@@ -24,10 +34,19 @@ from app.domain.solutions import IllegalSolutionTransition
 from app.knowledge.seed_loader import SeedRejected
 from app.simulation.protocol import EngineError
 
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    STORE.datasets
+    yield
+
+
 app = FastAPI(
     title="Systems V1",
     description="Deterministic simulation of a methodology-driven analytical system.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.include_router(health.router, prefix="/api", tags=["health"])
@@ -39,6 +58,7 @@ app.include_router(operator.router, prefix="/api", tags=["operator"])
 app.include_router(human.router, prefix="/api", tags=["human"])
 app.include_router(solutions.router, prefix="/api", tags=["solutions"])
 app.include_router(environment.router, prefix="/api", tags=["environment"])
+app.include_router(analytics.router, prefix="/api", tags=["analytics"])
 
 
 @app.exception_handler(EngineError)

@@ -5,6 +5,7 @@ description = "Systems V1 --- a deterministic simulation of a methodology-driven
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
+    "pandas>=3.0.6",
     "uvicorn[standard]>=0.32",
 ]
 
