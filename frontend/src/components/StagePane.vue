@@ -4,7 +4,6 @@ import { computed } from 'vue'
 import AssessmentStage from './AssessmentStage.vue'
 import EnvironmentStage from './EnvironmentStage.vue'
 import ImplementationStage from './ImplementationStage.vue'
-import RuntimeStage from './RuntimeStage.vue'
 import type { LayerSummary } from '../stores/seed'
 import { useSystemStore } from '../stores/system'
 
@@ -16,8 +15,9 @@ const system = useSystemStore()
  * The pane changes; the workspace around it does not (NFR-A3, §13). Init
  * shows what the seed loader actually registered, Discovery the
  * environment graph as System State holds it, Assessment the solutions
- * and the decisions on them, Implementation the build pipelines (§27),
- * and Runtime the solutions ready to run (§30).
+ * and the decisions on them, and Implementation the build pipelines
+ * (§27). The build stays on this stage once the system runs: what is
+ * ready to run lives in the Life pane (D-14).
  */
 const layers = computed<LayerSummary[]>(
   () => (system.snapshot?.seed?.layers as LayerSummary[] | undefined) ?? [],
@@ -35,11 +35,11 @@ const layers = computed<LayerSummary[]>(
     <!-- Assessment: what can be done, and a person deciding (FR-A7). -->
     <AssessmentStage v-else-if="system.phase === 'ASSESSMENT'" />
 
-    <!-- Implementation: the approved solutions, built (FR-I1). -->
-    <ImplementationStage v-else-if="system.phase === 'IMPLEMENTATION'" />
-
-    <!-- Runtime: what was built, ready to run (FR-I6). -->
-    <RuntimeStage v-else-if="system.phase === 'RUNTIME'" />
+    <!-- Implementation: the approved solutions, built (FR-I1). It stays
+         once the system runs, as the record of what was built. -->
+    <ImplementationStage
+      v-else-if="system.phase === 'IMPLEMENTATION' || system.phase === 'RUNTIME'"
+    />
 
     <template v-else>
       <header class="head">

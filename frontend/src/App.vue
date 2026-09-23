@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 
+import LayoutControl from './components/LayoutControl.vue'
 import OperatorPanel from './components/OperatorPanel.vue'
+import LifeView from './views/LifeView.vue'
 import SeedView from './views/SeedView.vue'
 import WorkspaceView from './views/WorkspaceView.vue'
 import { useDashboardStore } from './stores/dashboard'
 import { useEventStore } from './stores/events'
+import { useLayoutStore } from './stores/layout'
 import { useSeedStore } from './stores/seed'
 import { useSystemStore } from './stores/system'
 
-// Loaded when first opened: the charting library is the dashboard's alone,
-// and the workspace should not wait for it.
-const DashboardView = defineAsyncComponent(() => import('./views/DashboardView.vue'))
-
 const dashboard = useDashboardStore()
 const events = useEventStore()
+const layout = useLayoutStore()
 const seed = useSeedStore()
 const system = useSystemStore()
 
@@ -29,22 +29,12 @@ const system = useSystemStore()
 const planted = computed(() => system.lifecycle !== 'UNINITIALIZED')
 
 /**
- * A running solution's dashboard is shown in front of the workspace. The
- * workspace is hidden, not unmounted (NFR-A3): returning finds it exactly
- * as it was left, stream scrolled where it was (FR-L8).
+ * The seed screen is full-screen until the seed is planted (FR-W7): it is
+ * the act of planting, and half a screen beside an empty pane would
+ * weaken it. The one exception is a rehearsal link, which opens its
+ * dashboard in Life without a run (FR-W6, D-3).
  */
-const running = computed(() => system.lifecycle === 'RUNNING')
-
-/**
- * Which dashboard is showing, if any: the running solution's, or one
- * opened from a link for rehearsal, which needs no run to reach (D-3).
- */
-const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() => {
-  if (running.value && system.runtime.active) {
-    return { id: system.runtime.active, mode: 'running' }
-  }
-  return dashboard.rehearsal ? { id: dashboard.rehearsal, mode: 'rehearsal' } : null
-})
+const workspace = computed(() => planted.value || dashboard.rehearsal !== null)
 
 onMounted(() => events.connect())
 onBeforeUnmount(() => events.disconnect())
@@ -60,9 +50,29 @@ watch(planted, (now) => {
 
 <template>
   <div class="shell">
-    <WorkspaceView v-if="planted" v-show="!shown" />
-    <SeedView v-else v-show="!shown" />
-    <DashboardView v-if="shown" :key="shown.id" :solution-id="shown.id" :mode="shown.mode" />
+    <!-- Two panes under one bar, both mounted for the whole run (D-14,
+         NFR-A7). The layout hides a pane and never unmounts it, so the
+         stream keeps its scroll and a dashboard its filter context. -->
+    <div v-if="workspace" class="frame">
+      <!-- No transport bar. The chrome carries identity and the layout,
+           and nothing an audience should not see (FR-O2). -->
+      <header class="bar">
+        <div class="identity">
+          <span class="name">Seed</span>
+          <span class="version mono">V1</span>
+        </div>
+
+        <LayoutControl :disabled="!planted" />
+
+        <span class="lifecycle mono">{{ system.lifecycle }}</span>
+      </header>
+
+      <div class="panes" :data-layout="layout.layout">
+        <WorkspaceView v-if="planted" v-show="layout.seeding" class="region" />
+        <LifeView v-show="layout.life || !planted" class="region" />
+      </div>
+    </div>
+    <SeedView v-else />
 
     <!-- Hidden by default, and available on both screens, because the
          sample-seed shortcut is reached from the seed screen (FR-S7). -->
@@ -73,5 +83,79 @@ watch(planted, (now) => {
 <style scoped>
 .shell {
   height: 100%;
+}
+
+.frame {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  background: var(--surface-base);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-3) var(--space-6);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.identity {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.name {
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.version,
+.lifecycle {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.lifecycle {
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.panes[data-layout='both'] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.panes[data-layout='both'] > .region + .region {
+  border-left: 1px solid var(--border-default);
+}
+
+.region {
+  min-height: 0;
+}
+
+@media (max-width: 64rem) {
+  .panes[data-layout='both'] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .panes[data-layout='both'] > .region + .region {
+    border-left: none;
+    border-top: 1px solid var(--border-default);
+  }
 }
 </style>

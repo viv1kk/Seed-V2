@@ -29,22 +29,14 @@ const blocked = computed(() => system.blockedOn !== null)
 </script>
 
 <template>
-  <!-- Mounted once, when the seed is planted, and never unmounted across
-       a phase change (NFR-A3, §13). The lifecycle changes, the stage
+  <!-- The Seeding pane (D-14, FR-W1). Mounted once, when the seed is
+       planted, and never unmounted across a phase change or a layout
+       change (NFR-A3, NFR-A7, §13). The lifecycle changes, the stage
        changes, the activity accrues and human input appears when needed.
        A single system operating continuously underneath. -->
   <div class="workspace">
-    <!-- No transport bar. The chrome carries identity and the lifecycle
-         and nothing an audience should not see (FR-O2). -->
     <header class="bar">
-      <div class="identity">
-        <span class="name">Seed</span>
-        <span class="version mono">V1</span>
-      </div>
-
       <LifecycleStrip :phase="system.phase" :blocked="blocked" />
-
-      <span class="lifecycle mono">{{ system.lifecycle }}</span>
     </header>
 
     <div class="body">
@@ -96,38 +88,9 @@ const blocked = computed(() => system.blockedOn !== null)
 .bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
+  justify-content: center;
   padding: var(--space-3) var(--space-6);
-  background: var(--surface-raised);
   border-bottom: 1px solid var(--border-subtle);
-}
-
-.identity {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.name {
-  font-size: var(--text-md);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.version,
-.lifecycle {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-}
-
-.lifecycle {
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-}
-
-.mono {
-  font-family: var(--font-mono);
 }
 
 .body {

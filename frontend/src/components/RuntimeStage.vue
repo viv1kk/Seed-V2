@@ -9,11 +9,12 @@ const system = useSystemStore()
 const events = useEventStore()
 
 /**
- * The Runtime stage: what was built, ready to run (FR-I6, §30, §53).
+ * The Runtime stage: what was built, ready to run (FR-I6, §30, §53). It
+ * lives in the Life pane (D-14).
  *
- * Each ready solution is listed with Run. Running one opens its dashboard;
- * returning brings the viewer back here with every solution still ready,
- * so any of them can be run next (FR-L8). Completion is per solution, not
+ * Each ready solution is listed with Run. Running one opens its dashboard
+ * in the same pane; returning brings the viewer back here with every
+ * solution still ready, so any of them can be run next (FR-L10). Completion is per solution, not
  * global. The build record stays below, so what was built and how it was
  * tested remains one glance away.
  */
@@ -64,7 +65,7 @@ async function run(solutionId: string): Promise<void> {
       <h2 class="title">System ready</h2>
       <p class="note">
         {{ ready }} {{ ready === 1 ? 'Agent Component' : 'Agent Components' }} implemented. Run one
-        to open its dashboard; return to the workspace to run another.
+        to open its dashboard here; return to this list to run another.
       </p>
     </header>
 

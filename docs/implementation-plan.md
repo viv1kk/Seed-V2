@@ -239,8 +239,8 @@ seed-v2/
 | M10 Ticket Anomaly dashboard | —      | Built | `08fc371` |
 | M11 Display vocabulary       | RENAME | Built | `58b03cb` |
 | M12 Feasibility reference audit | RENAME (audit) | Built | `9436189` |
-| M13 Feasibility displayed as Potential | RENAME | Built | |
-| M14 Seeding and Life panes   | MOVE   | Not started | |
+| M13 Feasibility displayed as Potential | RENAME | Built | `1855e18` |
+| M14 Seeding and Life panes   | MOVE   | Built | |
 | M15 Declared stack at Planting | NEW  | Not started | |
 | M16 Routing-problem flag     | NEW    | Not started | |
 | M17 Growth tree              | NEW    | Not started | |

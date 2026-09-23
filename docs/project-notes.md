@@ -3816,3 +3816,101 @@ build pass. Live checks:
    `data-feasible='false'`) is unchanged, but the scripted run never
    shows it. The selector was not edited.
 
+### M14 · Seeding and Life panes
+
+**What changed.** The workspace is now two panes under one top bar
+(D-14). Both panes stay mounted for the whole run, and a layout change
+only hides one (NFR-A7).
+
+- **Top bar** (`App.vue`): the identity, the layout control (Both,
+  Seeding, Life) and the raw lifecycle state. It replaces the full-screen
+  dashboard overlay. `SeedView` still takes the whole screen until the
+  seed is planted (FR-W7).
+- **Seeding pane** (`WorkspaceView.vue`): unchanged in content. It keeps
+  the lifecycle strip in its own bar, then the stage, the Activity and
+  Protection rail, and the human-input surface. `StagePane` no longer
+  shows the ready list. At `RUNTIME` it keeps the finished build on
+  screen, as the record of what was built.
+- **Life pane** (`views/LifeView.vue`, new): headed "Agent One VW
+  (ValueWise™)". It shows an empty state until the build is done (FR-W4).
+  From `RUNTIME` it shows the ready list (`RuntimeStage`, moved). Run
+  opens the dashboard inside the pane, over the list, which stays
+  mounted. The dashboard is still loaded lazily.
+- **Layout rules** (`stores/layout.ts`, new):
+  - The lifecycle sets the default: Seeding until
+    `IMPLEMENTATION_COMPLETE`, Both at `IMPLEMENTATION_COMPLETE`, then
+    Life at `READY_TO_RUN` and `RUNNING`.
+  - A manual choice holds until the default next changes. I read "the
+    next lifecycle-driven change" in FR-W3 that way, so a transition
+    that keeps the same default does not override the choice.
+  - A pending request turns Life only into Both, and disables Life only
+    until it is answered (FR-W5).
+  - A rehearsal link sets Life only (FR-W6). Closing the rehearsal hands
+    the layout back to the lifecycle default. Before planting, the
+    rehearsal is shown in the pane shell with the control disabled.
+- **Copy.** The dashboard's back button reads "← Agent Components". The
+  ready list's note says to return to this list, not the workspace
+  (FR-L10).
+- **One layout fix.** The dashboard was built for the full screen. In
+  the Both layout it overflowed the pane's right edge, so its grid is now
+  held to the pane's width.
+
+**Files.** `frontend/src/App.vue`; `views/LifeView.vue` (new),
+`views/WorkspaceView.vue`, `views/DashboardView.vue`;
+`components/LayoutControl.vue` (new), `components/StagePane.vue`,
+`components/RuntimeStage.vue`; `stores/layout.ts` (new). No backend
+change.
+
+**Gates.** `pytest` gives 417 passed with no test edited. Typecheck and
+build pass. Live: one headless-Chrome session drove the full narrative
+through the interface with 31 checks. 29 passed. The 2 failures are
+described under "Found, pre-existing" below.
+
+- The layout rules: all three layouts reachable; Life's empty state; a
+  credential request forcing Seeding visible from Life only; Life only
+  after the build; a rehearsal link opening Life only, both before and
+  after planting; and a reload at `READY_TO_RUN` opening Life only.
+- Neither pane was unmounted across the run, checked by element
+  identity.
+- The stream kept its scroll position across a hide and show (700 to
+  700).
+- A drilled dashboard kept its element, its URL filter and its figures
+  across Seeding only and back.
+- Re-verified from M3 to M10 (FR-W8):
+  - M3: the seed screen summarises each dropped layer.
+  - M5: DENY PR-033 and ESCALATE PR-053 appear in both the stream and
+    the panel.
+  - M6: one credential pause, answered through the form; the timeout
+    recovered; and counts derived from the graph.
+  - M7: a completeness edit moves a grade on the card, and reverting it
+    moves it back.
+  - M8: approval through the interface, the build, and Run.
+  - M10: headline, then cluster, then ticket, with consistent figures,
+    and the browser's Back popped exactly one step.
+  - M9's backend is untouched, and its suite passes.
+
+**Found, pre-existing.** Both were confirmed by running the same steps
+against the M13 code with the M14 changes stashed. Neither was fixed,
+because neither is in M14's rework list.
+
+1. **After a live plant, the Planting stage shows no layer summary.**
+   `StagePane` reads the layers from the snapshot, and planting from the
+   interface never refreshes the snapshot. The summary appears only
+   after a reload. M15 changes the Planting stage anyway, so it is the
+   natural place to fix this. Waiting for a ruling.
+2. **Back, then closing a running dashboard, leaves it open as a
+   rehearsal.** The dashboard store's `popstate` handler sets
+   `rehearsal` from the URL, so after the browser's Back the closed run
+   falls through to a rehearsal of the same dashboard. A second click on
+   back closes it. The fix belongs in `stores/dashboard.ts` (M10).
+   Waiting for a ruling.
+
+**Check by hand.**
+
+1. The Both layout is cramped at 1600 px. The Seeding stage's column is
+   about 320 px wide beside the rail, and the build lanes shrink. M21
+   owns this, but judge whether it is acceptable until then.
+2. The top bar still shows the raw lifecycle state, such as
+   `READY_TO_RUN`, as before.
+3. Before M18, Both at `IMPLEMENTATION_COMPLETE` lasts one beat, so in
+   practice the layout goes from Seeding straight to Life.

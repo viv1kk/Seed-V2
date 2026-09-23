@@ -35,8 +35,9 @@ const props = defineProps<{
  * components it uses names a methodology, a dimension or a measure, and a
  * test holds that.
  *
- * It is shown in front of the workspace, which stays mounted underneath
- * (NFR-A3), so returning finds the workspace exactly as it was left.
+ * It opens inside the Life pane, over the list of Agent Components, which
+ * stays mounted underneath (D-14, NFR-A7). Returning finds the list, and
+ * the Seeding pane beside it, exactly as they were left.
  */
 const dashboard = useDashboardStore()
 const events = useEventStore()
@@ -104,7 +105,7 @@ async function back(): Promise<void> {
   <div class="dashboard">
     <header class="bar">
       <button type="button" class="back" :disabled="leaving" @click="back">
-        <span aria-hidden="true">←</span> Workspace
+        <span aria-hidden="true">←</span> Agent Components
       </button>
       <div class="identity">
         <h1 class="name">{{ descriptor?.title ?? 'Dashboard' }}</h1>
@@ -174,6 +175,8 @@ async function back(): Promise<void> {
 .dashboard {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
+  /* Held to its pane's width, which is half the screen in Both (D-14). */
+  grid-template-columns: minmax(0, 1fr);
   height: 100%;
   background: var(--surface-base);
   animation: enter var(--duration-base) var(--ease-out) both;
@@ -241,6 +244,7 @@ async function back(): Promise<void> {
 }
 
 .subtitle {
+  min-width: 0;
   margin: 0;
   overflow: hidden;
   color: var(--text-muted);
