@@ -783,6 +783,11 @@ before designing the watering step.** If it runs to hundreds, steps are
 batched.
 
 *Supersedes:* FR-L6, by A-4
+*Reworked by D-18 (2026-09-24), after review:* the tree moved to the Life
+pane and grows vertically from seed to tree while seeding runs, then hands
+over to Agent One VW when the build completes. The lifecycle strip
+returned to the Seeding pane (A-10), and the default layout during the
+build is Life only (A-11, A-12).
 *Discharges:* FR-G1–G6, NFR-V7
 *Exit:* a tree rebuilt from a snapshot plus replay is identical to one
 grown live. Two runs from Reset end with the same tree. Nothing strobes
@@ -812,6 +817,9 @@ Operator skip passes through closing (FR-C7). The narrative test harness
 (`tests/narrative.py`) resolves the new confirmation.
 
 *Reworks:* M8's transition from Implementation to Run.
+*Also (D-18):* move the Life pane's hand-over from the growing tree to Agent
+One VW, which M17 triggers at `IMPLEMENTATION_COMPLETE`, to the end of
+closing, and keep the tree up through `CLOSING_SEEDING`.
 *Supersedes:* FR-L2 by A-3, and FR-I6 by A-6
 *Discharges:* FR-L9, FR-C1–C7
 *Exit:* the narrative pauses once more, for confirmation. The three
@@ -1013,6 +1021,7 @@ rulings themselves:
 | **D-15** | **A growth tree replaces the lifecycle strip** in the Seeding pane; protection decisions water it. | No gen-AI calls exist to water it (NFR-D1). OQ-11 confirmed. |
 | **D-16** | **Closing the seeding phase** is a new lifecycle state, confirmed by a person, with three simulated, policy-gated operations. | Needs new protection rules; the only Phase R milestone that edits a test assertion. |
 | **D-17** | **Life is time-revealed operation** (Option B, OQ-12): a finite collection cursor over already-generated data, with precomputed recalibration. A drilled-in view pins to its step. | The "maintaining" half of Agent One VW. Needs A-8 and A-9. |
+| **D-18** | **The growth tree grows in the Life pane**, vertically from seed to tree as the process advances, then hands over to Agent One VW. The strip returns to the Seeding pane; Life only is the default during the build. | Ruled after M17's review. Amends D-15 and D-14's layout. A-10 to A-12. |
 
 Two requirement amendments follow from these and are applied in
 `requirements.md`:
@@ -1037,6 +1046,12 @@ clarifying rather than deleting (`decisions.md` §7.2):
   within a run is not Evolution.
 - **A-9** --- FR-AN4 superseded by FR-AN10: headline counts are those of
   the data collected so far.
+- **A-10** --- A-4 reversed: FR-L6 stands again, and the lifecycle strip
+  is the Seeding pane's indicator. FR-G1 places the tree in Life (D-18).
+- **A-11** --- FR-W3: Life only is the default from planting until the
+  build completes (D-18).
+- **A-12** --- FR-W4: the Life pane shows the growing tree until the build
+  completes, then Agent One VW (D-18).
 
 ---
 

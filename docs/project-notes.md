@@ -4281,3 +4281,95 @@ port `growthOf`.
    from the stage.
 3. Confirm the escalation reading: the deploy request waters, as a ringed
    dot.
+
+### Follow-up · the growth tree moves to Life (D-18)
+
+**Ruling, 2026-09-24, after M17's review.**
+
+- The tree is vertical and depicts the process: the seed planted, then a
+  sapling, a small plant, and a tree with branches and leaves.
+- It grows smoothly and follows the real progression.
+- It stands in the Life pane while seeding runs. When the build
+  completes it hides, and the pane shows that the process has completed,
+  with Agent One VW (ValueWise™).
+- Four questions were answered first:
+  - the layout is Life only during the build;
+  - the lifecycle strip returns to the Seeding pane;
+  - the hand-over happens when the build completes;
+  - each phase is one growth stage.
+
+These are recorded as D-18, with A-10 to A-12, in `decisions.md` and
+`requirements.md`, and noted in the plan's M17 and M18 blocks and in §5.
+
+**What changed.**
+
+- **The tree** (`components/GrowthTree.vue`, rewritten) grows vertically.
+  It is still drawn from `growthOf(events)`, so it remains a pure
+  function of the log.
+  - **Planting:** the seed, and a root per layer.
+  - **Discovery (sapling):** a sprout, then a small leaf per system
+    reached.
+  - **Assessment (small plant):** a pair of leaves per methodology
+    assessed.
+  - **Implementation (tree):** the trunk heightens and thickens, and a
+    branch grows per Agent Component, lengthening and gaining a foliage
+    cluster with each part built, fruiting when ready. The crown fills
+    out with the build, and the lower stem leaves thin as the trunk
+    matures.
+  - **Caption:** the stage and its phase in the process's own terms, for
+    example "Small plant · Assessment · 3 methodologies assessed ·
+    waiting on input".
+  - **Watering is unchanged:** an allowed request soaks in as a dot, a
+    refused one is held above the ground, and the tally reads "Watered by
+    N tool requests".
+- **Smooth growth.** Every dimension (height, girth, branch length, leaf
+  and foliage size) eases towards the state the log describes, so growth
+  is continuous at any speed and never flashes. A reload, and reduced
+  motion, go straight to the final state. A falling drop still plays
+  only for a request that arrives on its own.
+- **The Life pane** (`views/LifeView.vue`) shows the tree from planting
+  until the build completes, headed "Agent One VW (ValueWise™) ·
+  Growing". At `IMPLEMENTATION_COMPLETE` the tree fades out and a
+  "Seeding complete" statement fades in, with Agent One VW (ValueWise™)
+  and its ready Agent Components below. Reduced motion skips the fade.
+  The old empty state is gone.
+- **Layout** (`stores/layout.ts`): Life only from planting until the build
+  completes. A request still brings the Seeding pane forward (FR-W5).
+- **The Seeding pane** has `LifecycleStrip.vue` back, restored exactly as
+  it was before M17.
+
+**Files.** `frontend/src/components/GrowthTree.vue`,
+`components/LifecycleStrip.vue` (restored), `views/LifeView.vue`,
+`views/WorkspaceView.vue` (restored to its pre-M17 form),
+`stores/layout.ts`; `docs/decisions.md`, `docs/requirements.md`,
+`docs/implementation-plan.md`.
+
+**Gates.** `pytest` gives 431 passed. Typecheck and build pass. Live:
+
+- Planting opens Life only with the seed in the soil, and the Seeding
+  pane has the strip.
+- The captured stages read seed, sapling, small plant and tree, the tree
+  with a crown and foliage on its branches.
+- A reload at the approval point rebuilt the identical tree.
+- Two runs from Reset grew identical trees at the credential pause and at
+  approval.
+- A full-motion session settled on exactly the tree a reduced-motion one
+  drew.
+- At build completion the tree gave way to "Seeding complete · Agent One
+  VW (ValueWise™)" with the ready list.
+- The M14 walkthrough passes 31 of 31, with its expectations updated for
+  D-18: the default layout after planting, and the tree in place of the
+  empty state.
+
+One observation, not a fault. During a run at instant speed, 2 drops
+still fell. Each was the first request after a pause for a person, so it
+arrived alone. That is two isolated drops in a whole run, not strobing.
+
+**Check by hand.**
+
+1. Watch a run at 1x in Life only: the seed, sapling, small plant and
+   tree, the smoothness, and the hand-over.
+2. Judge the tree's look (R-14). M21 designs it properly.
+3. Confirm that the lost default view of the stages is acceptable. The
+   Seeding pane is one click away, and it comes forward on its own for
+   every question.

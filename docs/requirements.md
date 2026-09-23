@@ -144,7 +144,7 @@ structure (§63).
 | FR-L3  | An attempted illegal transition raises an error rather than mutating state.                                                                        |
 | FR-L4  | Blocking on human input is represented as a flag (`blockedOn`) alongside the current state, not as a separate state per phase.                      |
 | FR-L5  | System State is the sole source of truth. Simulated agents read from and write to it; they never hold authoritative state internally (§37, §73).     |
-| FR-L6  | ~~A persistent lifecycle indicator shows completed, current and future phases at all times (§14).~~ **Superseded by FR-G1** (A-4). |
+| FR-L6  | A persistent lifecycle indicator shows completed, current and future phases at all times (§14). *Superseded by FR-G1 under A-4, then restored by A-10 (D-18): the lifecycle strip is the Seeding pane's indicator.* |
 | FR-L7  | State is held in memory for a single run. An explicit Reset returns the system to `UNINITIALIZED`.                                                  |
 | FR-L8  | ~~From `READY_TO_RUN`, the user can run any ready solution, return to the workspace, and run another. Completion is per-solution, not global.~~ **Superseded by FR-L10** (A-5). |
 | FR-L9  | States: FR-L2's eleven, plus `CLOSING_SEEDING` between `IMPLEMENTATION_COMPLETE` and `READY_TO_RUN`. The edge `IMPLEMENTATION_COMPLETE → READY_TO_RUN` is replaced by `IMPLEMENTATION_COMPLETE → CLOSING_SEEDING → READY_TO_RUN`. `CLOSING_SEEDING` belongs to the Implementation phase (D-16). |
@@ -300,8 +300,8 @@ Added by the Seeding and Life rework (D-14).
 | ------ | ----------- |
 | FR-W1  | The workspace has two panes. **Seeding** holds the Planting, Discovery, Assessment and Implementation stages, the Activity and Protection rail, and the human-input surface. **Life** holds the running system. |
 | FR-W2  | A control in the top bar selects Both, Seeding only, or Life only. |
-| FR-W3  | The lifecycle sets the default layout: Seeding only until `IMPLEMENTATION_COMPLETE`, Both until seeding closes, then Life only. A manual choice holds until the next lifecycle-driven change. |
-| FR-W4  | Until Implementation completes, the Life pane shows a deliberate empty state rather than blank space. |
+| FR-W3  | The lifecycle sets the default layout: ~~Seeding only until `IMPLEMENTATION_COMPLETE`~~ Life only from planting until `IMPLEMENTATION_COMPLETE` (A-11), Both until seeding closes, then Life only. A manual choice holds until the next lifecycle-driven change. |
+| FR-W4  | Until Implementation completes, the Life pane shows ~~a deliberate empty state~~ the growing tree (FR-G1) rather than blank space. When it completes, the tree hands over to a completion statement and Agent One VW (A-12). |
 | FR-W5  | A pending human request makes the Seeding pane visible, whatever the layout. |
 | FR-W6  | Running a solution opens its dashboard inside the Life pane, not over the whole screen. A rehearsal link (D-3) opens it the same way, in the Life-only layout. |
 | FR-W7  | The seed upload screen stays full-screen until the seed is planted (FR-S2). After planting, the Planting stage is the first stage of the Seeding pane. |
@@ -313,7 +313,7 @@ Added by the Seeding and Life rework (D-15).
 
 | ID     | Requirement |
 | ------ | ----------- |
-| FR-G1  | In the Seeding pane, a growth tree replaces the lifecycle strip as the progress indicator. It shows completed, current and future phases, which carries forward FR-L6's intent (A-4). |
+| FR-G1  | ~~In the Seeding pane, a growth tree replaces the lifecycle strip as the progress indicator.~~ While seeding runs, a growth tree stands in the Life pane and grows vertically with the process: seed at Planting, sapling at Discovery, small plant at Assessment, tree with branches and leaves at Implementation. It names its current stage and phase. The lifecycle strip remains the Seeding pane's phase indicator (A-10, D-18). |
 | FR-G2  | The tree grows one segment per completed lifecycle step, driven by events (FR-E1). |
 | FR-G3  | Each capability request the protection engine evaluates triggers one watering step. A denied request waters nothing. |
 | FR-G4  | No part of the tree claims a gen-AI or model call, because none occurs (NFR-D1). Watering is attributed to tool requests. |

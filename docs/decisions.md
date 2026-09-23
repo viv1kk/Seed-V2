@@ -663,6 +663,9 @@ IMPLEMENTATION_COMPLETE, CLOSING_SEEDING   Both
 READY_TO_RUN, RUNNING                      Life only
 ```
 
+*Amended by D-18:* from planting until the build completes the default
+is now Life only, where the growth tree stands. The other rows hold.
+
 Seeding-only is the default during the build because an empty half
 screen for four minutes wastes the stage the narrative is played on.
 The empty Life pane is still one click away, so a presenter can show
@@ -700,6 +703,10 @@ move removed nothing.
 ---
 
 ### D-15 · The growth tree replaces the lifecycle strip in the Seeding pane
+
+> **Amended by D-18 (2026-09-24).** The tree moved to the Life pane,
+> grows vertically from seed to tree, and the strip returned to the
+> Seeding pane. The watering rules and the motion budget below stand.
 
 **Ruled: a hand-built SVG tree becomes the Seeding pane's progress
 indicator. It grows one segment per completed lifecycle step and takes
@@ -873,6 +880,51 @@ the agent framing.
   collected so far. Once collection ends, those are the dataset's full
   counts.
 
+### D-18 · The growth tree grows in the Life pane (2026-09-24)
+
+**Ruled after M17 was reviewed: the tree moves to the Life pane, grows
+vertically from seed to tree as the process advances, and hands over to
+Agent One VW when the build completes. The lifecycle strip returns to
+the Seeding pane.** This amends D-15 and D-14's layout table. It adds
+amendments A-10 to A-12.
+
+*Where and when.* The tree stands in the Life pane from planting until
+the build completes. Until then the Life pane showed an empty state
+(FR-W4), and the thing growing into Agent One VW is the natural content
+of the pane that will hold it. When Implementation completes, the tree
+gives way, with a short transition, to a "Seeding complete" statement
+and Agent One VW (ValueWise™) with its ready Agent Components. Once M18
+lands, that hand-over moves to the end of closing, the true end of
+seeding.
+
+*The layout follows it.* D-14 made Seeding only the default during the
+build. The default is now **Life only** from planting until the build
+completes, so the tree is what the audience watches. A pending request
+still makes the Seeding pane visible (FR-W5), and the stages and the
+stream are one click away. Both at `IMPLEMENTATION_COMPLETE` and Life
+only from `READY_TO_RUN` are unchanged.
+
+*Its form follows the process.* Each phase is one growth stage:
+
+| Phase | Stage | Grows by |
+| ----- | ----- | -------- |
+| Planting | Seed planted | the seed, and a root per layer |
+| Discovery | Sapling | a small leaf per system reached |
+| Assessment | Small plant | a pair of leaves per methodology assessed |
+| Implementation | Tree | the trunk thickens and a branch grows per Agent Component, lengthening and filling out with each part built, fruiting when ready; the crown fills out with the build |
+
+Growth stays a pure function of the event log (FR-G5), and every step is
+an event (FR-G2). The drawing eases continuously towards the state the
+log describes, so growth reads as smooth at any speed. Reduced motion,
+and a reload, go straight to that state.
+
+*Watering is unchanged* (FR-G3, FR-G4): each evaluated capability
+request is a drop, and a refused one is held above the ground.
+
+*The strip returns.* With the tree in Life, the Seeding pane has its
+lifecycle indicator back: the strip, as built in M4. A-4 is reversed,
+and FR-L6 stands again.
+
 ### 7.2 Requirement amendments
 
 Applied in `requirements.md`. Superseded requirements are struck through
@@ -887,6 +939,9 @@ and left in place, not deleted.
 | A-7 | §7     | Acceptance includes closing the seeding phase, exploring the dashboard in the Life pane, and watching Agent One VW collect and recalibrate. | D-14, D-16, D-17 |
 | A-8 | §4.1   | The Evolution exclusion stands, and is clarified: recalibrating baselines within a run is not Evolution. | D-17 |
 | A-9 | FR-AN4 | Superseded by FR-AN10: headline counts are those of the data collected so far. | D-17 |
+| A-10 | FR-L6, FR-G1 | A-4 reversed: FR-L6 stands again, and the strip is the Seeding pane's lifecycle indicator. FR-G1 now places the tree in the Life pane during seeding. | D-18 |
+| A-11 | FR-W3  | Life only is the default from planting until the build completes. | D-18 |
+| A-12 | FR-W4  | Until the build completes, the Life pane shows the growing tree rather than an empty state. When it completes, the tree hands over to Agent One VW. | D-18 |
 
 New requirement groups: FR-N (display vocabulary), FR-W (panes), FR-G
 (growth tree), FR-C (closing), FR-LF (Life pane), plus FR-A11 to FR-A13,

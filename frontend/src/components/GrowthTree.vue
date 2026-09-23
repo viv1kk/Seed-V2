@@ -1,359 +1,497 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import { PHASE_LABELS } from '../design/presentation'
-import { growthOf, phaseStateOf, type Grown } from '../design/growth'
+import { growthOf } from '../design/growth'
 import { useEventStore } from '../stores/events'
-import { PHASE_ORDER, type Phase } from '../stores/system'
 
 const events = useEventStore()
 
 /**
- * The growth tree: the Seeding pane's progress indicator (D-15, FR-G1).
+ * The growth tree: the seed growing into Agent One VW (D-15, D-18).
  *
- * It replaces the lifecycle strip and carries the same information:
- * every phase is labelled, and each reads as complete, current or
- * future. What it adds is how the phase is going. The seed's layers are
- * its roots, each system reached and each methodology assessed is a
- * leaf, each Agent Component built is a branch, and the tree flowers when
- * Agent One VW is ready to run (FR-G2).
+ * It stands in the Life pane while seeding is under way and follows the
+ * process as it happens. Planting puts the seed and its three roots in
+ * the soil. Discovery raises a sapling, a leaf per system reached.
+ * Assessment grows it into a small plant, a leaf per methodology
+ * assessed. Implementation makes it a tree: the trunk thickens, and each
+ * Agent Component is a branch that lengthens with every part built and
+ * fruits when it is ready. When the build completes the Life pane hands
+ * over to Agent One VW itself.
  *
  * It is watered by tool requests: every capability request the
  * protection engine evaluates is one drop (FR-G3). An allowed request
- * soaks into the soil. A refused one stops above the ground and stays
- * there, a request that did not feed the system. Nothing here stands for
- * a model call, because none occurs (FR-G4, NFR-D1).
+ * soaks into the soil. A refused one is held above the ground and stays
+ * there, a request that fed nothing. Nothing here stands for a model
+ * call, because none occurs (FR-G4, NFR-D1).
  *
- * Everything drawn is `growthOf(events)`, a pure function of the event
- * log, so a tree rebuilt from a replay is the tree that grew live (FR-G5).
+ * What is drawn is a pure function of the event log, `growthOf(events)`,
+ * so a tree rebuilt from a replay is the tree that grew live, and two
+ * runs from Reset end the same (FR-G5). Motion only eases the drawing
+ * towards that target; it never changes where it ends.
  */
 const growth = computed(() => growthOf(events.events))
 
 // -- Geometry, hand-authored (FR-G6) -----------------------------------
 
-const STEM_Y = 52
-const END_X = 930
+const CX = 200
+const GROUND = 392
 
-/** Each phase's stretch of stem, left to right. */
-const SECTIONS: Record<Phase, [number, number]> = {
-  INIT: [52, 170],
-  DISCOVERY: [170, 420],
-  ASSESSMENT: [420, 560],
-  IMPLEMENTATION: [560, 860],
-  RUNTIME: [860, END_X],
-}
-
-const LABEL_X: Record<Phase, number> = {
-  INIT: 89,
-  DISCOVERY: 295,
-  ASSESSMENT: 490,
-  IMPLEMENTATION: 710,
-  RUNTIME: 895,
-}
-
-const systemX = (i: number) => 200 + i * 44
-const assessmentX = (i: number) => 450 + i * 40
-const branchX = (i: number) => 590 + i * 90
-
-/** The stem, from the seed up and along; normalised to 1000 units. */
-const STEM_PATH = `M52 76 C52 64 56 54 70 ${STEM_Y} L${END_X} ${STEM_Y}`
-const CURVE_LENGTH = 32
-const STEM_LENGTH = CURVE_LENGTH + (END_X - 70)
-
-/** How far along the stem the tree has grown, as an x on the stem. */
-const frontier = computed(() => {
-  const g = growth.value
-  const current = g.phase
-  if (current === null) return 52
-  let x = 52
-  for (const phase of PHASE_ORDER) {
-    const state = phaseStateOf(phase, current)
-    const [start, end] = SECTIONS[phase]
-    if (state === 'complete') {
-      x = end
-    } else if (state === 'current') {
-      const tips: number[] = []
-      if (phase === 'INIT') tips.push(g.sprouted ? 110 : 60)
-      if (phase === 'DISCOVERY') tips.push(...g.systems.map((_, i) => systemX(i) + 14))
-      if (phase === 'ASSESSMENT') tips.push(...g.assessments.map((_, i) => assessmentX(i) + 14))
-      if (phase === 'IMPLEMENTATION') tips.push(...g.branches.map((_, i) => branchX(i) + 20))
-      if (phase === 'RUNTIME') tips.push(g.bloom ? END_X : start + 20)
-      x = Math.max(start + 12, ...tips)
-      x = Math.min(x, end)
-    }
-  }
-  return x
-})
-
-const grownOffset = computed(() => {
-  const x = frontier.value
-  const along = x <= 70 ? (Math.max(0, x - 52) / 18) * CURVE_LENGTH : CURVE_LENGTH + (x - 70)
-  return 1000 - (Math.min(along, STEM_LENGTH) / STEM_LENGTH) * 1000
-})
-
-/** A leaf on the stem, alternating above and below. */
-function stemLeaf(x: number, index: number): string {
-  return index % 2 === 0
-    ? `M${x} ${STEM_Y} q4 -12 14 -14 q-2 10 -14 14 z`
-    : `M${x} ${STEM_Y} q4 12 14 14 q-2 -10 -14 -14 z`
-}
-
-/** A branch rising from the stem, and points along it for its leaves. */
-function branchPath(x: number): string {
-  return `M${x} ${STEM_Y} Q${x + 14} 30 ${x + 60} 20`
-}
-
-function branchPoint(x: number, t: number): [number, number] {
-  const u = 1 - t
-  return [u * u * x + 2 * u * t * (x + 14) + t * t * (x + 60), u * u * STEM_Y + 2 * u * t * 30 + t * t * 20]
-}
-
-function branchLeaf(x: number, index: number): string {
-  const [px, py] = branchPoint(x, (index + 1) / 7)
-  return index % 2 === 0
-    ? `M${px} ${py} q-2 -8 4 -12 q2 7 -4 12 z`
-    : `M${px} ${py} q8 -1 11 4 q-7 2 -11 -4 z`
-}
-
-const ROOTS = ['M52 78 q-6 6 -18 10', 'M52 78 q2 8 -2 13', 'M52 78 q8 6 22 9']
-
-/** Allowed and escalated requests soak in; each is one dot of water. */
-const absorbed = computed(() =>
-  growth.value.waterings
-    .filter((w) => w.effect !== 'DENY')
-    .map((w, i) => ({ ...w, x: 84 + (i % 14) * 5.5, y: 76 + Math.min(Math.floor(i / 14), 3) * 5 })),
-)
-
-/** Refused requests stop above the ground and stay visible there. */
-const refused = computed(() =>
-  growth.value.waterings.filter((w) => w.effect === 'DENY').map((w, i) => ({ ...w, x: 132 + i * 12 })),
-)
-
-const phases = computed(() =>
-  PHASE_ORDER.map((phase) => ({
-    phase,
-    label: PHASE_LABELS[phase],
-    x: LABEL_X[phase],
-    state: phaseStateOf(phase, growth.value.phase),
-  })),
-)
-
-// -- Motion (NFR-V7) ----------------------------------------------------
+const ROOTS = [
+  'M200 400 q-18 10 -46 16',
+  'M200 400 q3 14 -4 24',
+  'M200 400 q20 9 48 14',
+]
 
 /**
- * Which grown elements may animate as they appear.
- *
- * Only an event that arrives on its own, after a pause, animates. A
- * replay on connect, a resync, or a run at instant speed delivers events
- * in a burst, and those simply appear in their final state, so nothing
- * strobes. Reduced motion turns every animation off in CSS. The final
- * state is the same either way: motion only ever decides how an element
- * arrives, never what is drawn.
+ * Where a stem leaf sits, and its side and size: by index, never by time.
+ * A system reached adds one small leaf to the sapling. A methodology
+ * assessed adds a pair, which is what makes the small plant bushier.
  */
-const CALM_GAP_MS = 250
-const moving = reactive(new Set<number>())
-let primed = false
-let lastArrival = 0
+function stemLeaf(kind: 'system' | 'methodology', index: number, pair: 0 | 1 = 0) {
+  if (kind === 'system') {
+    return { y: GROUND - (18 + index * 11), side: index % 2 === 0 ? 1 : -1, size: 0.7 }
+  }
+  return { y: GROUND - (74 + index * 18), side: pair === 0 ? 1 : -1, size: 1 }
+}
+
+/** Each branch leaves the trunk at a fixed height and side. */
+function branchBase(index: number) {
+  return { y: GROUND - (100 + index * 42), side: index % 2 === 0 ? -1 : 1 }
+}
+
+const BRANCH_ANGLE = (46 * Math.PI) / 180
+
+// -- Targets: what the log says has grown ------------------------------
+
+type Targets = Record<string, number>
+
+const targets = computed<Targets>(() => {
+  const g = growth.value
+  const t: Targets = {}
+  const systems = g.systems.length
+  const methods = g.assessments.length
+  const branches = g.branches.length
+  const parts = g.branches.reduce((n, b) => n + b.leaves.length, 0)
+
+  t.seed = g.roots.length > 0 ? 1 : 0
+  g.roots.forEach((_, i) => (t[`root:${i}`] = 1))
+
+  // The seed stays small through the sapling and the small plant; most of
+  // the height and girth come with the build, when it becomes a tree.
+  const height =
+    (g.sprouted ? 14 : 0) + systems * 11 + methods * 20 + branches * 45 + Math.min(parts, 18) * 1.4
+  t.height = Math.min(height, 292)
+  t.width = g.sprouted
+    ? 2 + systems * 0.3 + methods * 0.6 + branches * 3 + Math.min(parts, 18) * 0.15
+    : 0
+
+  g.systems.forEach((_, i) => (t[`leaf:system:${i}`] = 1))
+  g.assessments.forEach((_, i) => (t[`leaf:methodology:${i}`] = 1))
+  // As the tree matures its lower stem leaves thin out, as a trunk's do.
+  t.stemLeaves = 1 - 0.65 * (Math.min(branches, 3) / 3)
+  // The crown fills out with every Agent Component and every part built.
+  t.crown = branches > 0 ? 14 + branches * 8 + Math.min(parts, 18) * 1.1 : 0
+  g.branches.forEach((branch, i) => {
+    t[`branch:${i}`] = 36 + branch.leaves.length * 11
+    t[`branch:${i}:cluster`] = branch.leaves.length > 0 ? 5 + branch.leaves.length * 2.4 : 0
+    branch.leaves.forEach((_, k) => (t[`branch:${i}:leaf:${k}`] = 1))
+    t[`branch:${i}:fruit`] = branch.ready ? 1 : 0
+  })
+  return t
+})
+
+// -- Motion (NFR-V7) ---------------------------------------------------
+
+/**
+ * The drawing eases towards the targets, so growth is continuous rather
+ * than a series of jumps, whatever the speed. At instant speed a whole
+ * run's growth is simply a faster ease: nothing flashes. Reduced motion,
+ * and the first draw after a reload, go straight to the target.
+ */
+const shown = reactive<Targets>({})
+const settled = ref(true)
+const reduced =
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const TAU_MS = 320
+let frame = 0
+let last = 0
+
+function step(now: number): void {
+  const dt = last ? now - last : 16
+  last = now
+  const k = 1 - Math.exp(-dt / TAU_MS)
+  let moving = false
+  for (const [key, target] of Object.entries(targets.value)) {
+    const current = shown[key] ?? 0
+    const next = current + (target - current) * k
+    if (Math.abs(target - next) < 0.01) {
+      shown[key] = target
+    } else {
+      shown[key] = next
+      moving = true
+    }
+  }
+  settled.value = !moving
+  frame = moving ? requestAnimationFrame(step) : 0
+  if (!moving) last = 0
+}
+
+function snap(): void {
+  for (const key of Object.keys(shown)) delete shown[key]
+  Object.assign(shown, targets.value)
+  settled.value = true
+}
 
 watch(
-  () => events.events.length,
-  (length, previous) => {
-    const before = previous ?? 0
-    if (length < before) {
-      moving.clear()
-      primed = false
+  targets,
+  (next, previous) => {
+    for (const key of Object.keys(shown)) if (!(key in next)) delete shown[key]
+    if (previous === undefined || reduced) {
+      snap()
       return
     }
-    const now = performance.now()
-    const fresh = events.events.slice(before)
-    const calm = primed && fresh.length === 1 && now - lastArrival >= CALM_GAP_MS
-    lastArrival = now
-    primed = true
-    moving.clear()
-    if (calm && fresh[0]) moving.add(fresh[0].sequence)
+    if (!frame) {
+      settled.value = false
+      frame = requestAnimationFrame(step)
+    }
   },
   { immediate: true },
 )
 
-const isNew = (item: Grown | { sequence: number }) => moving.has(item.sequence)
-const motion = computed(() => moving.size > 0)
+onBeforeUnmount(() => cancelAnimationFrame(frame))
 
-const latestWatering = computed(() => {
-  const all = growth.value.waterings
-  const last = all[all.length - 1]
-  return last && moving.has(last.sequence) ? last : null
+const v = (key: string) => shown[key] ?? 0
+
+// -- Drawing -----------------------------------------------------------
+
+/** The trunk: a tapered stem from the ground to its current height. */
+const trunk = computed(() => {
+  const h = v('height')
+  const w = Math.max(v('width'), 0)
+  if (h <= 0.5 || w <= 0.1) return null
+  const top = GROUND - h
+  const lean = Math.min(h / 60, 3)
+  const tw = Math.max(w * 0.2, 0.7)
+  return (
+    `M${CX - w / 2} ${GROUND} ` +
+    `C${CX - w / 2} ${GROUND - h * 0.4} ${CX - tw - lean} ${top + h * 0.3} ${CX - tw} ${top} ` +
+    `L${CX + tw} ${top} ` +
+    `C${CX + tw + lean} ${top + h * 0.3} ${CX + w / 2} ${GROUND - h * 0.4} ${CX + w / 2} ${GROUND} Z`
+  )
 })
 
-const watered = computed(() => growth.value.waterings.filter((w) => w.effect !== 'DENY').length)
+/** A leaf, pointing out from its stem, scaled by how far it has grown. */
+const LEAF = 'M0 0 q7 -9 20 -8 q-5 8 -20 8 z'
+
+function leafTransform(x: number, y: number, side: number, angle: number, scale: number): string {
+  return `translate(${x} ${y}) scale(${side * scale} ${scale}) rotate(${angle})`
+}
+
+const stemLeaves = computed(() => {
+  const g = growth.value
+  const h = v('height')
+  const thin = v('stemLeaves')
+  const all = [
+    ...g.systems.map((s, i) => ({ ...s, kind: 'system' as const, i, pair: 0 as const })),
+    ...g.assessments.flatMap((a, i) => [
+      { ...a, kind: 'methodology' as const, i, pair: 0 as const },
+      { ...a, kind: 'methodology' as const, i, pair: 1 as const },
+    ]),
+  ]
+  return all.map((item) => {
+    const place = stemLeaf(item.kind, item.i, item.pair)
+    // A leaf never shows above the stem that carries it.
+    const reach = Math.min(1, Math.max(0, (h - (GROUND - place.y)) / 8))
+    const scale = v(`leaf:${item.kind}:${item.i}`) * place.size * reach * thin
+    return {
+      key: `${item.kind}:${item.sequence}:${item.pair}`,
+      label: item.kind === 'system' ? `${item.label} reached` : `${item.label} assessed`,
+      transform: leafTransform(CX, place.y, place.side, -18, scale),
+    }
+  })
+})
+
+/** Foliage: overlapping discs, so the silhouette reads as a tree's. */
+function foliage(x: number, y: number, r: number): { cx: number; cy: number; r: number }[] {
+  if (r <= 0.5) return []
+  return [
+    { cx: x, cy: y - r * 0.35, r },
+    { cx: x - r * 0.62, cy: y + r * 0.05, r: r * 0.72 },
+    { cx: x + r * 0.62, cy: y + r * 0.05, r: r * 0.72 },
+    { cx: x, cy: y + r * 0.3, r: r * 0.6 },
+  ]
+}
+
+const crown = computed(() => foliage(CX, GROUND - v('height'), v('crown')))
+
+const branches = computed(() =>
+  growth.value.branches.map((branch, i) => {
+    const base = branchBase(i)
+    const length = v(`branch:${i}`)
+    const dx = Math.cos(BRANCH_ANGLE) * length * base.side
+    const dy = -Math.sin(BRANCH_ANGLE) * length
+    const tip = { x: CX + dx, y: base.y + dy }
+    const bend = { x: CX + dx * 0.45, y: base.y + dy * 0.2 }
+    const leaves = branch.leaves.map((leaf, k) => {
+      const t = (k + 1) / 7
+      const x = (1 - t) ** 2 * CX + 2 * (1 - t) * t * bend.x + t * t * tip.x
+      const y = (1 - t) ** 2 * base.y + 2 * (1 - t) * t * bend.y + t * t * tip.y
+      const side = k % 2 === 0 ? base.side : -base.side
+      return {
+        key: leaf.sequence,
+        label: leaf.label,
+        transform: leafTransform(x, y, side, k % 2 === 0 ? -34 : 10, 0.7 * v(`branch:${i}:leaf:${k}`)),
+      }
+    })
+    return {
+      key: branch.id,
+      label: branch.label,
+      path: length > 0.5 ? `M${CX} ${base.y} Q${bend.x} ${bend.y} ${tip.x} ${tip.y}` : null,
+      width: 1.6 + Math.min(branch.leaves.length, 6) * 0.45,
+      leaves,
+      cluster: foliage(tip.x, tip.y, v(`branch:${i}:cluster`)),
+      fruit: { x: tip.x, y: tip.y - v(`branch:${i}:cluster`) * 0.55, r: 4.2 * v(`branch:${i}:fruit`) },
+    }
+  }),
+)
+
+const roots = computed(() =>
+  growth.value.roots.map((root, i) => ({
+    key: root.label,
+    label: `${root.label} layer`,
+    d: ROOTS[i % ROOTS.length],
+    grown: v(`root:${i}`),
+  })),
+)
+
+/** Allowed and escalated requests soak in: one dot each, in the soil. */
+const absorbed = computed(() =>
+  growth.value.waterings
+    .filter((w) => w.effect !== 'DENY')
+    .map((w, i) => ({ ...w, x: 76 + (i % 28) * 9, y: 404 + Math.min(Math.floor(i / 28), 2) * 8 })),
+)
+
+/** Refused requests: held above the ground, beside the tree. */
+const refused = computed(() =>
+  growth.value.waterings
+    .filter((w) => w.effect === 'DENY')
+    .map((w, i) => ({ ...w, x: 80 + i * 18 })),
+)
+
+const watered = computed(() => absorbed.value.length)
+
+/** The drop falling now, if the latest request arrived on its own. */
+const CALM_GAP_MS = 250
+const falling = ref<{ sequence: number; effect: string; x: number } | null>(null)
+let lastArrival = 0
+let primed = false
+watch(
+  () => growth.value.waterings.length,
+  (count, before) => {
+    const now = performance.now()
+    const calm = primed && before !== undefined && count === before + 1 && now - lastArrival >= CALM_GAP_MS
+    lastArrival = now
+    primed = true
+    const latest = growth.value.waterings[count - 1]
+    if (!calm || !latest || reduced) return
+    const deny = latest.effect === 'DENY'
+    falling.value = {
+      sequence: latest.sequence,
+      effect: latest.effect,
+      x: deny ? refused.value[refused.value.length - 1].x : CX + 24,
+    }
+  },
+  { immediate: true },
+)
+
+/** What the tree is now, in the process's own terms. */
+const STAGES = {
+  INIT: 'Seed planted',
+  DISCOVERY: 'Sapling',
+  ASSESSMENT: 'Small plant',
+  IMPLEMENTATION: 'Growing tree',
+  RUNTIME: 'Grown',
+} as const
+
+const caption = computed(() => {
+  const g = growth.value
+  const phase = g.phase ?? 'INIT'
+  const parts = g.branches.reduce((n, b) => n + b.leaves.length, 0)
+  const detail: Record<keyof typeof STAGES, string> = {
+    INIT: `${g.roots.length} layers rooted`,
+    DISCOVERY: `${g.systems.length} ${g.systems.length === 1 ? 'system' : 'systems'} reached`,
+    ASSESSMENT: `${g.assessments.length} ${g.assessments.length === 1 ? 'methodology' : 'methodologies'} assessed`,
+    IMPLEMENTATION: `${g.branches.length} Agent ${g.branches.length === 1 ? 'Component' : 'Components'}, ${parts} parts built`,
+    RUNTIME: 'Agent One VW',
+  }
+  return {
+    stage: STAGES[phase],
+    phase: PHASE_LABELS[phase],
+    detail: detail[phase],
+    waiting: g.blocked,
+  }
+})
 </script>
 
 <template>
-  <figure class="tree" aria-label="Growth">
-    <svg
-      viewBox="0 0 1000 116"
-      preserveAspectRatio="xMidYMid meet"
-      role="img"
-      :data-motion="motion"
-      :aria-label="`Lifecycle: ${phases.find((p) => p.state === 'current')?.label ?? 'not started'}`"
-    >
+  <figure class="tree" :aria-label="`Growth: ${caption.stage}`">
+    <figcaption class="caption">
+      <span class="stage">{{ caption.stage }}</span>
+      <span class="detail mono">
+        {{ caption.phase }} · {{ caption.detail }}
+        <template v-if="caption.waiting"> · waiting on input</template>
+      </span>
+    </figcaption>
+
+    <svg viewBox="0 0 400 460" role="img" :data-settled="settled">
       <title>
-        Growth of the seed. Watered by tool requests the protection engine evaluated; no model
-        calls occur.
+        The seed growing into Agent One VW. Watered by tool requests the protection engine
+        evaluated; no model calls occur.
       </title>
 
-      <!-- Watering tally: what fed the tree, and what did not (FR-G3, FR-G4). -->
-      <text class="tally" x="14" y="14">
-        Watered by {{ watered }} tool {{ watered === 1 ? 'request' : 'requests' }}
-        <tspan v-if="refused.length"> · {{ refused.length }} refused</tspan>
-      </text>
+      <!-- Soil, seed and roots: the Seed's three layers. -->
+      <rect class="soil" x="60" y="392" width="280" height="36" rx="6" />
+      <line class="ground" x1="40" x2="360" :y1="GROUND" :y2="GROUND" />
+      <path
+        v-for="root in roots"
+        :key="root.key"
+        class="root"
+        :d="root.d"
+        pathLength="1"
+        stroke-dasharray="1"
+        :stroke-dashoffset="1 - root.grown"
+      >
+        <title>{{ root.label }}</title>
+      </path>
+      <ellipse v-if="v('seed') > 0" class="seed" :cx="CX" cy="401" rx="7" ry="4.5" />
 
-      <!-- Soil, seed and roots: the three layers of the Seed. -->
-      <rect class="soil" x="14" y="70" width="150" height="24" rx="4" />
-      <g class="roots">
-        <path
-          v-for="(root, index) in growth.roots"
-          :key="root.label"
-          class="root"
-          :data-new="isNew(root)"
-          :d="ROOTS[index % ROOTS.length]"
-        >
-          <title>{{ root.label }} layer</title>
-        </path>
-      </g>
-      <ellipse class="seed" cx="52" cy="77" rx="5" ry="3.5" />
-
-      <!-- Water that soaked in, one dot per allowed request. -->
+      <!-- Water that soaked in, one dot per allowed request (FR-G3). -->
       <circle
         v-for="drop in absorbed"
         :key="drop.sequence"
         class="water"
         :data-effect="drop.effect"
-        :data-new="isNew(drop)"
         :cx="drop.x"
         :cy="drop.y"
-        r="1.8"
+        r="2.2"
       >
         <title>{{ drop.label }} ({{ drop.rule }})</title>
       </circle>
 
-      <!-- Refused requests: a drop held above the ground. -->
-      <g v-for="drop in refused" :key="drop.sequence" class="refused" :data-new="isNew(drop)">
+      <!-- Refused requests: held above the ground; they fed nothing. -->
+      <g v-for="drop in refused" :key="drop.sequence" class="refused">
         <title>Refused under {{ drop.rule }}: {{ drop.label }}. It watered nothing.</title>
-        <path class="refused-drop" :d="`M${drop.x} 56 q4 6 0 9 q-4 -3 0 -9 z`" />
-        <line class="barrier" :x1="drop.x - 5" :x2="drop.x + 5" y1="67" y2="67" />
+        <path :d="`M${drop.x} 366 q6 9 0 14 q-6 -5 0 -14 z`" />
+        <line :x1="drop.x - 8" :x2="drop.x + 8" y1="384" y2="384" />
       </g>
 
-      <!-- The drop falling now, if one is: live and calm arrivals only. -->
+      <!-- The trunk, its stem leaves, and the branches of the build. -->
+      <path v-if="trunk" class="trunk" :d="trunk" />
       <path
-        v-if="latestWatering"
-        :key="`fall-${latestWatering.sequence}`"
-        class="falling"
-        :data-effect="latestWatering.effect"
-        :d="`M${latestWatering.effect === 'DENY' ? refused[refused.length - 1]?.x ?? 132 : 110} 22 q4 6 0 9 q-4 -3 0 -9 z`"
-      />
-
-      <!-- The stem: the whole path as a guide, the grown part over it. -->
-      <path class="guide" :d="STEM_PATH" pathLength="1000" />
-      <path
-        class="stem"
-        :d="STEM_PATH"
-        pathLength="1000"
-        stroke-dasharray="1000"
-        :stroke-dashoffset="grownOffset"
-      />
-
-      <!-- Discovery: a leaf per system reached. -->
-      <path
-        v-for="(system, index) in growth.systems"
-        :key="`s${system.sequence}`"
+        v-for="leaf in stemLeaves"
+        :key="leaf.key"
         class="leaf"
-        :data-new="isNew(system)"
-        :d="stemLeaf(systemX(index), index)"
+        :d="LEAF"
+        :transform="leaf.transform"
       >
-        <title>{{ system.label }} reached</title>
+        <title>{{ leaf.label }}</title>
       </path>
-
-      <!-- Assessment: a leaf per methodology assessed. -->
-      <path
-        v-for="(assessment, index) in growth.assessments"
-        :key="`a${assessment.sequence}`"
-        class="leaf"
-        :data-new="isNew(assessment)"
-        :d="stemLeaf(assessmentX(index), index)"
-      >
-        <title>{{ assessment.label }} assessed</title>
-      </path>
-
-      <!-- Implementation: a branch per Agent Component, a leaf per part. -->
-      <g v-for="(branch, index) in growth.branches" :key="branch.id" class="branch">
+      <circle
+        v-for="(disc, d) in crown"
+        :key="`crown${d}`"
+        class="canopy"
+        :cx="disc.cx"
+        :cy="disc.cy"
+        :r="disc.r"
+      />
+      <g v-for="branch in branches" :key="branch.key" class="branch">
         <title>{{ branch.label }}</title>
-        <path class="twig" :data-new="isNew(branch)" :d="branchPath(branchX(index))" />
+        <path v-if="branch.path" class="twig" :d="branch.path" :stroke-width="branch.width" />
+        <circle
+          v-for="(disc, d) in branch.cluster"
+          :key="`c${d}`"
+          class="canopy"
+          :cx="disc.cx"
+          :cy="disc.cy"
+          :r="disc.r"
+        />
         <path
-          v-for="(leaf, leafIndex) in branch.leaves"
-          :key="leaf.sequence"
-          class="leaf small"
-          :data-new="isNew(leaf)"
-          :d="branchLeaf(branchX(index), leafIndex)"
+          v-for="leaf in branch.leaves"
+          :key="leaf.key"
+          class="leaf"
+          :d="LEAF"
+          :transform="leaf.transform"
         >
           <title>{{ leaf.label }}</title>
         </path>
         <circle
-          v-if="branch.ready"
-          class="bud"
-          :cx="branchX(index) + 60"
-          :cy="20"
-          r="3.2"
+          v-if="branch.fruit.r > 0.2"
+          class="fruit"
+          :cx="branch.fruit.x"
+          :cy="branch.fruit.y"
+          :r="branch.fruit.r"
         />
       </g>
 
-      <!-- Life: Agent One VW flowers when it is ready to run. -->
-      <g v-if="growth.bloom" class="bloom" :data-new="isNew(growth.bloom)">
-        <title>Agent One VW, ready to run</title>
-        <circle
-          v-for="angle in [0, 72, 144, 216, 288]"
-          :key="angle"
-          class="petal"
-          :cx="END_X + 8 * Math.cos((angle * Math.PI) / 180)"
-          :cy="STEM_Y + 8 * Math.sin((angle * Math.PI) / 180)"
-          r="4.5"
-        />
-        <circle class="heart" :cx="END_X" :cy="STEM_Y" r="3" />
-      </g>
+      <!-- The drop falling now: live, calm arrivals only. -->
+      <path
+        v-if="falling"
+        :key="`fall-${falling.sequence}`"
+        class="falling"
+        :data-effect="falling.effect"
+        :d="`M${falling.x} 60 q6 9 0 14 q-6 -5 0 -14 z`"
+        @animationend="falling = null"
+      />
 
-      <!-- The phases: complete, current and future, as the strip had them. -->
-      <g
-        v-for="item in phases"
-        :key="item.phase"
-        class="phase"
-        :data-state="item.state"
-        :data-blocked="item.state === 'current' && growth.blocked"
-      >
-        <circle class="marker" :cx="item.x - 4 - item.label.length * 3.4" cy="106" r="2.6" />
-        <text class="label" :x="item.x" y="109" text-anchor="middle">{{ item.label }}</text>
-      </g>
+      <text class="tally" :x="CX" y="450" text-anchor="middle">
+        Watered by {{ watered }} tool {{ watered === 1 ? 'request' : 'requests' }}
+        <tspan v-if="refused.length"> · {{ refused.length }} refused</tspan>
+      </text>
     </svg>
   </figure>
 </template>
 
 <style scoped>
 .tree {
-  width: 100%;
-  max-width: 64rem;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  height: 100%;
+  margin: 0;
+  padding: var(--space-6) var(--space-6) var(--space-4);
+}
+
+.caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.stage {
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.detail {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+}
+
+.mono {
+  font-family: var(--font-mono);
 }
 
 svg {
-  display: block;
+  flex: 1;
   width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.tally {
-  fill: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.04em;
+  min-height: 0;
+  max-height: 34rem;
 }
 
 .soil {
@@ -361,15 +499,42 @@ svg {
   stroke: var(--border-subtle);
 }
 
-.seed {
-  fill: var(--growth-stem);
+.ground {
+  stroke: var(--border-default);
 }
 
 .root {
   fill: none;
   stroke: var(--growth-stem);
-  stroke-width: 1.2;
+  stroke-width: 1.6;
   stroke-linecap: round;
+}
+
+.seed {
+  fill: var(--growth-stem);
+}
+
+.trunk {
+  fill: var(--growth-stem);
+}
+
+.twig {
+  fill: none;
+  stroke: var(--growth-stem);
+  stroke-linecap: round;
+}
+
+.leaf {
+  fill: var(--growth-leaf);
+}
+
+.canopy {
+  fill: var(--growth-leaf);
+  opacity: 0.55;
+}
+
+.fruit {
+  fill: var(--growth-bud);
 }
 
 .water {
@@ -380,154 +545,67 @@ svg {
 .water[data-effect='ESCALATE'] {
   fill: none;
   stroke: var(--growth-water);
-  stroke-width: 0.9;
+  stroke-width: 1.1;
 }
 
-.refused-drop {
+.refused path {
   fill: none;
   stroke: var(--text-muted);
-  stroke-width: 1;
 }
 
-.barrier {
+.refused line {
   stroke: var(--text-muted);
-  stroke-width: 1;
 }
 
 .falling {
   fill: var(--growth-water);
-  animation: fall 520ms var(--ease-out) both;
+  animation: fall 700ms var(--ease-out) both;
 }
 
 .falling[data-effect='DENY'] {
   fill: none;
   stroke: var(--text-muted);
+  animation-name: held;
 }
 
-.guide {
-  fill: none;
-  stroke: var(--growth-guide);
-  stroke-width: 1;
-  stroke-dasharray: 2 4;
-}
-
-.stem {
-  fill: none;
-  stroke: var(--growth-stem);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-svg[data-motion='true'] .stem {
-  transition: stroke-dashoffset 520ms var(--ease-out);
-}
-
-.leaf {
-  fill: var(--growth-leaf);
-}
-
-.twig {
-  fill: none;
-  stroke: var(--growth-stem);
-  stroke-width: 1.4;
-  stroke-linecap: round;
-}
-
-.bud {
-  fill: var(--growth-bud);
-}
-
-.petal {
-  fill: var(--growth-bud);
-  opacity: 0.85;
-}
-
-.heart {
-  fill: var(--growth-leaf);
-}
-
-.marker {
-  fill: none;
-  stroke: var(--border-default);
-}
-
-.label {
+.tally {
   fill: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-}
-
-.phase[data-state='complete'] .marker {
-  fill: var(--border-strong);
-  stroke: var(--border-strong);
-}
-
-.phase[data-state='complete'] .label {
-  fill: var(--text-secondary);
-}
-
-.phase[data-state='current'] .marker {
-  fill: var(--accent);
-  stroke: var(--accent);
-}
-
-.phase[data-state='current'] .label {
-  fill: var(--text-primary);
-  font-weight: 600;
-}
-
-/* Waiting on a person is not progress, and not a fault (FR-H4). */
-.phase[data-blocked='true'] .marker {
-  fill: var(--status-warning);
-  stroke: var(--status-warning);
-}
-
-/* Arrival: a short, low-amplitude sprout, only for calm live events. */
-[data-new='true'] {
-  transform-box: fill-box;
-  transform-origin: 0% 100%;
-  animation: sprout 420ms var(--ease-out) both;
-}
-
-.water[data-new='true'] {
-  transform-origin: 50% 50%;
-  animation-delay: 380ms;
-}
-
-@keyframes sprout {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
-  }
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 
 @keyframes fall {
   from {
     opacity: 0;
-    transform: translateY(-14px);
+    transform: translateY(-10px);
   }
-  70% {
+  20% {
     opacity: 1;
   }
   to {
     opacity: 0;
-    transform: translateY(46px);
+    transform: translateY(334px);
+  }
+}
+
+/* A refused drop stops at the barrier and fades there. */
+@keyframes held {
+  from {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(300px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-new='true'],
-  .falling {
-    animation: none;
-  }
-
   .falling {
     display: none;
-  }
-
-  svg[data-motion='true'] .stem {
-    transition: none;
   }
 }
 </style>
