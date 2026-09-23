@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 
 import GrowthTree from '../components/GrowthTree.vue'
 import RuntimeStage from '../components/RuntimeStage.vue'
@@ -21,6 +21,9 @@ const system = useSystemStore()
  * way to what it grew: Agent One VW, its ready Agent Components, and the
  * dashboard of whichever one is open (FR-LF1).
  *
+ * After the hand-over the tree stays one click away: the header's Growth
+ * control drops it open above Agent One VW (D-19).
+ *
  * The pane is never unmounted while the workspace exists, and nor is the
  * component list inside it while a dashboard is open, so returning from a
  * dashboard or from the Seeding pane finds both as they were left
@@ -39,6 +42,19 @@ const growing = computed(() => system.lifecycle !== 'UNINITIALIZED' && !complete
 const ready = computed(() => system.solutions.filter((s) => s.status !== 'REJECTED').length)
 
 /**
+ * Whether the grown tree is open above Agent One VW.
+ *
+ * After the hand-over the tree is not gone: the header keeps a Growth
+ * control that drops it open again, fully grown, drawn from the same log.
+ * Closed by default, so Agent One VW is what the pane leads with. A new
+ * run starts closed again.
+ */
+const treeOpen = ref(false)
+watch(complete, (now) => {
+  if (!now) treeOpen.value = false
+})
+
+/**
  * Which dashboard is open, if any: the running component's, or one
  * opened from a link for rehearsal, which needs no run to reach (D-3).
  */
@@ -55,7 +71,25 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
     <header class="head">
       <h2 class="title">Agent One VW <span class="mark">(ValueWise™)</span></h2>
       <span v-if="growing" class="state mono">Growing</span>
+      <button
+        v-if="complete"
+        type="button"
+        class="growth-toggle"
+        :aria-expanded="treeOpen"
+        aria-controls="life-growth"
+        @click="treeOpen = !treeOpen"
+      >
+        Growth
+        <span class="chevron" aria-hidden="true">{{ treeOpen ? '▴' : '▾' }}</span>
+      </button>
     </header>
+
+    <!-- The grown tree, dropped open from the header after the hand-over. -->
+    <Transition name="drop">
+      <div v-if="complete && treeOpen" id="life-growth" class="growth">
+        <GrowthTree />
+      </div>
+    </Transition>
 
     <div class="body">
       <div v-show="!shown" class="holder">
@@ -78,12 +112,7 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
         </Transition>
       </div>
 
-      <DashboardView
-        v-if="shown"
-        :key="shown.id"
-        :solution-id="shown.id"
-        :mode="shown.mode"
-      />
+      <DashboardView v-if="shown" :key="shown.id" :solution-id="shown.id" :mode="shown.mode" />
     </div>
   </section>
 </template>
@@ -91,7 +120,7 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
 <style scoped>
 .life {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
   height: 100%;
   min-height: 0;
@@ -151,6 +180,53 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
   font-family: var(--font-mono);
 }
 
+.growth-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  padding: var(--space-1) var(--space-3);
+  color: var(--text-secondary);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.growth-toggle:hover,
+.growth-toggle[aria-expanded='true'] {
+  color: var(--text-primary);
+  border-color: var(--growth-leaf);
+}
+
+.chevron {
+  font-size: 0.7em;
+}
+
+.growth {
+  height: clamp(18rem, 48vh, 30rem);
+  overflow: hidden;
+  background: var(--surface-base);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.drop-enter-active,
+.drop-leave-active {
+  transition:
+    height var(--duration-slow) var(--ease-out),
+    opacity var(--duration-slow) var(--ease-out);
+}
+
+.drop-enter-from,
+.drop-leave-to {
+  height: 0;
+  opacity: 0;
+}
+
 .grown {
   display: flex;
   flex-direction: column;
@@ -202,7 +278,9 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
 
 @media (prefers-reduced-motion: reduce) {
   .handover-enter-active,
-  .handover-leave-active {
+  .handover-leave-active,
+  .drop-enter-active,
+  .drop-leave-active {
     transition: none;
   }
 }

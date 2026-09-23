@@ -4446,3 +4446,79 @@ dark and light:
    Activity drawer sits at the bottom. Close and reopen it.
 2. Scroll the Activity stream and the stages in both themes.
 3. Watch the tree grow at 1x: the roots bush out, and the crown widens.
+
+### Follow-up · Both during the build, the Growth control, and the tree's look (D-19)
+
+**Requested, 2026-09-24, after reviewing the previous follow-up:**
+
+- the stem changes colour as the tree grows;
+- the tree stays reachable after the Life phase, from a drop-down at
+  the top of the Life pane;
+- clusters almost covered in leaves, with texture on the leaves, the
+  stem and the clusters;
+- denser roots, with more nodules and threads;
+- Both, not Life only, during the build.
+
+These are ruled as D-19, with A-13 and A-14, and applied in
+decisions.md, requirements.md and the plan.
+
+**What changed.**
+
+- **Layout** (`stores/layout.ts`): the default is Both from planting
+  until the build completes. It is Life only from `READY_TO_RUN`.
+- **The Life pane** (`views/LifeView.vue`): after the hand-over, a
+  **Growth ▾** control in the header drops the grown tree open above
+  Agent One VW, and closes it again. It is closed by default, and a new
+  run starts closed.
+- **The tree** (`components/GrowthTree.vue`):
+  - **Stem.** A new `age` target runs from 0 at the sprout to 1 late in
+    the build. It colours the trunk by mixing `--growth-stem-young` with
+    `--growth-bark`. Branches lag the trunk, and twigs lag the branches.
+    A bark-furrow pattern fades in with age, over a rounded shading.
+  - **Foliage.** Clusters take a radial gradient, lit from the upper
+    left. A single leaf shape with a midrib is placed by `<use>`, and
+    leaves cover every crown disc, branch cluster and twig tuft. They
+    sit on a fixed-spacing sunflower spiral from the centre, so a
+    growing cluster gains leaves at its rim and the ones already there
+    stay put. The outer leaves reach past the rim, in three greens. A
+    grown tree carries about 900 leaves.
+  - **Roots.** There are eight laterals per main root, four hairs each,
+    and nodules along the laterals. Six finer fibres come in as the
+    roots bush out. Roots are clipped below the surface. A stroke that
+    has not started is left out, because a round cap on an empty dash
+    painted a stray dot.
+- **Tokens** (`design/tokens.css`): `--growth-stem-young`,
+  `--growth-bark`, `--growth-leaf-light` and `--growth-nodule`, in both
+  themes.
+
+**Files.** `frontend/src/stores/layout.ts`, `views/LifeView.vue`,
+`components/GrowthTree.vue`, `design/tokens.css`; `docs/decisions.md`,
+`docs/requirements.md`, `docs/implementation-plan.md`.
+
+**Gates.** `pytest` gives 431 passed. Typecheck and build pass. Live, in
+dark and light:
+
+- The layout after planting is Both.
+- The trunk's colour moved from 30.6% to 86.4% bark between the small
+  plant and late in the build.
+- At the hand-over the tree is closed behind the Growth control, which
+  drops it open.
+- The request box still clears the rail, and the drawer still closes.
+- A reload at approval rebuilt the identical tree, two runs from Reset
+  grew identical trees, and the hand-over still appears at build
+  completion (5 of 5).
+- The M14 walkthrough passes 31 of 31. Its expectation for the layout
+  after planting is updated to D-19.
+
+These ran against an isolated copy of the app, on ports 8001 and 5174.
+A browser left open on the shared app changed its state mid-run, which
+twice broke the walkthrough at unrelated steps. Windows Application
+Control had also begun blocking `uv.exe`, so pytest ran through the
+project's `.venv` interpreter.
+
+**Check by hand.**
+
+1. Plant and watch at 1x. The layout is Both, and the stem turns from
+   green to bark as the build proceeds.
+2. At the hand-over, open and close **Growth ▾** in the Life header.
+3. Judge the leaf cover and the root density in both themes.

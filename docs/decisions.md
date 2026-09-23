@@ -666,6 +666,9 @@ READY_TO_RUN, RUNNING                      Life only
 *Amended by D-18:* from planting until the build completes the default
 is now Life only, where the growth tree stands. The other rows hold.
 
+*Amended again by D-19:* from planting until the build completes the
+default is Both, so the stages and the tree are watched together.
+
 *The rail in Both* (after review, 2026-09-24). With both panes showing,
 a side rail of at least 22rem left the stages a sliver. In Both the
 Activity and Protection rail docks along the bottom of the Seeding pane
@@ -933,11 +936,52 @@ request is a drop, and a refused one is held above the ground.
 *Its look* (after review, 2026-09-24). The roots are earth brown, apart
 from the green above ground. The soil is a warm tint at the surface that
 fades downward and at both ends, so the roots show through it. The tree
-spreads wider than it is tall once the build is under way.
+spreads wider than it is tall once the build is under way. D-19 adds
+the stem's ageing, textures, the leaf cover and the denser roots.
 
 *The strip returns.* With the tree in Life, the Seeding pane has its
 lifecycle indicator back: the strip, as built in M4. A-4 is reversed,
 and FR-L6 stands again.
+
+### D-19 · Both during the build, and the tree kept after it (2026-09-24)
+
+**Ruled after D-18 was reviewed. The default layout during the build is
+Both, not Life only. The tree stays available after the hand-over. The
+tree's look deepens.** This amends D-18 and D-14's layout table, and
+adds amendments A-13 and A-14.
+
+*Both during the build.* From planting until the build completes, the
+default layout is Both. The stages and the record are on one side and
+the tree grows on the other, so the process and its growth are watched
+together. With both panes showing, the Seeding pane's rail is the
+bottom drawer described under D-14. At `READY_TO_RUN` the default
+becomes Life only, as before. A-13 supersedes A-11.
+
+*The tree after the hand-over.* When the build completes, the tree
+still gives way to "Seeding complete" and Agent One VW. It is no longer
+gone. A **Growth** control in the Life pane's header drops the grown
+tree open above Agent One VW, and closes it again. The tree is closed
+by default, so the pane leads with what was grown. The tree it shows is
+the same function of the same log (FR-G5). A new run starts closed.
+This is A-14.
+
+*Its look.* The drawing still follows the process, and it is still a
+pure function of the log:
+
+- **Stem.** The stem ages from young green to bark as the process
+  advances: a little with each system reached and each methodology
+  assessed, most of it with the build. The branches lag the trunk, and
+  the twigs lag the branches, as younger wood does. Bark furrows and a
+  rounded shading appear once the stem has begun to turn.
+- **Foliage.** Each cluster is shaded for volume and covered in leaves,
+  each leaf with a midrib, in three greens. The leaves fill a cluster
+  from its centre outward as it grows, and the outermost ones reach past
+  its rim, so the silhouette is leafy rather than round.
+- **Roots.** Each layer's root carries eight laterals, each with four
+  fine hairs and with nodules along it. Six finer fibres grow between
+  the main roots once they begin to bush out. Roots stay below the
+  surface.
+
 
 ### 7.2 Requirement amendments
 
@@ -956,6 +1000,8 @@ and left in place, not deleted.
 | A-10 | FR-L6, FR-G1 | A-4 reversed: FR-L6 stands again, and the strip is the Seeding pane's lifecycle indicator. FR-G1 now places the tree in the Life pane during seeding. | D-18 |
 | A-11 | FR-W3  | Life only is the default from planting until the build completes. | D-18 |
 | A-12 | FR-W4  | Until the build completes, the Life pane shows the growing tree rather than an empty state. When it completes, the tree hands over to Agent One VW. | D-18 |
+| A-13 | FR-W3  | Supersedes A-11: Both is the default from planting until the build completes. | D-19 |
+| A-14 | FR-W4  | After the hand-over the tree stays available: a Growth control in the Life pane's header drops it open above Agent One VW. | D-19 |
 
 New requirement groups: FR-N (display vocabulary), FR-W (panes), FR-G
 (growth tree), FR-C (closing), FR-LF (Life pane), plus FR-A11 to FR-A13,

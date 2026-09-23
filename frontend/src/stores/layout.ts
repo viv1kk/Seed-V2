@@ -8,22 +8,23 @@ import { useSystemStore, type LifecycleState } from './system'
 export type Layout = 'both' | 'seeding' | 'life'
 
 /**
- * The layout the lifecycle asks for (FR-W3, as amended by D-18).
+ * The layout the lifecycle asks for (FR-W3, as amended by D-18 and D-19).
  *
- * Life only while the seed is being grown: the Life pane shows it growing
- * as the process advances, and the Seeding pane's detail is one click
- * away. A question still brings the Seeding pane forward (FR-W5). Both
- * once Implementation completes, so the hand-over is visible. Life only
- * once there is something running to look at.
+ * Both while the seed is being grown: the stages and the record on one
+ * side, the tree growing with them on the other, so the process and its
+ * growth are watched together. Both through the hand-over when
+ * Implementation completes. Life only once there is something running to
+ * look at.
  */
 function defaultFor(lifecycle: LifecycleState): Layout {
   switch (lifecycle) {
     case 'UNINITIALIZED':
       return 'seeding'
-    case 'IMPLEMENTATION_COMPLETE':
-      return 'both'
-    default:
+    case 'READY_TO_RUN':
+    case 'RUNNING':
       return 'life'
+    default:
+      return 'both'
   }
 }
 

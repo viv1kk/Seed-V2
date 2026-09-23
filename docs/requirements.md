@@ -300,8 +300,8 @@ Added by the Seeding and Life rework (D-14).
 | ------ | ----------- |
 | FR-W1  | The workspace has two panes. **Seeding** holds the Planting, Discovery, Assessment and Implementation stages, the Activity and Protection rail, and the human-input surface. **Life** holds the running system. |
 | FR-W2  | A control in the top bar selects Both, Seeding only, or Life only. |
-| FR-W3  | The lifecycle sets the default layout: ~~Seeding only until `IMPLEMENTATION_COMPLETE`~~ Life only from planting until `IMPLEMENTATION_COMPLETE` (A-11), Both until seeding closes, then Life only. A manual choice holds until the next lifecycle-driven change. |
-| FR-W4  | Until Implementation completes, the Life pane shows ~~a deliberate empty state~~ the growing tree (FR-G1) rather than blank space. When it completes, the tree hands over to a completion statement and Agent One VW (A-12). |
+| FR-W3  | The lifecycle sets the default layout: ~~Seeding only until `IMPLEMENTATION_COMPLETE`~~ ~~Life only from planting until `IMPLEMENTATION_COMPLETE` (A-11)~~ Both from planting until seeding closes (A-13), then Life only. A manual choice holds until the next lifecycle-driven change. |
+| FR-W4  | Until Implementation completes, the Life pane shows ~~a deliberate empty state~~ the growing tree (FR-G1) rather than blank space. When it completes, the tree hands over to a completion statement and Agent One VW (A-12). The grown tree stays one click away, behind a Growth control in the pane's header (A-14). |
 | FR-W5  | A pending human request makes the Seeding pane visible, whatever the layout. |
 | FR-W6  | Running a solution opens its dashboard inside the Life pane, not over the whole screen. A rehearsal link (D-3) opens it the same way, in the Life-only layout. |
 | FR-W7  | The seed upload screen stays full-screen until the seed is planted (FR-S2). After planting, the Planting stage is the first stage of the Seeding pane. |

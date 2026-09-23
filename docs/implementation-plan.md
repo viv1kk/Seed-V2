@@ -1022,6 +1022,7 @@ rulings themselves:
 | **D-16** | **Closing the seeding phase** is a new lifecycle state, confirmed by a person, with three simulated, policy-gated operations. | Needs new protection rules; the only Phase R milestone that edits a test assertion. |
 | **D-17** | **Life is time-revealed operation** (Option B, OQ-12): a finite collection cursor over already-generated data, with precomputed recalibration. A drilled-in view pins to its step. | The "maintaining" half of Agent One VW. Needs A-8 and A-9. |
 | **D-18** | **The growth tree grows in the Life pane**, vertically from seed to tree as the process advances, then hands over to Agent One VW. The strip returns to the Seeding pane; Life only is the default during the build. | Ruled after M17's review. Amends D-15 and D-14's layout. A-10 to A-12. |
+| **D-19** | **Both during the build**, and the grown tree kept behind a **Growth** control after the hand-over. The tree's stem ages from green to bark, and it gains texture, leaf cover and denser roots. | Ruled after D-18's review. Amends D-18 and D-14's layout. A-13, A-14. |
 
 Two requirement amendments follow from these and are applied in
 `requirements.md`:
@@ -1052,6 +1053,10 @@ clarifying rather than deleting (`decisions.md` §7.2):
   build completes (D-18).
 - **A-12** --- FR-W4: the Life pane shows the growing tree until the build
   completes, then Agent One VW (D-18).
+- **A-13** --- FR-W3: supersedes A-11; Both is the default from planting
+  until the build completes (D-19).
+- **A-14** --- FR-W4: after the hand-over, a Growth control in the Life
+  pane's header drops the grown tree open (D-19).
 
 ---
 

@@ -53,9 +53,20 @@ const MAIN_ROOTS: { end: [number, number]; bend: [number, number] }[] = [
   { end: [96, 46], bend: [38, 30] },
 ]
 
-/** Where laterals leave a main root, and where hairs leave a lateral. */
-const LATERALS = [0.26, 0.44, 0.62, 0.8]
-const HAIRS = [0.45, 0.8]
+/**
+ * Finer roots from the seed, between the three main ones. They carry no
+ * layer: they are what makes the root system read as dense, and they
+ * come in as the roots bush out.
+ */
+const FIBRES: { end: [number, number]; bend: [number, number] }[] = [
+  { end: [-58, 72], bend: [-16, 40] },
+  { end: [-128, 24], bend: [-52, 14] },
+  { end: [54, 76], bend: [18, 42] },
+  { end: [130, 20], bend: [56, 12] },
+  { end: [-26, 80], bend: [-6, 44] },
+  { end: [30, 82], bend: [10, 46] },
+]
+
 const LATERAL_ANGLE = (48 * Math.PI) / 180
 const HAIR_ANGLE = (52 * Math.PI) / 180
 
@@ -92,33 +103,59 @@ function sprig(from: Point, dir: Point, length: number, bow: number): { d: strin
   }
 }
 
+/** Evenly spaced positions along a stroke, from `from` to `to`. */
+function spaced(count: number, from: number, to: number): number[] {
+  return Array.from({ length: count }, (_, k) =>
+    count === 1 ? from : from + ((to - from) * k) / (count - 1),
+  )
+}
+
+interface Lateral {
+  d: string
+  hairs: string[]
+  nodules: { x: number; y: number; r: number }[]
+}
+
 /**
- * The whole root system, fixed in advance: each main root, its laterals
- * and their hairs. How much of it shows is set by growth, not here.
+ * One root, fixed in advance: its curve, the laterals along it, the fine
+ * hairs on each lateral and the nodules they carry. How much of it shows
+ * is set by growth, not here.
  */
-const ROOT_SYSTEM = MAIN_ROOTS.map((root) => {
+function rootOf(
+  root: { end: [number, number]; bend: [number, number] },
+  lateralCount: number,
+  hairCount: number,
+): { d: string; laterals: Lateral[] } {
   const p0 = { x: CX, y: SEED_Y }
   const c = { x: CX + root.bend[0], y: SEED_Y + root.bend[1] }
   const p1 = { x: CX + root.end[0], y: SEED_Y + root.end[1] }
   const reach = Math.hypot(root.end[0], root.end[1]) / 90
-  const laterals = LATERALS.map((t, j) => {
+  const laterals = spaced(lateralCount, 0.12, 0.92).map((t, j) => {
     const side = j % 2 === 0 ? 1 : -1
     const { at, dir } = quad(p0, c, p1, t)
     const length = 34 * (1 - t * 0.55) * reach
     const lateral = sprig(at, turn(dir, side * LATERAL_ANGLE), length, 0.12 * side)
-    const middle = {
-      x: (at.x + lateral.end.x) / 2,
-      y: (at.y + lateral.end.y) / 2,
-    }
-    const hairs = HAIRS.map((s, h) => {
+    const middle = { x: (at.x + lateral.end.x) / 2, y: (at.y + lateral.end.y) / 2 }
+    const hairs = spaced(hairCount, 0.25, 0.9).map((s, h) => {
       const point = quad(at, middle, lateral.end, s)
       const hs = h % 2 === 0 ? -side : side
       return sprig(point.at, turn(point.dir, hs * HAIR_ANGLE), 11 * (1 - s * 0.4), 0.1 * hs).d
     })
-    return { d: lateral.d, hairs }
+    // Nodules sit along the lateral: one on each, a second on every other.
+    const nodules = (j % 2 === 0 ? [0.35, 0.72] : [0.5]).map((s, n) => {
+      const { at: point } = quad(at, middle, lateral.end, s)
+      return { x: point.x, y: point.y, r: 1.3 + ((j + n) % 3) * 0.35 }
+    })
+    return { d: lateral.d, hairs, nodules }
   })
   return { d: `M${p0.x} ${p0.y} Q${c.x} ${c.y} ${p1.x} ${p1.y}`, laterals }
-})
+}
+
+/** The main roots, one per layer: eight laterals, four hairs on each. */
+const ROOT_SYSTEM = MAIN_ROOTS.map((root) => rootOf(root, 8, 4))
+
+/** The fibres: shorter, with fewer laterals. */
+const FIBRE_SYSTEM = FIBRES.map((root) => rootOf(root, 4, 3))
 
 /**
  * Where a stem leaf sits, and its side and size: by index, never by time.
@@ -165,6 +202,11 @@ const targets = computed<Targets>(() => {
   // planting, the whole system once the build is well under way.
   const progress = systems + methods * 2 + branches * 3 + parts
   t.rootSpread = g.roots.length > 0 ? 0.25 + 0.75 * Math.min(1, progress / 30) : 0
+  // How far the stem has aged from green shoot to bark: a little with each
+  // system and methodology, most of it with the build.
+  t.age = g.sprouted
+    ? Math.min(1, (systems + methods * 2 + branches * 4 + Math.min(parts, 18) * 0.8) / 36)
+    : 0
 
   // The seed stays small through the sapling and the small plant; most of
   // the height and girth come with the build, when it becomes a tree.
@@ -257,7 +299,7 @@ const v = (key: string) => shown[key] ?? 0
 // -- Drawing -----------------------------------------------------------
 
 /**
- * Ids for the soil's gradients. Fixed rather than generated, so the same
+ * Ids for the drawing's shared parts. Fixed rather than generated, so the same
  * log draws the same markup (FR-G5); only one tree is ever mounted.
  */
 const ids = {
@@ -265,7 +307,31 @@ const ids = {
   edge: 'growth-edge',
   mask: 'growth-mask',
   line: 'growth-line',
+  leaf: 'growth-leaf',
+  canopy: 'growth-canopy',
+  canopyDeep: 'growth-canopy-deep',
+  bark: 'growth-bark',
+  shade: 'growth-shade',
+  underground: 'growth-underground',
 }
+
+/**
+ * The stem's colour, by age: fresh green in the sapling, turning to bark
+ * as the process advances. Branches lag the trunk and twigs lag the
+ * branches, as younger wood does.
+ */
+function woodAt(age: number): string {
+  const bark = Math.round(Math.min(1, Math.max(0, age)) * 1000) / 10
+  return `color-mix(in oklab, var(--growth-bark) ${bark}%, var(--growth-stem-young))`
+}
+
+const wood = computed(() => ({
+  trunk: woodAt(v('age')),
+  branch: woodAt(v('age') * 0.8),
+  twig: woodAt(v('age') * 0.45),
+  // Bark furrows show once the stem has started to turn.
+  furrows: Math.round(Math.min(1, Math.max(0, (v('age') - 0.15) / 0.6)) * 100) / 100,
+}))
 
 /** The trunk: a tapered stem from the ground to its current height. */
 const trunk = computed(() => {
@@ -287,8 +353,9 @@ const trunk = computed(() => {
   )
 })
 
-/** A leaf, pointing out from its stem, scaled by how far it has grown. */
-const LEAF = 'M0 0 q7 -9 20 -8 q-5 8 -20 8 z'
+/** A leaf, pointing out from its stem, with a midrib drawn over it. */
+const LEAF = 'M0 0 q6 -11 20 -9 q-4 10 -20 9 z'
+const VEIN = 'M1.5 -0.3 q8 -3.4 17 -8.4'
 
 function leafTransform(x: number, y: number, side: number, angle: number, scale: number): string {
   return `translate(${x} ${y}) scale(${side * scale} ${scale}) rotate(${angle})`
@@ -363,25 +430,49 @@ function foliage(x: number, y: number, r: number, shape = TUFT): Disc[] {
   }))
 }
 
+type Tone = 'deep' | 'mid' | 'light'
+const TONES: Tone[] = ['deep', 'mid', 'light']
+const GOLDEN = 2.39996
+
+/**
+ * Leaves covering a cluster, so it reads as foliage rather than a disc.
+ *
+ * Each disc is filled from its centre outward on a sunflower spiral with
+ * a fixed spacing, so a growing disc gains leaves at its rim while the
+ * ones already there stay put. The outermost leaves reach past the rim,
+ * so the silhouette is leafy rather than round. Each leaf points out from
+ * the centre, in one of three greens. All by index, never by time.
+ */
+function cover(prefix: string, discs: Disc[], spacing: number, size: number) {
+  return discs.flatMap((disc, d) => {
+    const leaves: { key: string; tone: Tone; transform: string }[] = []
+    const reach = disc.r * 1.02
+    for (let k = 0; ; k++) {
+      const radius = Math.sqrt(k + 0.5) * spacing
+      if (radius > reach) break
+      const angle = k * GOLDEN + d * 0.7
+      const x = disc.cx + Math.cos(angle) * radius
+      const y = disc.cy + Math.sin(angle) * radius
+      // A leaf opens as the rim passes it.
+      const open = Math.min(1, (reach - radius) / (spacing * 1.2))
+      const heading = (angle * 180) / Math.PI - 20 + ((k * 37) % 40)
+      const scale = size * (0.8 + ((k * 7) % 5) * 0.08) * open
+      leaves.push({
+        key: `${prefix}${d}:${k}`,
+        tone: TONES[(k + d) % 3],
+        transform: leafTransform(x, y, 1, heading, scale),
+      })
+    }
+    return leaves
+  })
+}
+
 /** The crown sits on the top of the trunk and spreads out from it. */
 const crown = computed(() => {
   const r = v('crown')
   const top = { x: CX, y: GROUND - v('height') + r * 0.2 }
-  const parts = growth.value.branches.reduce((n, b) => n + b.leaves.length, 0)
-  // Two leaves per part built, set on a spiral through the crown so they
-  // spread evenly: placed by index, never by time.
-  const leaves = Array.from({ length: Math.min(parts, 18) * 2 }, (_, k) => {
-    const angle = k * 2.39996
-    const radius = Math.sqrt((k + 0.5) / 36)
-    const x = top.x + Math.cos(angle) * radius * r * 2.2
-    const y = top.y - r * 0.2 + Math.sin(angle) * radius * r * 0.95
-    const scale = 0.75 * v(`crownLeaf:${k}`)
-    return {
-      key: `crown${k}`,
-      transform: leafTransform(x, y, k % 2 === 0 ? 1 : -1, (k * 47) % 360, scale),
-    }
-  })
-  return { discs: foliage(top.x, top.y, r, CLOUD), leaves }
+  const discs = foliage(top.x, top.y, r, CLOUD)
+  return { discs, leaves: cover('crown', discs, 6, 0.72) }
 })
 
 const branches = computed(() =>
@@ -403,23 +494,21 @@ const branches = computed(() =>
         transform: leafTransform(at.x, at.y, side, k % 2 === 0 ? -34 : 10, scale),
       }
     })
-    // A twig per part built, each ending in a small tuft and two leaves.
+    // A twig per part built, each ending in a small leafy tuft.
     const twigs = branch.leaves.map((leaf, k) => {
       const grown = v(`branch:${i}:leaf:${k}`)
       const { at, dir } = quad(start, bend, tip, 0.3 + 0.12 * k)
       const heading = turn(dir, -base.side * TWIG_TURN[k % 2])
       const twig = sprig(at, heading, 24 * grown, 0.1 * base.side)
+      const tuft = foliage(twig.end.x, twig.end.y, 9 * grown)
       return {
         key: `t${leaf.sequence}`,
         d: grown > 0.02 ? twig.d : null,
-        tuft: foliage(twig.end.x, twig.end.y, 8.5 * grown),
-        leaves: [
-          leafTransform(twig.end.x, twig.end.y, base.side, -40, 0.6 * grown),
-          leafTransform(twig.end.x, twig.end.y, -base.side, 20, 0.55 * grown),
-        ],
+        tuft,
+        leaves: cover(`t${leaf.sequence}:`, tuft, 3, 0.4),
       }
     })
-    const cluster = v(`branch:${i}:cluster`)
+    const cluster = foliage(tip.x, tip.y, v(`branch:${i}:cluster`))
     return {
       key: branch.id,
       label: branch.label,
@@ -427,10 +516,11 @@ const branches = computed(() =>
       width: 2 + Math.min(branch.leaves.length, 6) * 0.55,
       leaves,
       twigs,
-      cluster: foliage(tip.x, tip.y, cluster),
+      cluster,
+      clusterLeaves: cover(`c${i}:`, cluster, 4.4, 0.54),
       fruit: {
         x: tip.x,
-        y: tip.y - cluster * 0.55,
+        y: tip.y - v(`branch:${i}:cluster`) * 0.55,
         r: 4.2 * v(`branch:${i}:fruit`),
       },
     }
@@ -438,11 +528,38 @@ const branches = computed(() =>
 )
 
 /**
- * The roots: a main root per layer, which bushes out into laterals and
- * fine hairs as the plant above it grows.
+ * How far along a root's laterals and hairs have come, 0 to 1 each.
+ *
+ * A stroke that has not started is left out rather than drawn at zero
+ * length, because a round cap on an empty dash still paints a dot.
+ */
+const STARTED = 0.01
+
+function reveal(system: { d: string; laterals: Lateral[] }, grown: number, spread: number) {
+  const steps = spread * (system.laterals.length + 1)
+  return system.laterals
+    .map((lateral, j) => {
+      const own = grown * Math.min(1, Math.max(0, steps - j))
+      const hairs = grown * Math.min(1, Math.max(0, steps - j - 1))
+      return {
+        key: j,
+        d: lateral.d,
+        grown: own,
+        hairs: hairs > STARTED ? lateral.hairs : [],
+        hairGrown: hairs,
+        nodules: lateral.nodules.map((n) => ({ ...n, r: n.r * hairs })),
+      }
+    })
+    .filter((lateral) => lateral.grown > STARTED)
+}
+
+/**
+ * The roots: a main root per layer, which bushes out into laterals, fine
+ * hairs and nodules as the plant above it grows, with finer fibres
+ * between them.
  */
 const roots = computed(() => {
-  const spread = v('rootSpread') * (LATERALS.length + 1)
+  const spread = v('rootSpread')
   const girth = 1.8 + Math.min(v('width'), 12) * 0.2
   return growth.value.roots.map((root, i) => {
     const system = ROOT_SYSTEM[i % ROOT_SYSTEM.length]
@@ -453,14 +570,24 @@ const roots = computed(() => {
       d: system.d,
       grown,
       girth,
-      laterals: system.laterals.map((lateral, j) => ({
-        d: lateral.d,
-        grown: grown * Math.min(1, Math.max(0, spread - j)),
-        hairs: lateral.hairs,
-        hairGrown: grown * Math.min(1, Math.max(0, spread - j - 1)),
-      })),
+      laterals: reveal(system, grown, spread),
     }
   })
+})
+
+const fibres = computed(() => {
+  if (growth.value.roots.length === 0) return []
+  const spread = v('rootSpread')
+  return FIBRE_SYSTEM.map((system, f) => {
+    // Each fibre starts once the roots have begun to bush out.
+    const grown = Math.min(1, Math.max(0, (spread - 0.3 - f * 0.08) / 0.25))
+    return {
+      key: `fibre${f}`,
+      d: system.d,
+      grown,
+      laterals: reveal(system, grown, grown),
+    }
+  }).filter((fibre) => fibre.grown > STARTED)
 })
 
 /** Allowed and escalated requests soak in: one dot each, in the soil. */
@@ -573,6 +700,48 @@ const caption = computed(() => {
           <stop offset="0.8" class="surface-stop" stop-opacity="1" />
           <stop offset="1" class="surface-stop" stop-opacity="0" />
         </linearGradient>
+        <!-- A leaf, drawn once and placed everywhere: the blade takes the
+             fill of wherever it is used, the midrib is a lighter line. -->
+        <g :id="ids.leaf">
+          <path :d="LEAF" />
+          <path
+            :d="VEIN"
+            fill="none"
+            stroke="#fff"
+            stroke-opacity="0.32"
+            stroke-width="0.9"
+            stroke-linecap="round"
+          />
+        </g>
+        <!-- Foliage has volume: lit from the upper left, darker at the rim. -->
+        <radialGradient :id="ids.canopy" cx="0.38" cy="0.32" r="0.75">
+          <stop offset="0" class="leaf-light-stop" />
+          <stop offset="0.6" class="leaf-stop" />
+          <stop offset="1" class="leaf-deep-stop" />
+        </radialGradient>
+        <radialGradient :id="ids.canopyDeep" cx="0.38" cy="0.32" r="0.75">
+          <stop offset="0" class="leaf-stop" />
+          <stop offset="1" class="leaf-deep-stop" />
+        </radialGradient>
+        <!-- Bark: fine vertical furrows, and a round-stem shading. -->
+        <pattern :id="ids.bark" patternUnits="userSpaceOnUse" width="7" height="18">
+          <path
+            d="M1.5 0 q1.4 4.5 0 9 q-1.4 4.5 0 9 M5 -4 q1.2 5 0 10 q-1.2 5 0 10 M3.4 4 l0 5"
+            fill="none"
+            stroke="#000"
+            stroke-opacity="0.32"
+            stroke-width="0.8"
+          />
+        </pattern>
+        <linearGradient :id="ids.shade" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#fff" stop-opacity="0.2" />
+          <stop offset="0.45" stop-color="#fff" stop-opacity="0" />
+          <stop offset="1" stop-color="#000" stop-opacity="0.3" />
+        </linearGradient>
+        <!-- Roots stay below the surface, however they branch. -->
+        <clipPath :id="ids.underground">
+          <rect x="0" :y="GROUND + 0.5" width="520" :height="SOIL_DEPTH + 40" />
+        </clipPath>
         <mask :id="ids.mask">
           <rect
             :x="SOIL_X"
@@ -595,17 +764,21 @@ const caption = computed(() => {
         :mask="`url(#${ids.mask})`"
       />
       <rect :x="SOIL_X" :y="GROUND - 1" :width="SOIL_W" height="2" :fill="`url(#${ids.line})`" />
-      <g v-for="root in roots" :key="root.key" class="roots">
-        <title>{{ root.label }}</title>
+      <g
+        v-for="fibre in fibres"
+        :key="fibre.key"
+        class="roots fibre"
+        :clip-path="`url(#${ids.underground})`"
+      >
         <path
           class="root"
-          :d="root.d"
-          :stroke-width="root.girth"
+          :d="fibre.d"
+          stroke-width="1.1"
           pathLength="1"
           stroke-dasharray="1"
-          :stroke-dashoffset="1 - root.grown"
+          :stroke-dashoffset="1 - fibre.grown"
         />
-        <template v-for="(lateral, j) in root.laterals" :key="j">
+        <template v-for="lateral in fibre.laterals" :key="lateral.key">
           <path
             class="root lateral"
             :d="lateral.d"
@@ -622,6 +795,49 @@ const caption = computed(() => {
             stroke-dasharray="1"
             :stroke-dashoffset="1 - lateral.hairGrown"
           />
+        </template>
+      </g>
+      <g
+        v-for="root in roots"
+        :key="root.key"
+        class="roots"
+        :clip-path="`url(#${ids.underground})`"
+      >
+        <title>{{ root.label }}</title>
+        <path
+          class="root"
+          :d="root.d"
+          :stroke-width="root.girth"
+          pathLength="1"
+          stroke-dasharray="1"
+          :stroke-dashoffset="1 - root.grown"
+        />
+        <template v-for="lateral in root.laterals" :key="lateral.key">
+          <path
+            class="root lateral"
+            :d="lateral.d"
+            pathLength="1"
+            stroke-dasharray="1"
+            :stroke-dashoffset="1 - lateral.grown"
+          />
+          <path
+            v-for="(hair, h) in lateral.hairs"
+            :key="h"
+            class="root hair"
+            :d="hair"
+            pathLength="1"
+            stroke-dasharray="1"
+            :stroke-dashoffset="1 - lateral.hairGrown"
+          />
+          <template v-for="(nodule, n) in lateral.nodules" :key="`n${n}`">
+            <circle
+              v-if="nodule.r > 0.2"
+              class="nodule"
+              :cx="nodule.x"
+              :cy="nodule.y"
+              :r="nodule.r"
+            />
+          </template>
         </template>
       </g>
       <ellipse v-if="v('seed') > 0" class="seed" :cx="CX" :cy="SEED_Y" rx="7" ry="4.5" />
@@ -647,7 +863,8 @@ const caption = computed(() => {
       </g>
 
       <!-- The crown behind, then the trunk and its stem leaves, then the
-           branches of the build with their twigs and foliage. -->
+           branches of the build with their twigs and foliage, and the
+           crown's leaves over all of it. -->
       <circle
         v-for="(disc, d) in crown.discs"
         :key="`crown${d}`"
@@ -656,21 +873,37 @@ const caption = computed(() => {
         :cy="disc.cy"
         :r="disc.r"
       />
-      <path v-if="trunk" class="trunk" :d="trunk" />
-      <path
+      <g v-if="trunk">
+        <path class="trunk" :d="trunk" :style="{ fill: wood.trunk }" />
+        <path :d="trunk" :fill="`url(#${ids.bark})`" :opacity="wood.furrows" />
+        <path :d="trunk" :fill="`url(#${ids.shade})`" />
+      </g>
+      <use
         v-for="leaf in stemLeaves"
         :key="leaf.key"
         class="leaf"
-        :d="LEAF"
+        :href="`#${ids.leaf}`"
         :transform="leaf.transform"
       >
         <title>{{ leaf.label }}</title>
-      </path>
+      </use>
       <g v-for="branch in branches" :key="branch.key" class="branch">
         <title>{{ branch.label }}</title>
-        <path v-if="branch.path" class="twig" :d="branch.path" :stroke-width="branch.width" />
+        <path
+          v-if="branch.path"
+          class="twig"
+          :d="branch.path"
+          :stroke-width="branch.width"
+          :style="{ stroke: wood.branch }"
+        />
         <g v-for="twig in branch.twigs" :key="twig.key">
-          <path v-if="twig.d" class="twig" :d="twig.d" stroke-width="1.4" />
+          <path
+            v-if="twig.d"
+            class="twig"
+            :d="twig.d"
+            stroke-width="1.4"
+            :style="{ stroke: wood.twig }"
+          />
           <circle
             v-for="(disc, d) in twig.tuft"
             :key="`f${d}`"
@@ -679,12 +912,13 @@ const caption = computed(() => {
             :cy="disc.cy"
             :r="disc.r"
           />
-          <path
-            v-for="(transform, l) in twig.leaves"
-            :key="`l${l}`"
+          <use
+            v-for="leaf in twig.leaves"
+            :key="leaf.key"
             class="leaf"
-            :d="LEAF"
-            :transform="transform"
+            :data-tone="leaf.tone"
+            :href="`#${ids.leaf}`"
+            :transform="leaf.transform"
           />
         </g>
         <circle
@@ -695,21 +929,30 @@ const caption = computed(() => {
           :cy="disc.cy"
           :r="disc.r"
         />
-        <path
+        <use
+          v-for="leaf in branch.clusterLeaves"
+          :key="leaf.key"
+          class="leaf"
+          :data-tone="leaf.tone"
+          :href="`#${ids.leaf}`"
+          :transform="leaf.transform"
+        />
+        <use
           v-for="leaf in branch.leaves"
           :key="leaf.key"
           class="leaf"
-          :d="LEAF"
+          :href="`#${ids.leaf}`"
           :transform="leaf.transform"
         >
           <title>{{ leaf.label }}</title>
-        </path>
+        </use>
       </g>
-      <path
+      <use
         v-for="leaf in crown.leaves"
         :key="leaf.key"
         class="leaf"
-        :d="LEAF"
+        :data-tone="leaf.tone"
+        :href="`#${ids.leaf}`"
         :transform="leaf.transform"
       />
       <g v-for="branch in branches" :key="`fruit-${branch.key}`">
@@ -799,25 +1042,28 @@ svg {
 }
 
 .lateral {
-  stroke-width: 1.2;
+  stroke-width: 1.1;
 }
 
 .hair {
-  stroke-width: 0.7;
+  stroke-width: 0.6;
   opacity: 0.75;
+}
+
+.fibre .root {
+  opacity: 0.85;
+}
+
+.nodule {
+  fill: var(--growth-nodule);
 }
 
 .seed {
   fill: var(--growth-root);
 }
 
-.trunk {
-  fill: var(--growth-stem);
-}
-
 .twig {
   fill: none;
-  stroke: var(--growth-stem);
   stroke-linecap: round;
 }
 
@@ -825,14 +1071,32 @@ svg {
   fill: var(--growth-leaf);
 }
 
+.leaf[data-tone='deep'] {
+  fill: var(--growth-leaf-deep);
+}
+
+.leaf[data-tone='light'] {
+  fill: var(--growth-leaf-light);
+}
+
+.leaf-stop {
+  stop-color: var(--growth-leaf);
+}
+
+.leaf-deep-stop {
+  stop-color: var(--growth-leaf-deep);
+}
+
+.leaf-light-stop {
+  stop-color: var(--growth-leaf-light);
+}
+
 .canopy {
-  fill: var(--growth-leaf);
-  opacity: 0.6;
+  fill: url(#growth-canopy);
 }
 
 .canopy.deep {
-  fill: var(--growth-leaf-deep);
-  opacity: 0.85;
+  fill: url(#growth-canopy-deep);
 }
 
 .fruit {

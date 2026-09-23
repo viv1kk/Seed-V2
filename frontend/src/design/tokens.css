@@ -54,13 +54,18 @@
   /* The growth tree (D-15, D-18). Muted on purpose: it is a progress
    * indicator, not an illustration (NFR-V6, R-14). Roots are earth
    * brown, apart from the green above ground, and the soil is a warm
-   * tint that fades downward so the roots show through it. Water is the
-   * tool requests the protection engine allowed; nothing here is a
-   * model. */
+   * tint that fades downward so the roots show through it. The stem
+   * turns from young green to bark as the process advances (D-19).
+   * Water is the tool requests the protection engine allowed; nothing
+   * here is a model. */
   --growth-stem: #5d7a66;
+  --growth-stem-young: #6f9f5c;
+  --growth-bark: #6e5238;
   --growth-leaf: #6f9a7a;
   --growth-leaf-deep: #4f7a5c;
+  --growth-leaf-light: #93bd8a;
   --growth-root: #8a6443;
+  --growth-nodule: #b58d63;
   --growth-bud: #8a6fb8;
   --growth-water: #4f86cf;
   --growth-soil: #d8c6ad;
@@ -152,9 +157,13 @@
   --grade-medium: #8aab4c;
 
   --growth-stem: #7f9d88;
+  --growth-stem-young: #7fb36a;
+  --growth-bark: #8c6a4b;
   --growth-leaf: #5f8f6c;
   --growth-leaf-deep: #3f6a4d;
+  --growth-leaf-light: #82b27a;
   --growth-root: #b08a64;
+  --growth-nodule: #d2ab7e;
   --growth-bud: #a58fd6;
   --growth-water: #6d9be0;
   --growth-soil: #3a2e22;
