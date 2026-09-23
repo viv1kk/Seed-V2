@@ -991,7 +991,9 @@ pure function of the log:
   root has grown past it. The roots reach further than the drawing lets
   the eye follow. They fade into the soil around the seed, wider than
   deep, and are slightly blurred, so they read as growing on out of view
-  rather than ending.
+  rather than ending. The blur grows with depth: sharp near the surface,
+  soft through the lower half of what shows. Their colour is dimmed a
+  little, so they sit back behind the plant.
 - **Watering** (after review, 2026-09-24). An allowed request no longer
   leaves a drop in the soil. It sends a pulse through the plant: the
   soil and roots take a blue tint, and the tree glows while it grows a
@@ -1045,6 +1047,12 @@ tools, the stake is lifted away. When the seed sprouts, it splits into a
 husk at the foot of the stem. The husk shrinks with each clean-up step
 and is gone once the seed is consumed. The caption reads "Shedding the
 seed" during closing and "Standing on its own" after it.
+
+*The Life pane after it* (after review, 2026-09-24). Life lists the
+live Agent Components under "Live Agent Components", not "System
+ready", and the stream says "Agent One VW is live". Life no longer
+repeats the build record. How each component was built stays in the
+Seeding pane's Implementation stage.
 
 *Its name on screen* (after review, 2026-09-24). The screen calls
 closing **Cleanup**: the checklist is "Cleanup, after implementation",

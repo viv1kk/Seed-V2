@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import BuildLanes from './BuildLanes.vue'
 import { useEventStore } from '../stores/events'
 import { useSystemStore } from '../stores/system'
 
@@ -15,8 +14,8 @@ const events = useEventStore()
  * Each ready solution is listed with Run. Running one opens its dashboard
  * in the same pane; returning brings the viewer back here with every
  * solution still ready, so any of them can be run next (FR-L10). Completion is per solution, not
- * global. The build record stays below, so what was built and how it was
- * tested remains one glance away.
+ * global. How each was built is the Seeding pane's record, not Life's: the
+ * Implementation stage keeps it.
  */
 
 const busy = ref<string | null>(null)
@@ -62,7 +61,7 @@ async function run(solutionId: string): Promise<void> {
 <template>
   <div class="runtime">
     <header class="head">
-      <h2 class="title">System ready</h2>
+      <h2 class="title">Live Agent Components</h2>
       <p class="note">
         {{ ready }} {{ ready === 1 ? 'Agent Component' : 'Agent Components' }} implemented. Run one
         to open its dashboard here; return to this list to run another.
@@ -83,16 +82,17 @@ async function run(solutionId: string): Promise<void> {
               Rejected at approval. Not implemented.
             </template>
             <template v-else-if="item.build">
-              <span>Potential <span class="grade" :data-grade="item.grade">{{ item.grade }}</span></span>
+              <span
+                >Potential
+                <span class="grade" :data-grade="item.grade">{{ item.grade }}</span></span
+              >
               <span>
                 {{ item.build.summary.passed }} of {{ item.build.summary.total }} tests passed
               </span>
               <span v-if="item.withheld">
                 {{ item.withheld }} conclusion withheld as insufficient
               </span>
-              <span v-if="runs.get(item.solution.id)">
-                Run {{ runs.get(item.solution.id) }}×
-              </span>
+              <span v-if="runs.get(item.solution.id)"> Run {{ runs.get(item.solution.id) }}× </span>
             </template>
           </p>
         </div>
@@ -108,11 +108,6 @@ async function run(solutionId: string): Promise<void> {
         </button>
       </li>
     </ul>
-
-    <section v-if="system.implementations.length" class="record">
-      <h3 class="section-title">Build record</h3>
-      <BuildLanes :implementations="system.implementations" />
-    </section>
   </div>
 </template>
 
@@ -254,14 +249,5 @@ async function run(solutionId: string): Promise<void> {
 .action:disabled {
   opacity: 0.5;
   cursor: default;
-}
-
-.section-title {
-  margin: 0 0 var(--space-3);
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 </style>

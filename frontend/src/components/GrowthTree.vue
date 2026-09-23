@@ -339,6 +339,12 @@ const ids = {
   rootFade: 'growth-root-fade',
   rootMask: 'growth-root-mask',
   rootBlur: 'growth-root-blur',
+  rootArt: 'growth-root-art',
+  rootNear: 'growth-root-near',
+  rootNearMask: 'growth-root-near-mask',
+  rootDeep: 'growth-root-deep',
+  rootDeepMask: 'growth-root-deep-mask',
+  rootDeepBlur: 'growth-root-deep-blur',
 }
 
 /**
@@ -830,8 +836,9 @@ const caption = computed(() => {
           <rect x="0" :y="GROUND + 0.5" width="520" :height="SOIL_DEPTH + 40" />
         </clipPath>
         <!-- The roots fade into the soil around the seed, wider than
-             deep, and are softened a little: they go on growing out of
-             sight rather than ending where the drawing does. -->
+             deep, and blur as they go down: sharp near the surface, soft
+             through the lower half of what shows. They go on growing out
+             of sight rather than ending where the drawing does. -->
         <radialGradient
           :id="ids.rootFade"
           gradientUnits="userSpaceOnUse"
@@ -855,8 +862,55 @@ const caption = computed(() => {
           />
         </mask>
         <filter :id="ids.rootBlur" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur stdDeviation="0.55" />
+          <feGaussianBlur stdDeviation="0.4" />
         </filter>
+        <filter :id="ids.rootDeepBlur" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="2.2" />
+        </filter>
+        <!-- The sharp drawing holds the top of the root bed and gives way,
+             across its middle, to a blurred copy that holds the bottom. -->
+        <linearGradient
+          :id="ids.rootNear"
+          gradientUnits="userSpaceOnUse"
+          x1="0"
+          x2="0"
+          :y1="GROUND"
+          :y2="GROUND + 95"
+        >
+          <stop offset="0" stop-color="#fff" stop-opacity="1" />
+          <stop offset="0.3" stop-color="#fff" stop-opacity="1" />
+          <stop offset="0.68" stop-color="#fff" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient
+          :id="ids.rootDeep"
+          gradientUnits="userSpaceOnUse"
+          x1="0"
+          x2="0"
+          :y1="GROUND"
+          :y2="GROUND + 95"
+        >
+          <stop offset="0.25" stop-color="#fff" stop-opacity="0" />
+          <stop offset="0.68" stop-color="#fff" stop-opacity="1" />
+          <stop offset="1" stop-color="#fff" stop-opacity="1" />
+        </linearGradient>
+        <mask :id="ids.rootNearMask">
+          <rect
+            x="0"
+            :y="GROUND"
+            width="520"
+            :height="SOIL_DEPTH + 40"
+            :fill="`url(#${ids.rootNear})`"
+          />
+        </mask>
+        <mask :id="ids.rootDeepMask">
+          <rect
+            x="0"
+            :y="GROUND"
+            width="520"
+            :height="SOIL_DEPTH + 40"
+            :fill="`url(#${ids.rootDeep})`"
+          />
+        </mask>
         <mask :id="ids.mask">
           <rect
             :x="SOIL_X"
@@ -887,78 +941,82 @@ const caption = computed(() => {
         :mask="`url(#${ids.mask})`"
       />
       <rect :x="SOIL_X" :y="GROUND - 1" :width="SOIL_W" height="2" :fill="`url(#${ids.line})`" />
-      <g
-        class="rootbed"
-        :clip-path="`url(#${ids.underground})`"
-        :mask="`url(#${ids.rootMask})`"
-        :filter="`url(#${ids.rootBlur})`"
-      >
-        <g v-for="fibre in fibres" :key="fibre.key" class="roots fibre">
-          <path
-            class="root"
-            :d="fibre.d"
-            stroke-width="1.1"
-            pathLength="1"
-            stroke-dasharray="1"
-            :stroke-dashoffset="1 - fibre.grown"
-          />
-          <template v-for="lateral in fibre.laterals" :key="lateral.key">
-            <path
-              class="root lateral"
-              :d="lateral.d"
-              pathLength="1"
-              stroke-dasharray="1"
-              :stroke-dashoffset="1 - lateral.grown"
-            />
-            <path
-              v-for="(hair, h) in lateral.hairs"
-              :key="h"
-              class="root hair"
-              :d="hair"
-              pathLength="1"
-              stroke-dasharray="1"
-              :stroke-dashoffset="1 - lateral.hairGrown"
-            />
-          </template>
-        </g>
-        <g v-for="root in roots" :key="root.key" class="roots">
-          <title>{{ root.label }}</title>
-          <path
-            class="root"
-            :d="root.d"
-            :stroke-width="root.girth"
-            pathLength="1"
-            stroke-dasharray="1"
-            :stroke-dashoffset="1 - root.grown"
-          />
-          <template v-for="lateral in root.laterals" :key="lateral.key">
-            <path
-              class="root lateral"
-              :d="lateral.d"
-              pathLength="1"
-              stroke-dasharray="1"
-              :stroke-dashoffset="1 - lateral.grown"
-            />
-            <path
-              v-for="(hair, h) in lateral.hairs"
-              :key="h"
-              class="root hair"
-              :d="hair"
-              pathLength="1"
-              stroke-dasharray="1"
-              :stroke-dashoffset="1 - lateral.hairGrown"
-            />
-            <template v-for="(nodule, n) in lateral.nodules" :key="`n${n}`">
-              <circle
-                v-if="nodule.r > 0.2"
-                class="nodule"
-                :cx="nodule.x"
-                :cy="nodule.y"
-                :r="nodule.r"
+      <g class="rootbed" :clip-path="`url(#${ids.underground})`" :mask="`url(#${ids.rootMask})`">
+        <g :mask="`url(#${ids.rootNearMask})`">
+          <g :id="ids.rootArt" :filter="`url(#${ids.rootBlur})`">
+            <g v-for="fibre in fibres" :key="fibre.key" class="roots fibre">
+              <path
+                class="root"
+                :d="fibre.d"
+                stroke-width="1.1"
+                pathLength="1"
+                stroke-dasharray="1"
+                :stroke-dashoffset="1 - fibre.grown"
               />
-            </template>
-          </template>
+              <template v-for="lateral in fibre.laterals" :key="lateral.key">
+                <path
+                  class="root lateral"
+                  :d="lateral.d"
+                  pathLength="1"
+                  stroke-dasharray="1"
+                  :stroke-dashoffset="1 - lateral.grown"
+                />
+                <path
+                  v-for="(hair, h) in lateral.hairs"
+                  :key="h"
+                  class="root hair"
+                  :d="hair"
+                  pathLength="1"
+                  stroke-dasharray="1"
+                  :stroke-dashoffset="1 - lateral.hairGrown"
+                />
+              </template>
+            </g>
+            <g v-for="root in roots" :key="root.key" class="roots">
+              <title>{{ root.label }}</title>
+              <path
+                class="root"
+                :d="root.d"
+                :stroke-width="root.girth"
+                pathLength="1"
+                stroke-dasharray="1"
+                :stroke-dashoffset="1 - root.grown"
+              />
+              <template v-for="lateral in root.laterals" :key="lateral.key">
+                <path
+                  class="root lateral"
+                  :d="lateral.d"
+                  pathLength="1"
+                  stroke-dasharray="1"
+                  :stroke-dashoffset="1 - lateral.grown"
+                />
+                <path
+                  v-for="(hair, h) in lateral.hairs"
+                  :key="h"
+                  class="root hair"
+                  :d="hair"
+                  pathLength="1"
+                  stroke-dasharray="1"
+                  :stroke-dashoffset="1 - lateral.hairGrown"
+                />
+                <template v-for="(nodule, n) in lateral.nodules" :key="`n${n}`">
+                  <circle
+                    v-if="nodule.r > 0.2"
+                    class="nodule"
+                    :cx="nodule.x"
+                    :cy="nodule.y"
+                    :r="nodule.r"
+                  />
+                </template>
+              </template>
+            </g>
+          </g>
         </g>
+        <use
+          :href="`#${ids.rootArt}`"
+          :mask="`url(#${ids.rootDeepMask})`"
+          :filter="`url(#${ids.rootDeepBlur})`"
+        />
       </g>
       <ellipse v-if="v('seed') > 0" class="seed" :cx="CX" :cy="SEED_Y" rx="7" ry="4.5" />
 

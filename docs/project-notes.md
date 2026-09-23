@@ -4726,3 +4726,40 @@ app:
 - Cleanup hands over to Life.
 - The M18 check passes 12 of 12, replay and Reset 5 of 5, and the M14
   walkthrough 31 of 31.
+
+### Follow-up · roots blur with depth, and a leaner Life pane
+
+**Requested, 2026-09-24:**
+
+- the roots blur more, the blur fading in from the lower half of what
+  shows;
+- the roots are slightly dimmer;
+- the Life pane drops the build record;
+- "System ready" gets another name.
+
+**What changed.**
+
+- **Roots** (`components/GrowthTree.vue`):
+  - They are drawn twice. The sharp drawing, with a 0.4 blur, is masked
+    to the top of the root bed. A `<use>` copy, with a 2.2 blur, is
+    masked to the bottom. The two cross over through the middle of the
+    visible roots, about 25 to 68% of the way down.
+  - The seed-centred radial fade still dissolves them at the edges.
+  - The colours are dimmer: `--growth-root` and `--growth-nodule` in
+    both themes.
+- **Life** (`components/RuntimeStage.vue`): the build record (the build
+  lanes) is gone from Life, and the Implementation stage keeps it. The
+  list is headed "Live Agent Components". The hand-over event reads
+  "Agent One VW is live. Three Agent Components ready to run."
+  (`workflows/closing.py`).
+- **Docs:** decisions.md, D-19's roots and D-20's Life pane.
+
+**Gates.** `pytest` gives 473 passed, with the 200 ms timing test
+deselected. Typecheck and build pass. Live, on an isolated copy of the
+app:
+
+- The root bed has the sharp and blurred layers.
+- Life shows no build record and the new heading.
+- The stream says Agent One VW is live.
+- Replay and Reset give 5 of 5, the M14 walkthrough 31 of 31, and the
+  M18 check 12 of 12.

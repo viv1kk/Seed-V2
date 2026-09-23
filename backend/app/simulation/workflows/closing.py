@@ -265,9 +265,10 @@ def closing(state: SystemState) -> Workflow:
         type="deployment.ready",
         category=Category.SUCCESS,
         message=(
-            f"System ready. {_count(len(ready), 'Agent Component')} ready to run."
+            f"Agent One VW is live. {_count(len(ready), 'Agent Component')} ready to run."
             if ready
-            else "System ready. No Agent Component was approved, so there is nothing to run."
+            else "Agent One VW is live, but no Agent Component was approved, so there is "
+            "nothing to run."
         ),
         payload={"ready": [s["id"] for s in ready]},
     )
