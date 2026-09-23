@@ -37,6 +37,16 @@
   --status-negative: #c0392f;
   --status-neutral: #5a6172;
 
+  /* Potential (D-12), an ordered scale from strong value to not yet
+   * modellable: green, olive, amber, grey. MEDIUM sits between HIGH and
+   * PARTIAL rather than in plain text. PARTIAL stays the caution colour
+   * and never the fault colour (FR-H4). The aliases resolve per theme,
+   * because the theme is set on this same element. */
+  --grade-high: var(--status-positive);
+  --grade-medium: #5f7f1a;
+  --grade-partial: var(--status-warning);
+  --grade-low: var(--status-neutral);
+
   /* Semantic roles for charts. Specifications name a role; the
    * renderer resolves the role to one of these (D-5). */
   --chart-series-1: #2f6df6;
@@ -115,6 +125,8 @@
   --status-warning: #d79a3a;
   --status-negative: #e5705f;
   --status-neutral: #6f7885;
+
+  --grade-medium: #8aab4c;
 
   --chart-series-1: #5b8cff;
   --chart-series-2: #9a82f0;

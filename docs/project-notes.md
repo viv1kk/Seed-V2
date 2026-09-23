@@ -3914,3 +3914,40 @@ because neither is in M14's rework list.
    `READY_TO_RUN`, as before.
 3. Before M18, Both at `IMPLEMENTATION_COMPLETE` lasts one beat, so in
    practice the layout goes from Seeding straight to Life.
+
+### Follow-up · Potential grade colours (requested after M14)
+
+**What changed.** MEDIUM used to render in plain text colour, so the
+four grades did not read as one scale. Potential now has its own tokens
+in `design/tokens.css`, forming an ordered scale: `--grade-high` (green),
+`--grade-medium` (olive, new), `--grade-partial` (amber) and `--grade-low`
+(grey). HIGH, PARTIAL and LOW alias the existing status tokens, so their
+colours are unchanged. PARTIAL stays the caution colour and never the
+fault colour (FR-H4).
+
+- The card, the drawer and the Life ready list all read the grade
+  tokens. The drawer gains the MEDIUM rule it never had. The ready list
+  now colours its grade, where before it was plain text.
+- The `[data-grade]` selectors are unchanged (M12's silent-failure
+  class). Only the colours they apply changed, at your request.
+
+**Contrast.** Measured against the card surface:
+
+| Theme | HIGH | MEDIUM | PARTIAL | LOW |
+| ----- | ---- | ------ | ------- | --- |
+| Light | 5.0:1 | 4.6:1 (`#5f7f1a`) | 4.4:1 | 6.2:1 |
+| Dark | 6.5:1 | 6.6:1 (`#8aab4c`) | 7.1:1 | 3.9:1 |
+
+The dark MEDIUM was first tried as a brighter lime (9:1). It was toned
+down so MEDIUM does not outshine HIGH.
+
+**Files.** `frontend/src/design/tokens.css`,
+`components/SolutionCard.vue`, `components/ReviewDrawer.vue`,
+`components/RuntimeStage.vue`.
+
+**Gates.** Typecheck and build pass. No backend change. Live: all three
+surfaces show the four grade colours, read as computed styles, in both
+themes.
+
+**Check by hand.** In light theme, confirm that HIGH (dark green) and
+MEDIUM (olive) are distinct enough at a glance. M21 tunes the palette.

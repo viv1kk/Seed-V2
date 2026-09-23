@@ -257,15 +257,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 }
 
 .grade[data-grade='HIGH'] {
-  color: var(--status-positive);
+  color: var(--grade-high);
+}
+
+.grade[data-grade='MEDIUM'] {
+  color: var(--grade-medium);
 }
 
 .grade[data-grade='PARTIAL'] {
-  color: var(--status-warning);
+  color: var(--grade-partial);
 }
 
 .grade[data-grade='LOW'] {
-  color: var(--status-neutral);
+  color: var(--grade-low);
 }
 
 .body {

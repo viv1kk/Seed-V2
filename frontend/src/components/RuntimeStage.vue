@@ -83,7 +83,7 @@ async function run(solutionId: string): Promise<void> {
               Rejected at approval. Not implemented.
             </template>
             <template v-else-if="item.build">
-              <span>Potential {{ item.grade }}</span>
+              <span>Potential <span class="grade" :data-grade="item.grade">{{ item.grade }}</span></span>
               <span>
                 {{ item.build.summary.passed }} of {{ item.build.summary.total }} tests passed
               </span>
@@ -199,6 +199,26 @@ async function run(solutionId: string): Promise<void> {
   margin: 0;
   color: var(--text-muted);
   font-size: var(--text-xs);
+}
+
+.grade {
+  font-weight: 600;
+}
+
+.grade[data-grade='HIGH'] {
+  color: var(--grade-high);
+}
+
+.grade[data-grade='MEDIUM'] {
+  color: var(--grade-medium);
+}
+
+.grade[data-grade='PARTIAL'] {
+  color: var(--grade-partial);
+}
+
+.grade[data-grade='LOW'] {
+  color: var(--grade-low);
 }
 
 .status {
