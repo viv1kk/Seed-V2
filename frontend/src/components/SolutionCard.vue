@@ -39,6 +39,15 @@ const STATUS_LABELS: Record<SolutionStatus, string> = {
 
 const grade = computed(() => props.assessment?.feasibility ?? null)
 const sufficiency = computed(() => percentOf(props.assessment?.dataSufficiency))
+
+/**
+ * Sources whose evidence exists but cannot reach the analysis (D-12).
+ * Shown beside the grade and never in it: HIGH potential with a blocked
+ * path is two facts, and one scale would lose one of them.
+ */
+const blocked = computed(
+  () => new Set((props.assessment?.routing ?? []).map((problem) => problem.dataset)).size,
+)
 </script>
 
 <template>
@@ -72,6 +81,11 @@ const sufficiency = computed(() => percentOf(props.assessment?.dataSufficiency))
         <dd class="mono">{{ assessment.coverage.located }} / {{ assessment.coverage.required }}</dd>
       </div>
     </dl>
+
+    <p v-if="blocked > 0" class="routing">
+      <span class="routing-mark" aria-hidden="true">⤳</span>
+      Routing problem: {{ blocked }} {{ blocked === 1 ? 'source' : 'sources' }} out of reach
+    </p>
 
     <p class="description">{{ solution.description }}</p>
 
@@ -212,6 +226,24 @@ const sufficiency = computed(() => percentOf(props.assessment?.dataSufficiency))
 
 .grade[data-grade='LOW'] {
   color: var(--grade-low);
+}
+
+/* A routing problem is neither a fault nor a shortfall in the grade
+   (FR-H4), so it takes neither colour: an interrupted outline instead. */
+.routing {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.routing-mark {
+  font-family: var(--font-mono);
 }
 
 .description {

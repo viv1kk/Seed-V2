@@ -188,6 +188,22 @@ export interface Improvement {
   to: Grade
 }
 
+/**
+ * Evidence a methodology requires that exists but cannot reach the
+ * analysis (D-12, FR-A12). Computed by the backend from the graph.
+ */
+export interface RoutingProblem {
+  concept: string
+  description: string
+  dataset: string
+  label: string
+  reason: 'refused' | 'unreachable' | 'awaiting-input'
+  /** The rule behind a refusal. */
+  rule: string | null
+  /** The dataset, or the surface or system above it, where the path stops. */
+  at: string
+}
+
 /** One methodology's assessment, with everything FR-A4 asks for. */
 export interface Assessment {
   id: string
@@ -202,6 +218,8 @@ export interface Assessment {
   declaredLimitations: string[]
   improvements: Improvement[]
   recommendation: string
+  /** Beside the grade, never part of it. Empty means no routing problem. */
+  routing: RoutingProblem[]
   process: string[]
   /** FR-A10: these are simulated demo values, and say so. */
   simulated: boolean

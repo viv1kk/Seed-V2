@@ -4059,3 +4059,75 @@ than in the suite.
 **Check by hand.** Plant, and read the Declared stack section's copy.
 Confirm that "Not yet verified" in muted italic reads as intended beside
 the "Declared" label.
+
+**Ruling on the performance test, 2026-09-24.** Leave the test as it
+is. Background processes on the machine vary the load, so a marginal
+timing failure is expected noise, not a defect.
+
+### M16 · Routing-problem flag
+
+**What changed.** Each assessment now carries a routing-problem flag
+beside its grade (D-12, FR-A12, FR-A13).
+
+- `knowledge/routing.py` (new) computes it. A required concept is
+  flagged when a dataset that carries it has been found in the graph
+  but cannot reach the analysis, for one of three reasons:
+  - the dataset was refused by policy (`excludedBy`, with its rule);
+  - it, or the surface or system above it, is in error;
+  - it, or the surface or system above it, is waiting on input.
+
+  Which concepts a dataset carries comes from the Adaptation concept
+  mapping in the environment definition. The state of each node comes
+  from System State. A dataset nobody has found yet is not counted,
+  because it is not yet known to exist (G-2).
+- `assess` adds `routing`, a list of the blocked dataset and concept
+  pairs, as an additive field on every assessment. An empty list means
+  no routing problem. The grade and its computation are untouched, and
+  a test holds that the flag never moves the grade.
+- The card shows "Routing problem: N sources out of reach". The drawer
+  shows a banner under the headline and a "Routing problem" section.
+  Each entry there names the concept, the dataset and the reason:
+  "Refused under PR-…", "Unreachable at …" or "Awaiting input at …".
+  The treatment is a dashed outline in secondary text, never the fault
+  or the caution colour, which keeps FR-H4's distinctions.
+
+**Recorded for D-12: the scripted run raises no routing problem.**
+PR-033, the candidate D-12 named, refuses ServiceNow's
+`sys_security_log`. That dataset is outside the concept mapping, so it
+carries nothing any methodology requires, and its refusal does not flag
+anything. By the end of Discovery no node is in error or awaiting
+input. So the flag is computed and tested, but it never appears in the
+narrative. D-12 calls this a narrative choice for the stakeholder, not
+something to fake. It is raised for a ruling.
+
+**Files.** `backend/app/knowledge/routing.py` (new),
+`knowledge/feasibility.py`; `backend/tests/test_routing.py` (new);
+`frontend/src/stores/system.ts`, `design/presentation.ts`,
+`components/SolutionCard.vue`, `components/ReviewDrawer.vue`.
+
+**Gates.**
+
+- `pytest` gives 431 passed: 8 new tests and no existing test edited.
+  The new tests are in M7's style, where changing the fact moves the
+  flag:
+  - a carrier in error;
+  - a surface awaiting input, which blocks every dataset behind it;
+  - a policy refusal, citing its rule;
+  - restoring the fact clears the flag;
+  - an unfound dataset is not counted;
+  - the grade never moves;
+  - a regrade carries the flag into System State.
+- Typecheck and build pass.
+- Live: the scripted run's assessments all carry an empty `routing`. The
+  scripted run raises nothing to see, so the frontend treatment was
+  checked by injecting two routing problems into the browser's store.
+  Ticket Anomaly Detection then showed HIGH in green beside a dashed,
+  neutral "Routing problem: 2 sources out of reach". The drawer listed
+  "Unreachable at Incident API" and "Refused under PR-032", in both
+  themes.
+- The M14 walkthrough still passes 31 of 31.
+
+**Check by hand.** Judge the treatment in the screenshots or by
+injection. It is a dashed outline with a ⤳ mark, and it is deliberately
+neither a grade colour nor the fault colour. M21 designs it properly
+(R-14 is about the tree, but the same restraint applies).

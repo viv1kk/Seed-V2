@@ -32,6 +32,7 @@ from enum import StrEnum
 from typing import Any
 
 from app.knowledge.methodologies import BY_ID, Methodology, Requirement
+from app.knowledge.routing import routing_of
 
 SUFFICIENT = 0.90
 USABLE = 0.70
@@ -148,6 +149,9 @@ def assess(methodology: Methodology, environment: dict[str, Any]) -> dict[str, A
         "declaredLimitations": list(methodology.limitations),
         "improvements": _improvements(methodology, requirements, grade),
         "recommendation": RECOMMENDATIONS[grade],
+        # Beside the grade, never inside it: evidence that exists but
+        # cannot reach the analysis (D-12). Empty means no routing problem.
+        "routing": routing_of(methodology.requires, environment),
         "process": list(methodology.process),
         "simulated": True,
     }

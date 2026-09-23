@@ -67,6 +67,25 @@ export function labelOf(category: Category): string {
 }
 
 /**
+ * Why a source's evidence cannot reach the analysis, in a few words
+ * (D-12). A refusal names its rule, as every policy outcome does (FR-P4).
+ */
+export function routingReasonOf(problem: {
+  reason: 'refused' | 'unreachable' | 'awaiting-input'
+  rule: string | null
+  at: string
+}): string {
+  switch (problem.reason) {
+    case 'refused':
+      return problem.rule ? `Refused under ${problem.rule}` : 'Refused by policy'
+    case 'unreachable':
+      return `Unreachable at ${problem.at}`
+    case 'awaiting-input':
+      return `Awaiting input at ${problem.at}`
+  }
+}
+
+/**
  * What a phase is called on screen (D-11, FR-N1).
  *
  * The phase values are contract and keep their names; only the label

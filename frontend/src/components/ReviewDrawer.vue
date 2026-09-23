@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 
-import { percentOf } from '../design/presentation'
+import { percentOf, routingReasonOf } from '../design/presentation'
 import type { Approval, Assessment, Solution, Standing } from '../stores/system'
 
 const props = defineProps<{
@@ -78,6 +78,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           <dd>{{ assessment.coverage.located }} / {{ assessment.coverage.required }}</dd>
         </div>
       </dl>
+      <p v-if="assessment.routing.length" class="routing">
+        <span class="routing-mark" aria-hidden="true">⤳</span>
+        Routing problem. Evidence this needs exists, but cannot reach the analysis.
+      </p>
     </header>
 
     <div class="body">
@@ -98,6 +102,25 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               </span>
             </span>
             <span class="coverage mono">{{ percent(requirement.coverage) }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Apart from the grade and from the limitations: present evidence
+           that is out of reach is neither a fault nor a shortfall (D-12). -->
+      <section v-if="assessment.routing.length" class="section">
+        <h3 class="section-title">Routing problem</h3>
+        <ul class="routes">
+          <li
+            v-for="problem in assessment.routing"
+            :key="`${problem.concept}:${problem.dataset}`"
+            class="route"
+          >
+            <span class="route-text">
+              {{ problem.description }}
+              <span class="source mono">{{ problem.label }}</span>
+            </span>
+            <span class="route-reason mono">{{ routingReasonOf(problem) }}</span>
           </li>
         </ul>
       </section>
@@ -358,6 +381,53 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   flex: none;
   width: 1.25rem;
   color: var(--text-muted);
+  text-align: right;
+}
+
+.routing {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  margin: var(--space-4) 0 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.routing-mark {
+  font-family: var(--font-mono);
+}
+
+.routes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.route-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+}
+
+.route-reason {
+  color: var(--text-secondary);
   text-align: right;
 }
 
