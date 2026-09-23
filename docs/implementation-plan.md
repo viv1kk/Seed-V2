@@ -242,8 +242,8 @@ seed-v2/
 | M13 Feasibility displayed as Potential | RENAME | Built | `1855e18` |
 | M14 Seeding and Life panes   | MOVE   | Built | `34ce3d9` |
 | M15 Declared stack at Planting | NEW  | Built | `64ed030` |
-| M16 Routing-problem flag     | NEW    | Built | |
-| M17 Growth tree              | NEW    | Not started | |
+| M16 Routing-problem flag     | NEW    | Built | `4cf715d` |
+| M17 Growth tree              | NEW    | Built | |
 | M18 Closing the seeding phase | NEW   | Not started | |
 | M19 Life: collection and recalibration | NEW | Not started | |
 | M20 Remaining dashboards *(was M11)* | — | Not started | |

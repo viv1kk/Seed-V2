@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import ActivityStream from '../components/ActivityStream.vue'
 import HumanRequest from '../components/HumanRequest.vue'
-import LifecycleStrip from '../components/LifecycleStrip.vue'
+import GrowthTree from '../components/GrowthTree.vue'
 import ProtectionPanel from '../components/ProtectionPanel.vue'
 import StagePane from '../components/StagePane.vue'
 import { useEventStore } from '../stores/events'
@@ -24,8 +24,6 @@ type Rail = 'activity' | 'protection'
  * (NFR-A3).
  */
 const rail = ref<Rail>('activity')
-
-const blocked = computed(() => system.blockedOn !== null)
 </script>
 
 <template>
@@ -35,8 +33,10 @@ const blocked = computed(() => system.blockedOn !== null)
        changes, the activity accrues and human input appears when needed.
        A single system operating continuously underneath. -->
   <div class="workspace">
+    <!-- The growth tree is the pane's lifecycle indicator (D-15, FR-G1),
+         in the place the lifecycle strip held. -->
     <header class="bar">
-      <LifecycleStrip :phase="system.phase" :blocked="blocked" />
+      <GrowthTree />
     </header>
 
     <div class="body">
@@ -89,7 +89,7 @@ const blocked = computed(() => system.blockedOn !== null)
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-2) var(--space-6);
   border-bottom: 1px solid var(--border-subtle);
 }
 

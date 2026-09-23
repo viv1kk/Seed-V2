@@ -47,6 +47,16 @@
   --grade-partial: var(--status-warning);
   --grade-low: var(--status-neutral);
 
+  /* The growth tree (D-15). Muted on purpose: it is a progress
+   * indicator, not an illustration (NFR-V6, R-14). Water is the tool
+   * requests the protection engine allowed; nothing here is a model. */
+  --growth-stem: #5d7a66;
+  --growth-leaf: #6f9a7a;
+  --growth-bud: #8a6fb8;
+  --growth-water: #4f86cf;
+  --growth-soil: #eceef2;
+  --growth-guide: #d5d9e0;
+
   /* Semantic roles for charts. Specifications name a role; the
    * renderer resolves the role to one of these (D-5). */
   --chart-series-1: #2f6df6;
@@ -127,6 +137,13 @@
   --status-neutral: #6f7885;
 
   --grade-medium: #8aab4c;
+
+  --growth-stem: #7f9d88;
+  --growth-leaf: #5f8f6c;
+  --growth-bud: #a58fd6;
+  --growth-water: #6d9be0;
+  --growth-soil: #0b0e13;
+  --growth-guide: #2a313b;
 
   --chart-series-1: #5b8cff;
   --chart-series-2: #9a82f0;

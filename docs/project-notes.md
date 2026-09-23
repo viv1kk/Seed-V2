@@ -4193,3 +4193,91 @@ fault.
 **Check by hand.** Open Application Portfolio Rationalization's review
 and read the Routing problem section. Then decide whether the seed
 paragraph's wording suits the Adaptation document.
+
+### M17 · Growth tree
+
+**Measured first, as the plan asks.** A full narrative records 106
+events, 27 of them policy decisions: 25 ALLOW, 1 DENY and 1 ESCALATE.
+Nothing is near "hundreds", so every decision is its own watering step
+and none are batched.
+
+**What changed.** A hand-built SVG growth tree replaces the lifecycle
+strip in the Seeding pane (D-15, FR-G1 to G6). `LifecycleStrip.vue` is
+removed, because FR-L6 is superseded by A-4.
+
+- **A pure function of the event log.** `design/growth.ts` computes
+  `growthOf(events)`, which reads nothing but the log. It gives:
+  - roots from `seed.loaded`, one per layer;
+  - a sprout at `system.ready`;
+  - a stem leaf per system reached (`discovery.system.connected` or
+    `.registered`) and per methodology assessed;
+  - a branch per Agent Component built (`implementation.build.started`),
+    with a leaf per `implementation.component.built` and a bud at
+    `solution.ready`;
+  - a bloom at `deployment.ready`, for Agent One VW;
+  - a watering step per `policy.decision`.
+
+  The current phase and the waiting-on-a-person state come from the log
+  too. The frontend replays the whole log on connect, so a reloaded tree
+  is the tree that grew live (FR-G5).
+- **The layout keeps the strip's footprint.** The tree grows along a
+  horizontal line: the seed and roots in a soil bed at the left, then
+  one stem through five labelled phase sections, ending in the bloom.
+  Each phase label reads complete, current or future, with the same
+  marker meanings the strip had, including amber while waiting on a
+  person (FR-G1). The ungrown stem is a dotted guide, so the future stays
+  visible.
+- **Watering (FR-G3, FR-G4).** An allowed request is a dot of water
+  absorbed into the soil. A refused request is a hollow drop held above
+  a barrier line, with its rule in the tooltip: it watered nothing. An
+  escalated request is a ringed dot. I read FR-G3 literally here: it was
+  evaluated and not denied, so it waters, but it reached a person rather
+  than soaking straight in. A tally reads "Watered by 26 tool requests ·
+  1 refused". The tree's accessible title says that no model calls
+  occur.
+- **Motion (NFR-V7).** Only an event that arrives alone, 250 ms or more
+  after the previous one, animates: a 420 ms sprout, a falling drop, a
+  stem transition. A replay, a resync or a run at instant speed arrives
+  in a burst and simply appears in its final state. Reduced motion turns
+  every animation off. Motion decides only how an element arrives, never
+  what is drawn.
+- **Colours.** New `--growth-*` tokens in both themes, deliberately
+  muted (NFR-V6, R-14). M21 reviews them.
+
+**Files.** `frontend/src/design/growth.ts` (new),
+`components/GrowthTree.vue` (new), `components/LifecycleStrip.vue`
+(removed), `views/WorkspaceView.vue`, `design/tokens.css`. No backend
+change.
+
+**Gates.** `pytest` gives 431 passed, and no test was edited. Typecheck
+and build pass. Live, with the tree serialized without its
+motion-only attributes:
+
+- After a full run the tree holds 3 roots, 8 stem leaves, 3 branches with
+  18 leaves, 3 buds and the bloom. Its watering is 26 absorbed and 1
+  refused.
+- **Replay equals live.** A reload rebuilt the identical tree
+  (10,969 characters).
+- **Two runs from Reset** ended with the identical tree. Reset returns to
+  just the planted seed.
+- **No strobing.** A whole run at instant speed produced 0 animated
+  arrivals, while 25 s at 2x produced 2.
+- **Reduced motion** gives the identical final tree to a full-motion
+  session.
+- No text in the tree claims a model or an AI call.
+- The M14 walkthrough still passes 31 of 31.
+
+**For M22.** FR-G5's determinism is proven live here. The plan's
+automated determinism test is backend Python and cannot run
+`growthOf`. Since the tree is a pure function of the log, event-log
+determinism implies tree determinism. M22 can rely on that argument or
+port `growthOf`.
+
+**Check by hand.**
+
+1. Watch a run at 1x and judge the motion budget: the sprouts, the
+   falling drops and the stem growth (R-14).
+2. Judge the horizontal form. A vertical tree would need a column taken
+   from the stage.
+3. Confirm the escalation reading: the deploy request waters, as a ringed
+   dot.
