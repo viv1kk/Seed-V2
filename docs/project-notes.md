@@ -4003,3 +4003,59 @@ still open and close a real rehearsal.
 stage lists the three layers at once. Run a component, drill in, press
 the browser's Back, then press "← Agent Components". The list should
 appear at the first click.
+
+### M15 · Declared stack at Planting
+
+**What changed.** The Planting stage now shows the systems the
+Adaptation layer declares, each marked declared and not yet verified
+(D-13, FR-N5).
+
+- `environment/acme.py` gains `declared_inventory()`: the five systems of
+  `SYSTEM_ORDER`, with their labels. Discovery's first beat already
+  reveals `SYSTEM_ORDER`, so the two read one source.
+- System State gains `declared`, an additive snapshot field. The plant
+  sets it at `INITIALIZED` and Reset clears it. The environment graph
+  stays empty until Discovery runs, so the declaration gives nothing of
+  Discovery's work away (G-2).
+- `seed.loaded` carries `declared` as an additive payload key, so a
+  watching client shows the stack without a reload. It is not a new
+  event, because `test_seed.py` pins the plant to exactly two events.
+- The frontend store adopts `declared` from the snapshot and folds it
+  from `seed.loaded`. The Planting stage lists each system with
+  "Declared" and a standing. The standing is "Not yet verified" until the
+  system's node leaves `unknown` in the graph, and from then on it is the
+  graph's status. Unverified is shown muted, never in the warning colour,
+  because it is a state of knowledge, not a fault.
+
+**Files.** `backend/app/environment/acme.py`, `domain/state.py`,
+`api/seed.py`; `backend/tests/test_declared.py` (new);
+`frontend/src/stores/system.ts`, `components/StagePane.vue`.
+
+**Gates.**
+
+- `pytest` gives 423 tests, 422 passing: 418 existing plus 5 new, with no
+  existing test edited. The one failure is the performance test below.
+- Typecheck and build pass.
+- Live:
+  - After a plant from the interface, the five systems appear at once,
+    each "Declared, Not yet verified", and the graph is still empty.
+  - A reload shows the same list from the snapshot.
+  - `seed.loaded` and Discovery's first beat (`discovery.inventory.loaded`)
+    name the same five systems in the same order.
+  - The M14 walkthrough still passes 31 of 31.
+
+**Flagged: a performance test at its limit.**
+`test_any_filter_answers_every_view_inside_200_ms[ticket-anomaly-detection]`
+fails in the full suite with a worst case of 204 to 234 ms against its
+200 ms budget. It passes on its own and passed twice with the new test
+file excluded. It also failed once before M15 (see the previous entry).
+M15 touches no analytics code, and suite runtimes rose from about 23 s
+to 33 s over the session, so this reads as machine load near a tight
+threshold. Changing the test is an assertion edit before M18, so it is
+left for a ruling. The options are to measure the median rather than
+the worst case, to warm up more, or to take the timing on its own rather
+than in the suite.
+
+**Check by hand.** Plant, and read the Declared stack section's copy.
+Confirm that "Not yet verified" in muted italic reads as intended beside
+the "Declared" label.

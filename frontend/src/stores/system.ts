@@ -303,6 +303,12 @@ export interface RegisteredLayer {
   headingCount: number
 }
 
+/** A system the Adaptation layer declares, as planted (D-13, FR-N5). */
+export interface DeclaredSystem {
+  id: string
+  label: string
+}
+
 /** A layer as `seed.loaded` reports it; `headings` is the count. */
 interface SeedLoadedLayer extends Omit<RegisteredLayer, 'headingCount'> {
   headings: number
@@ -315,6 +321,8 @@ export interface StateSnapshot {
   blockedOn: BlockedOn | null
   humanRequests: HumanRequestRecord[]
   seed: Record<string, unknown> | null
+  /** What the seed was told it is planted into; empty until planting. */
+  declared: DeclaredSystem[]
   /** Empty until discovery begins. */
   environment: Environment | Record<string, never>
   assessments: Assessment[]
@@ -361,6 +369,12 @@ export const useSystemStore = defineStore('system', () => {
   /** The registered seed, as the Planting stage summarises it (FR-S5). */
   const seed = ref<RegisteredLayer[]>([])
 
+  /**
+   * The declared stack (D-13). A declaration, not a discovery: whether
+   * each system is really there is the environment graph's to say.
+   */
+  const declared = ref<DeclaredSystem[]>([])
+
   /** The sequence number the snapshot is current as of. */
   const baseline = ref(0)
 
@@ -378,6 +392,7 @@ export const useSystemStore = defineStore('system', () => {
       topics: layer.topics,
       headingCount: layer.headingCount,
     }))
+    declared.value = structuredClone(next.declared ?? [])
     environment.value =
       'nodes' in next.environment ? structuredClone(next.environment as Environment) : null
     assessments.value = structuredClone(next.assessments)
@@ -481,6 +496,7 @@ export const useSystemStore = defineStore('system', () => {
           topics: layer.topics,
           headingCount: layer.headings,
         }))
+        declared.value = structuredClone((event.payload.declared ?? []) as DeclaredSystem[])
         break
       case 'lifecycle.transition':
         lifecycle.value = event.payload.to as LifecycleState
@@ -509,6 +525,7 @@ export const useSystemStore = defineStore('system', () => {
   return {
     snapshot,
     seed,
+    declared,
     lifecycle,
     phase,
     blockedOn,

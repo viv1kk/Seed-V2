@@ -190,6 +190,16 @@ ACME = Definition(
 #: The declared systems, in the order discovery walks them (§68).
 SYSTEM_ORDER: tuple[str, ...] = ("servicenow", "sap", "sqlserver", "lms", "legacy")
 
+
+def declared_inventory() -> list[dict[str, str]]:
+    """The systems the Adaptation layer declares, as planted (D-13, FR-N5).
+
+    This is what the seed was told, not what exists. Discovery's first
+    beat reveals the same `SYSTEM_ORDER` as unknown nodes, so what
+    Planting shows and what Discovery starts from can never disagree.
+    """
+    return [{"id": system, "label": ACME.by_id[system].label} for system in SYSTEM_ORDER]
+
 #: What enumeration reads on each system, from the Adaptation inventory.
 ENUMERATION: dict[str, str] = {
     "servicenow": "table metadata",

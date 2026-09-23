@@ -28,6 +28,7 @@ from app.knowledge.seed_loader import (
     read_bundled,
 )
 from app.domain.state import StateSnapshot
+from app.environment.acme import declared_inventory
 from app.runtime import state
 
 router = APIRouter(prefix="/seed")
@@ -101,6 +102,9 @@ async def initialize(upload: SeedUpload) -> StateSnapshot:
 
     summary = load_seed(upload.layers)
     state.seed = summary.model_dump(by_alias=True)
+    # What the seed was told it is planted into, unverified until
+    # Discovery reaches each system (D-13).
+    state.declared = declared_inventory()
 
     state.record(
         type="seed.loaded",
@@ -120,7 +124,8 @@ async def initialize(upload: SeedUpload) -> StateSnapshot:
                     "topics": entry.topics,
                 }
                 for entry in summary.layers
-            ]
+            ],
+            "declared": [dict(system) for system in state.declared],
         },
     )
 

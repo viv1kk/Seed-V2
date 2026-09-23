@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import AssessmentStage from './AssessmentStage.vue'
 import EnvironmentStage from './EnvironmentStage.vue'
 import ImplementationStage from './ImplementationStage.vue'
-import { useSystemStore } from '../stores/system'
+import { useSystemStore, type NodeStatus } from '../stores/system'
 
 const system = useSystemStore()
 
@@ -19,6 +19,36 @@ const system = useSystemStore()
  * ready to run lives in the Life pane (D-14).
  */
 const layers = computed(() => system.seed)
+
+/** How a node's status reads beside a declared system. */
+const REACHED: Record<NodeStatus, string> = {
+  unknown: 'Not yet verified',
+  detected: 'Detected',
+  testing: 'Testing',
+  'requires-input': 'Awaiting input',
+  error: 'Error',
+  validated: 'Validated',
+  connected: 'Connected',
+}
+
+/**
+ * The declared stack (D-13, FR-N5): what the seed was told it is planted
+ * into. Each system reads as declared and not yet verified until
+ * Discovery reaches it; from then on its status is the environment
+ * graph's, so this list never claims more than Discovery has found.
+ */
+const declared = computed(() =>
+  system.declared.map((entry) => {
+    const node = system.environment?.nodes.find((n) => n.id === entry.id)
+    const reached = node !== undefined && node.status !== 'unknown'
+    const standing = !reached
+      ? REACHED.unknown
+      : node.origin === 'administrator-supplied'
+        ? 'Admin supplied'
+        : REACHED[node.status]
+    return { ...entry, reached, standing }
+  }),
+)
 </script>
 
 <template>
@@ -64,6 +94,28 @@ const layers = computed(() => system.seed)
           </dl>
         </li>
       </ul>
+
+      <section v-if="declared.length > 0" class="declared">
+        <header class="head">
+          <h3 class="section-title">Declared stack</h3>
+          <p class="note">
+            What the Adaptation layer says this seed is planted into. A declaration, not a
+            discovery: Discovery establishes what is actually there, reachable and usable.
+          </p>
+        </header>
+        <ul class="systems">
+          <li
+            v-for="entry in declared"
+            :key="entry.id"
+            class="system"
+            :data-reached="entry.reached"
+          >
+            <span class="system-name">{{ entry.label }}</span>
+            <span class="system-origin">Declared</span>
+            <span class="system-standing">{{ entry.standing }}</span>
+          </li>
+        </ul>
+      </section>
     </template>
 
   </section>
@@ -156,6 +208,71 @@ const layers = computed(() => system.seed)
 
 .layer-counts dt {
   color: var(--text-muted);
+}
+
+.declared {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.section-title {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.systems {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.system {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--space-4);
+  align-items: baseline;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.system + .system {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.system-name {
+  color: var(--text-primary);
+}
+
+.system-origin,
+.system-standing {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.system-origin {
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Unverified is a state of knowledge, not a fault: muted, never warning. */
+.system-standing {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.system[data-reached='true'] .system-standing {
+  color: var(--text-secondary);
+  font-style: normal;
 }
 
 .layer-counts dd {

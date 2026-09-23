@@ -86,6 +86,7 @@ class StateSnapshot(Schema):
     blocked_on: BlockedOn | None = None
     human_requests: list[dict[str, Any]] = Field(default_factory=list)
     seed: dict[str, Any] | None = None
+    declared: list[dict[str, Any]] = Field(default_factory=list)
     environment: dict[str, Any] = Field(default_factory=dict)
     assessments: list[dict[str, Any]] = Field(default_factory=list)
     solutions: list[dict[str, Any]] = Field(default_factory=list)
@@ -131,6 +132,7 @@ class SystemState:
         self.human_requests: list[dict[str, Any]] = []
         self.events = EventLog()
         self.seed: dict[str, Any] | None = None
+        self.declared: list[dict[str, Any]] = []
         self.environment: dict[str, Any] = {}
         self.assessments: list[dict[str, Any]] = []
         self.solutions: list[dict[str, Any]] = []
@@ -257,6 +259,7 @@ class SystemState:
             blocked_on=self.blocked_on,
             human_requests=self.human_requests,
             seed=self.seed,
+            declared=self.declared,
             environment=self.environment,
             assessments=self.assessments,
             solutions=self.solutions,

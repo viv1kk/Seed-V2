@@ -240,8 +240,8 @@ seed-v2/
 | M11 Display vocabulary       | RENAME | Built | `58b03cb` |
 | M12 Feasibility reference audit | RENAME (audit) | Built | `9436189` |
 | M13 Feasibility displayed as Potential | RENAME | Built | `1855e18` |
-| M14 Seeding and Life panes   | MOVE   | Built | |
-| M15 Declared stack at Planting | NEW  | Not started | |
+| M14 Seeding and Life panes   | MOVE   | Built | `34ce3d9` |
+| M15 Declared stack at Planting | NEW  | Built | |
 | M16 Routing-problem flag     | NEW    | Not started | |
 | M17 Growth tree              | NEW    | Not started | |
 | M18 Closing the seeding phase | NEW   | Not started | |
