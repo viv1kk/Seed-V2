@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 
+import CollectionProgress from '../components/CollectionProgress.vue'
 import GrowthTree from '../components/GrowthTree.vue'
 import RuntimeStage from '../components/RuntimeStage.vue'
 import { useDashboardStore } from '../stores/dashboard'
@@ -83,6 +84,8 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
     <header class="head">
       <h2 class="title">Agent One VW <span class="mark">(ValueWise™)</span></h2>
       <span v-if="growing" class="state mono">{{ doing }}</span>
+      <!-- Life's collection, once seeding has closed (D-17). -->
+      <CollectionProgress v-if="complete" class="collection" />
       <button
         v-if="complete"
         type="button"
@@ -194,6 +197,10 @@ const shown = computed<{ id: string; mode: 'running' | 'rehearsal' } | null>(() 
 
 .mono {
   font-family: var(--font-mono);
+}
+
+.collection {
+  margin-left: var(--space-5);
 }
 
 .growth-toggle {

@@ -16,6 +16,7 @@ from app.analytics.generator.tickets import (
     PRIORITIES,
 )
 from app.analytics.schema import (
+    Collection,
     Chart,
     ColourRule,
     ColourScale,
@@ -316,6 +317,7 @@ TICKETS = Dashboard(
         Level(id="cluster", label="Cluster", dimension="cluster"),
         Level(id="ticket", label="Ticket", entity=True),
     ],
+    collection=Collection(source="ServiceNow", noun="tickets", confirm="cluster"),
     evidence=Evidence(
         dimension="pattern",
         findings=[

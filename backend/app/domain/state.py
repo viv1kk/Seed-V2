@@ -93,6 +93,7 @@ class StateSnapshot(Schema):
     approvals: list[dict[str, Any]] = Field(default_factory=list)
     implementations: list[dict[str, Any]] = Field(default_factory=list)
     closing: dict[str, Any] = Field(default_factory=dict)
+    collection: dict[str, Any] = Field(default_factory=dict)
     runtime: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -143,6 +144,9 @@ class SystemState:
         #: record, the scratch released, the interfaces promoted and the
         #: tools retired. Empty until seeding is closed.
         self.closing: dict[str, Any] = {}
+        #: Life's collection cursor (D-17): the system cursor every dashboard
+        #: at the top of its hierarchy follows. Empty until Life begins.
+        self.collection: dict[str, Any] = {}
         self.runtime: dict[str, Any] = {}
 
     @property
@@ -271,5 +275,6 @@ class SystemState:
             approvals=self.approvals,
             implementations=self.implementations,
             closing=self.closing,
+            collection=self.collection,
             runtime=self.runtime,
         )

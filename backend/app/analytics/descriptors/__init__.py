@@ -8,6 +8,7 @@ a methodology.
 from collections.abc import Callable
 from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
 
 from app.analytics.descriptors.applications import APPLICATIONS
@@ -22,6 +23,12 @@ class Source:
     dashboard: Dashboard
     #: Returns the primary frame and any secondary frames, by frame id.
     generate: Callable[[], dict[str, pd.DataFrame]]
+    #: Life's recalibrations (D-17): for each calibration, the columns that
+    #: differ from the generated frames, by frame. None if nothing
+    #: recalibrates.
+    calibrate: (
+        Callable[[dict[str, pd.DataFrame]], list[dict[str, dict[str, np.ndarray]]]] | None
+    ) = None
 
 
 def _pair(primary_and_secondary: Callable[[], tuple[pd.DataFrame, pd.DataFrame]], frame: str):
@@ -33,7 +40,7 @@ def _pair(primary_and_secondary: Callable[[], tuple[pd.DataFrame, pd.DataFrame]]
 
 
 SOURCES: tuple[Source, ...] = (
-    Source(TICKETS, lambda: {"primary": tickets.generate()}),
+    Source(TICKETS, lambda: {"primary": tickets.generate()}, tickets.calibrate),
     Source(LICENSES, _pair(licenses.generate, "activity")),
-    Source(APPLICATIONS, _pair(applications.generate, "usage")),
+    Source(APPLICATIONS, _pair(applications.generate, "usage"), applications.calibrate),
 )

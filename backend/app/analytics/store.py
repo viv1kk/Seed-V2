@@ -19,7 +19,12 @@ import numpy as np
 import pandas as pd
 
 from app.analytics.descriptors import SOURCES
+from app.analytics.generator import CALIBRATIONS, COLLECTED, EVERY, STEPS
 from app.analytics.schema import ColourScale, Dashboard
+
+#: A value of a collection's confirm dimension is confirmed when its
+#: collected records score at least this on average.
+CONFIRMED = 0.8
 
 
 class UnknownDashboard(KeyError):
@@ -36,10 +41,37 @@ class Dataset:
     palettes: dict[str, dict[str, str]] = field(default_factory=dict)
     #: Entity id to row position in the primary frame.
     positions: dict[str, int] = field(default_factory=dict)
+    #: Life's recalibrations (D-17): for each, the columns that differ from
+    #: the generated frames. The last is the generated frames themselves.
+    calibrations: list[dict[str, dict[str, np.ndarray]]] = field(default_factory=list)
+    #: Life's plan, precomputed: arrivals per step, and what each
+    #: recalibration moved.
+    arrivals: list[int] = field(default_factory=list)
+    recalibrations: list[dict] = field(default_factory=list)
+    _calibrated: dict[int, dict[str, pd.DataFrame]] = field(default_factory=dict, repr=False)
 
     @property
     def primary(self) -> pd.DataFrame:
         return self.frames["primary"]
+
+    def at(self, calibration: int) -> dict[str, pd.DataFrame]:
+        """The frames as a calibration saw them.
+
+        Shallow copies with the recalibrated columns swapped in: every
+        other column is the generated one, shared rather than copied.
+        """
+        changes = self.calibrations[calibration] if calibration < len(self.calibrations) else {}
+        if not changes:
+            return self.frames
+        if calibration not in self._calibrated:
+            frames = dict(self.frames)
+            for frame_id, columns in changes.items():
+                frame = frames[frame_id].copy(deep=False)
+                for column, values in columns.items():
+                    frame[column] = values
+                frames[frame_id] = frame
+            self._calibrated[calibration] = frames
+        return self._calibrated[calibration]
 
 
 def roles_for(scale: ColourScale, values: list[str]) -> dict[str, str]:
@@ -129,7 +161,81 @@ def build(source) -> Dataset:
         if dimension.colour:
             dataset.palettes[dimension.id] = roles_for(dashboard.scale(dimension.colour), values)
     dataset.positions = {str(v): i for i, v in enumerate(primary[entity].tolist())}
+    if dashboard.collection:
+        dataset.calibrations = source.calibrate(frames) if source.calibrate else [{}] * CALIBRATIONS
+        if len(dataset.calibrations) != CALIBRATIONS or dataset.calibrations[-1]:
+            raise ValueError(
+                f"{dashboard.solution_id}: {CALIBRATIONS} calibrations, the last the generated frames"
+            )
+        _plan(dataset)
     return dataset
+
+
+def _plan(dataset: Dataset) -> None:
+    """Life's plan: what arrives at each step, and what each recalibration moves.
+
+    Counted from rows, once, so the stream reports what the dashboards
+    will show (FR-LF4, FR-LF6).
+    """
+    dashboard = dataset.dashboard
+    spec = dashboard.collection
+    collected = dataset.frames[spec.frame][COLLECTED].to_numpy()
+    dataset.arrivals = np.bincount(collected, minlength=STEPS + 1).tolist()
+
+    evidence = dashboard.evidence
+    column = dashboard.dimension(evidence.dimension).column
+
+    def confirmed(c: int) -> set[str]:
+        if not spec.confirm or not evidence.score:
+            return set()
+        frame = dataset.at(c)["primary"]
+        seen = frame[frame[COLLECTED] <= c * EVERY]
+        key = dashboard.dimension(spec.confirm).column
+        scores = seen.groupby(key, observed=True)[evidence.score].mean()
+        return {str(v) for v, s in scores.items() if s >= CONFIRMED}
+
+    def baselines(c: int) -> dict[str, float]:
+        frame = dataset.at(c)["primary"]
+        seen = frame[frame[COLLECTED] <= c * EVERY]
+        values = {}
+        for finding in evidence.findings:
+            if finding.baseline:
+                rows = seen[seen[column] == finding.value]
+                if len(rows):
+                    values[finding.value] = float(rows[finding.baseline].astype(float).mean())
+        return values
+
+    order = {v: i for i, v in enumerate(dataset.domains.get(spec.confirm or "", []))}
+    before, held = baselines(0), confirmed(0)
+    dataset.recalibrations = []
+    for c in range(1, CALIBRATIONS):
+        after, now = baselines(c), confirmed(c)
+        moved = [
+            (abs(after[v] - before[v]) / before[v], v)
+            for v in after
+            if v in before and before[v] and round(after[v], 2) != round(before[v], 2)
+        ]
+        baseline = None
+        if moved:
+            _, value = max(moved)
+            finding = next(f for f in evidence.findings if f.value == value)
+            baseline = {
+                "finding": value,
+                "metric": finding.metric_label,
+                "unit": finding.unit,
+                "from": round(before[value], 2),
+                "to": round(after[value], 2),
+            }
+        dataset.recalibrations.append(
+            {
+                "calibration": c,
+                "step": c * EVERY,
+                "baseline": baseline,
+                "confirmed": sorted(now - held, key=lambda v: order.get(v, 0)),
+                "withdrawn": sorted(held - now, key=lambda v: order.get(v, 0)),
+            }
+        )
+        before, held = after, now
 
 
 def build_all() -> dict[str, Dataset]:

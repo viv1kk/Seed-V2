@@ -310,6 +310,22 @@ interface SeedLoadedLayer extends Omit<RegisteredLayer, 'headingCount'> {
   headings: number
 }
 
+/**
+ * Life's collection cursor (D-17): the system cursor. It moves with the
+ * clock after seeding closes; a dashboard at the top of its hierarchy
+ * follows it.
+ */
+export interface Collection {
+  step: number
+  steps: number
+  every: number
+  calibration: number
+  calibrations: number
+  week: string
+  caughtUp: boolean
+  sources: string[]
+}
+
 export interface StateSnapshot {
   sequence: number
   lifecycle: LifecycleState
@@ -326,6 +342,8 @@ export interface StateSnapshot {
   approvals: Approval[]
   implementations: Implementation[]
   runtime: Runtime | Record<string, never>
+  /** Empty until Life begins collecting. */
+  collection: Collection | Record<string, never>
 }
 
 /**
@@ -361,6 +379,8 @@ export const useSystemStore = defineStore('system', () => {
   /** Builds and runs, folded the same way (FR-L5). */
   const implementations = ref<Implementation[]>([])
   const runtime = ref<Runtime>({ active: null, runs: [] })
+  /** Life's collection cursor; null until Life begins (D-17). */
+  const collection = ref<Collection | null>(null)
 
   /** The registered seed, as the Planting stage summarises it (FR-S5). */
   const seed = ref<RegisteredLayer[]>([])
@@ -397,6 +417,10 @@ export const useSystemStore = defineStore('system', () => {
     implementations.value = structuredClone(next.implementations)
     runtime.value =
       'runs' in next.runtime ? structuredClone(next.runtime as Runtime) : { active: null, runs: [] }
+    collection.value =
+      next.collection && 'step' in next.collection
+        ? structuredClone(next.collection as Collection)
+        : null
   }
 
   function upsert<T extends { id: string }>(records: T[], record: T): void {
@@ -480,6 +504,10 @@ export const useSystemStore = defineStore('system', () => {
     if (event.payload.runtime) {
       runtime.value = event.payload.runtime as Runtime
     }
+    // Every Life event carries the cursor as it stands (D-17).
+    if (event.type.startsWith('life.') && event.payload.collection) {
+      collection.value = event.payload.collection as Collection
+    }
     switch (event.type) {
       case 'seed.loaded':
         // The plant carries its own summary, so a client that planted, or
@@ -531,6 +559,7 @@ export const useSystemStore = defineStore('system', () => {
     approvals,
     implementations,
     runtime,
+    collection,
     baseline,
     fetchSnapshot,
     apply,

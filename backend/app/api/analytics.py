@@ -22,6 +22,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import Field
 
 from app.analytics.evidence import evidence
+from app.analytics.generator import CALIBRATIONS, EVERY, STEPS, week_of
 from app.analytics.query import Engine, FilterContext, QueryError, run
 from app.analytics.store import STORE, Dataset, UnknownDashboard
 from app.domain.schema import Schema
@@ -73,10 +74,20 @@ async def dashboards() -> list[dict[str, str]]:
 @router.get("/analytics/{solution_id}/dashboard")
 async def dashboard(solution_id: str) -> dict[str, Any]:
     dataset = _dataset(solution_id)
+    collection = None
+    if dataset.dashboard.collection:
+        # Life's clock, so the dashboard can name the week a step is.
+        collection = {
+            "steps": STEPS,
+            "every": EVERY,
+            "calibrations": CALIBRATIONS - 1,
+            "weeks": [week_of(step) for step in range(STEPS + 1)],
+        }
     return {
         "descriptor": dataset.dashboard.model_dump(by_alias=True),
         "domains": dataset.domains,
         "palettes": dataset.palettes,
+        "collection": collection,
     }
 
 

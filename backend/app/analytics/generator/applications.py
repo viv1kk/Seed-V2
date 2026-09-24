@@ -24,7 +24,7 @@ A second frame holds monthly distinct users per instrumented application.
 import numpy as np
 import pandas as pd
 
-from app.analytics.generator import MONTHS
+from app.analytics.generator import CALIBRATIONS, COLLECTED, EVERY, MONTHS, month_step
 
 SEED = 20260625
 
@@ -182,4 +182,49 @@ def generate() -> tuple[pd.DataFrame, pd.DataFrame]:
             "users": np.round(users.reshape(-1)),
         }
     )
+    # A month's usage arrives when the month is complete, once Life begins
+    # (D-17). The portfolio itself is known from the start.
+    df[COLLECTED] = np.zeros(len(df), dtype=np.int16)
+    usage[COLLECTED] = month_step(MONTHS)[usage["month"].cat.codes.to_numpy()]
     return df, usage
+
+
+def calibrate(frames: dict[str, pd.DataFrame]) -> list[dict[str, dict[str, np.ndarray]]]:
+    """Every recalibration's usage figures and baselines, computed once (FR-LF6).
+
+    An application's monthly users are as of the latest month collected:
+    the generated figure, scaled by how that month's usage stood against
+    the final month's. Cost per user follows, and the baselines are
+    recomputed from the retained applications by the rule generation
+    uses. The last calibration is exactly the generated frame. Nothing
+    here runs when a dashboard asks (FR-AN3).
+    """
+    df, usage = frames["primary"], frames["usage"]
+    months = len(MONTHS)
+    by_month = usage["users"].to_numpy().reshape(len(df), months)
+    ends = month_step(MONTHS)
+    final = by_month[:, months - 1]
+    retained = (df["disposition"] == "Retain").to_numpy()
+    calibrations = []
+    for c in range(CALIBRATIONS):
+        if c == CALIBRATIONS - 1:
+            calibrations.append({})
+            continue
+        latest = int(np.flatnonzero(ends <= c * EVERY).max())
+        ratio = np.where(final > 0, by_month[:, latest] / np.where(final > 0, final, 1), 1.0)
+        users = np.round(df["monthlyUsers"].to_numpy() * ratio)
+        cost = np.round(df["costPerUser"].to_numpy() / np.where(ratio > 0, ratio, 1.0), 1)
+        columns = {"monthlyUsers": users, "costPerUser": cost}
+        frame = pd.DataFrame({"capability": df["capability"], **columns})
+        means = frame[retained].groupby("capability", observed=True).mean().round(1)
+        for column, name in (
+            ("monthlyUsers", "usersBaseline"),
+            ("costPerUser", "costPerUserBaseline"),
+        ):
+            columns[name] = (
+                df[["capability"]]
+                .join(means[column].rename(name), on="capability")[name]
+                .to_numpy()
+            )
+        calibrations.append({"primary": columns})
+    return calibrations

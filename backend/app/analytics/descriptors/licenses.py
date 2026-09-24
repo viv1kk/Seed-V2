@@ -9,6 +9,7 @@ withheld figure, never an estimate (PR-074).
 from app.analytics.generator import MONTHS, month_labels
 from app.analytics.generator.licenses import CLASSES, DEPARTMENTS, PRODUCTS, UNASSIGNED
 from app.analytics.schema import (
+    Collection,
     Chart,
     ColourRule,
     ColourScale,
@@ -250,6 +251,9 @@ LICENSES = Dashboard(
         Level(id="class", label="Utilisation", dimension="class"),
         Level(id="seat", label="Seat", entity=True),
     ],
+    collection=Collection(
+        frame="activity", source="the License Management System", noun="seat-months of use"
+    ),
     evidence=Evidence(
         dimension="class",
         findings=[

@@ -15,7 +15,7 @@ from app.config import NARRATIVE_WEIGHT, TOTAL_DURATION_SECONDS
 from app.domain.state import SystemState
 from app.simulation.engine import SimulationEngine
 from app.simulation.protocol import EventSource
-from app.simulation.workflows.registry import NARRATIVE
+from app.simulation.workflows.registry import LIFE, NARRATIVE
 
 state = SystemState()
 bus = EventBus()
@@ -24,7 +24,7 @@ state.subscribe(bus.publish)
 
 source: EventSource = SimulationEngine(
     state,
-    NARRATIVE,
+    (*NARRATIVE, *LIFE),
     total_duration=TOTAL_DURATION_SECONDS,
     narrative_weight=NARRATIVE_WEIGHT,
 )

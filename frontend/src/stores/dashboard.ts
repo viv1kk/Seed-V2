@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { Format } from '../design/format'
+import { useSystemStore } from './system'
 
 /*
  * The wire types, mirroring backend/app/analytics/schema.py and the query
@@ -127,6 +128,8 @@ export interface Descriptor {
   sections: SectionSpec[]
   hierarchy: { id: string; label: string; dimension: string | null; entity: boolean }[]
   evidence: { dimension: string; methodology: string }
+  /** What Life collects for this dashboard (D-17); null if nothing. */
+  collection: { frame: string; source: string; noun: string; confirm: string | null } | null
   simulated: boolean
 }
 
@@ -212,11 +215,7 @@ export interface RecordsResult {
 }
 
 export type ViewResult =
-  | KpiResult
-  | SeriesChartResult
-  | TreemapResult
-  | SummaryResult
-  | RecordsResult
+  KpiResult | SeriesChartResult | TreemapResult | SummaryResult | RecordsResult
 
 export interface DrillLevel {
   id: string
@@ -250,6 +249,22 @@ export interface EvidenceResult {
   score?: number | null
   entity?: string | null
   simulated: boolean
+  /** The calibration a finding is scored under (FR-LF9); null outside Life. */
+  calibration?: { index: number; step: number; label: string } | null
+  /** Whether the one group selected is confirmed yet (FR-LF6). */
+  confirmation?: {
+    dimension: string
+    value: string
+    status: 'confirmed' | 'provisional'
+    score: number | null
+  } | null
+}
+
+/** A collection step's simulated week (D-17). */
+export interface Week {
+  week: string
+  from: string
+  to: string
 }
 
 /**
@@ -287,6 +302,8 @@ function same(a: Context, b: Context): boolean {
 interface Location {
   dashboard: string | null
   steps: Step[]
+  /** The collection step the view is pinned to; absent, it follows (D-17). */
+  step?: number | null
 }
 
 function readUrl(): Location {
@@ -298,7 +315,9 @@ function readUrl(): Location {
   } catch {
     steps = []
   }
-  return { dashboard: params.get('dashboard'), steps }
+  const raw = params.get('step')
+  const step = raw !== null && /^\d+$/.test(raw) ? Number(raw) : null
+  return { dashboard: params.get('dashboard'), steps, step }
 }
 
 function writeUrl(location: Location, push: boolean): void {
@@ -306,6 +325,9 @@ function writeUrl(location: Location, push: boolean): void {
   if (location.dashboard) params.set('dashboard', location.dashboard)
   if (location.dashboard && location.steps.length) {
     params.set('drill', JSON.stringify(location.steps))
+  }
+  if (location.dashboard && location.step !== null && location.step !== undefined) {
+    params.set('step', String(location.step))
   }
   const query = params.toString()
   const url = `${window.location.pathname}${query ? `?${query}` : ''}`
@@ -360,6 +382,35 @@ export const useDashboardStore = defineStore('dashboard', () => {
   let controller: AbortController | null = null
   let pushed = 0
 
+  /*
+   * Two cursors (D-17, FR-LF8). The system cursor moves with Life's clock.
+   * The view cursor is this dashboard's: at the top of the breadcrumb it
+   * follows the system; once the viewer drills in it pins to the step it
+   * was at, so no finding changes while they are inside it. It catches up
+   * on return to the top, or when asked.
+   */
+  const system = useSystemStore()
+  /** The collection clock's weeks, for a dashboard that collects. */
+  const weeks = ref<Week[]>([])
+  /** The step the view is pinned to, or null to follow the system. */
+  const pinned = ref<number | null>(readUrl().step ?? null)
+  /** The system cursor, for a dashboard that collects, once Life begins. */
+  const live = computed(() =>
+    descriptor.value?.collection && system.collection ? system.collection.step : null,
+  )
+  /** The step the figures are read at: null is the full dataset. */
+  const viewStep = computed(() =>
+    descriptor.value?.collection ? (pinned.value ?? live.value) : null,
+  )
+  /** How many collections have landed since the view pinned. */
+  const newer = computed(() =>
+    pinned.value !== null && live.value !== null ? Math.max(0, live.value - pinned.value) : 0,
+  )
+
+  function location(push: boolean): void {
+    writeUrl({ dashboard: solutionId.value, steps: steps.value, step: pinned.value }, push)
+  }
+
   function measure(id: string): MeasureSpec | undefined {
     return descriptor.value?.measures.find((m) => m.id === id)
   }
@@ -368,8 +419,16 @@ export const useDashboardStore = defineStore('dashboard', () => {
     return descriptor.value?.dimensions.find((d) => d.id === id)
   }
 
-  function request(): { filter: { dimensions: Filter; entityId: string | null } } {
-    return { filter: { dimensions: context.value.dimensions, entityId: context.value.entityId } }
+  function request(): {
+    filter: { dimensions: Filter; entityId: string | null; step: number | null }
+  } {
+    return {
+      filter: {
+        dimensions: context.value.dimensions,
+        entityId: context.value.entityId,
+        step: viewStep.value,
+      },
+    }
   }
 
   async function refresh(): Promise<void> {
@@ -414,14 +473,18 @@ export const useDashboardStore = defineStore('dashboard', () => {
       descriptor: Descriptor
       domains: Record<string, string[]>
       palettes: Record<string, Record<string, Role>>
+      collection: { weeks: Week[] } | null
     }
     descriptor.value = body.descriptor
     domains.value = body.domains
     palettes.value = body.palettes
-    const location = readUrl()
-    steps.value = location.dashboard === id ? location.steps : []
+    weeks.value = body.collection?.weeks ?? []
+    const url = readUrl()
+    steps.value = url.dashboard === id ? url.steps : []
+    // A link can open a chosen step (D-3); otherwise the view follows.
+    pinned.value = url.dashboard === id ? (url.step ?? null) : null
     pushed = 0
-    writeUrl({ dashboard: id, steps: steps.value }, false)
+    location(false)
     await refresh()
   }
 
@@ -434,16 +497,32 @@ export const useDashboardStore = defineStore('dashboard', () => {
     evidence.value = null
     steps.value = []
     rehearsal.value = null
+    pinned.value = null
     writeUrl({ dashboard: null, steps: [] }, false)
   }
 
-  /** Add a drill step, unless it changes nothing. */
+  /**
+   * Add a drill step, unless it changes nothing. Drilling in pins the view
+   * to the collection step it is at, so what the viewer is inside holds
+   * still while collection goes on (FR-LF8).
+   */
   function apply(step: Step): void {
     const next = [...steps.value, step]
     if (same(fold(next), context.value)) return
     steps.value = next
+    if (pinned.value === null && live.value !== null) pinned.value = live.value
     pushed += 1
-    writeUrl({ dashboard: solutionId.value, steps: next }, true)
+    location(true)
+    void refresh()
+  }
+
+  /**
+   * Catch up with collection. At the top the view follows again; drilled
+   * in, it moves to the newest step and pins there.
+   */
+  function catchUp(): void {
+    pinned.value = steps.value.length && live.value !== null ? live.value : null
+    location(false)
     void refresh()
   }
 
@@ -455,7 +534,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
       return
     }
     steps.value = steps.value.slice(0, -1)
-    writeUrl({ dashboard: solutionId.value, steps: steps.value }, false)
+    if (!steps.value.length) pinned.value = null
+    location(false)
     void refresh()
   }
 
@@ -463,13 +543,20 @@ export const useDashboardStore = defineStore('dashboard', () => {
   function jump(index: number): void {
     if (index >= steps.value.length) return
     steps.value = steps.value.slice(0, index)
+    // Back at the top, the view follows collection again (FR-LF8).
+    if (index === 0) pinned.value = null
     pushed += 1
-    writeUrl({ dashboard: solutionId.value, steps: steps.value }, true)
+    location(true)
     void refresh()
   }
 
   /** A page or a new sort of a record table. */
-  async function page(tableId: string, pageNumber: number, sortBy?: string, descending?: boolean): Promise<void> {
+  async function page(
+    tableId: string,
+    pageNumber: number,
+    sortBy?: string,
+    descending?: boolean,
+  ): Promise<void> {
     if (!solutionId.value) return
     const answer = await post<RecordsResult & { elapsedMs: number }>(
       `/api/analytics/${encodeURIComponent(solutionId.value)}/records`,
@@ -489,8 +576,14 @@ export const useDashboardStore = defineStore('dashboard', () => {
     if (location.dashboard && location.dashboard === solutionId.value) {
       pushed = Math.max(0, pushed - 1)
       steps.value = location.steps
+      pinned.value = location.step ?? null
       void refresh()
     }
+  })
+
+  // A view that follows collection refreshes as each step lands.
+  watch(live, (step, before) => {
+    if (step !== before && pinned.value === null && solutionId.value) void refresh()
   })
 
   return {
@@ -506,6 +599,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
     error,
     rehearsal,
     context,
+    weeks,
+    pinned,
+    live,
+    viewStep,
+    newer,
+    catchUp,
     measure,
     dimension,
     open,

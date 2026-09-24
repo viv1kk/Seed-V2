@@ -321,6 +321,22 @@ class Evidence(Schema):
     validation: list[str]
 
 
+class Collection(Schema):
+    """What Life collects for this dashboard, and what it recalibrates (D-17).
+
+    Records carry the step they are collected at, and every frame that has
+    that column is narrowed to what has been collected so far. `frame` is
+    the one whose arrivals the stream reports, in `noun` from `source`.
+    `confirm` names a dimension whose values a recalibration confirms or
+    withdraws, if the methodology has one.
+    """
+
+    frame: str = "primary"
+    source: str
+    noun: str
+    confirm: str | None = None
+
+
 class Entity(Schema):
     """What one record is."""
 
@@ -347,6 +363,7 @@ class Dashboard(Schema):
     sections: list[Section]
     hierarchy: list[Level]
     evidence: Evidence
+    collection: Collection | None = None
     simulated: bool = True
 
     # -- Lookup ------------------------------------------------------
@@ -431,6 +448,9 @@ class Dashboard(Schema):
         for level in self.hierarchy:
             need("dimension", level.dimension, dims, f"level {level.id}")
         need("dimension", self.evidence.dimension, dims, "evidence")
+        if self.collection:
+            need("frame", self.collection.frame, frames, "collection")
+            need("dimension", self.collection.confirm, dims, "collection")
 
         if problems:
             raise ValueError(f"{self.solution_id} descriptor: " + "; ".join(problems))

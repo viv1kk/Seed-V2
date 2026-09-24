@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 from pydantic import Field
 
+from app.analytics.generator import COLLECTED, STEPS, calibration_of
 from app.analytics.schema import Chart, Dashboard, Kpi, Measure, Restriction, Table
 from app.analytics.store import Dataset
 from app.domain.schema import Schema
@@ -33,11 +34,16 @@ class FilterContext(Schema):
 
     Values within one dimension are alternatives; dimensions combine. The
     time range is inclusive of both dates.
+
+    `step` is Life's collection step (D-17, FR-LF7): only records collected
+    by then exist, and figures are read under the calibration in force at
+    that step. No step is the full dataset, as collection leaves it.
     """
 
     time_range: tuple[dt.date, dt.date] | None = None
     dimensions: dict[str, list[str]] = Field(default_factory=dict)
     entity_id: str | None = None
+    step: int | None = Field(default=None, ge=0, le=STEPS)
 
 
 # -- Values ------------------------------------------------------------
@@ -84,6 +90,12 @@ class Selection:
         self.dashboard = dataset.dashboard
         self.context = context
         self._masks: dict[tuple, tuple[np.ndarray, list[str]]] = {}
+        collecting = self.dashboard.collection is not None
+        #: The step and calibration this selection reads at. A dashboard with
+        #: no collection is always its full dataset.
+        self.step = context.step if collecting else None
+        self.calibration = calibration_of(self.step)
+        self.frames = dataset.at(self.calibration) if collecting else dataset.frames
         known = {d.id for d in self.dashboard.dimensions}
         unknown = sorted(set(context.dimensions) - known)
         if unknown:
@@ -102,9 +114,13 @@ class Selection:
         if key in self._masks:
             return self._masks[key]
 
-        frame = self.dataset.frames[frame_id]
+        frame = self.frames[frame_id]
         selected = np.ones(len(frame), dtype=bool)
         ignored: list[str] = []
+        # What has been collected is not a filter: nothing else exists yet,
+        # so it narrows every figure, totals included.
+        if self.step is not None and COLLECTED in frame:
+            selected &= frame[COLLECTED].to_numpy() <= self.step
         if apply:
             for dim_id, values in self.context.dimensions.items():
                 if not values:
@@ -145,7 +161,7 @@ class Selection:
         self, frame_id: str, where: list[Restriction] = (), apply: bool = True
     ) -> pd.DataFrame:
         selected, _ = self.mask(frame_id, where, apply)
-        return self.dataset.frames[frame_id][selected]
+        return self.frames[frame_id][selected]
 
     def single(self, dim_id: str) -> str | None:
         values = self.context.dimensions.get(dim_id) or []
@@ -257,7 +273,7 @@ class Engine:
             "ignored": ignored,
         }
         if kpi.context == "of-total":
-            everything = self.dataset.frames[measure.frame]
+            everything = self.selection.rows(measure.frame, apply=False)
             result["total"] = plain(aggregate(everything, measure, self.dashboard))
         return result
 

@@ -18,7 +18,7 @@ A second frame holds each seat's month-by-month use, for the trend.
 import numpy as np
 import pandas as pd
 
-from app.analytics.generator import AS_OF, MONTHS, allocate
+from app.analytics.generator import AS_OF, COLLECTED, MONTHS, allocate, month_step
 
 SEED = 20260624
 
@@ -197,4 +197,9 @@ def generate() -> tuple[pd.DataFrame, pd.DataFrame]:
             "active": used.reshape(-1),
         }
     )
+    # A month's use arrives when the month is complete, once Life begins
+    # (D-17). Seats are the licence system's entitlements, known from the
+    # start, so they are all collected at step 0.
+    df[COLLECTED] = np.zeros(len(df), dtype=np.int16)
+    frame[COLLECTED] = month_step(MONTHS)[frame["month"].cat.codes.to_numpy()]
     return df, frame

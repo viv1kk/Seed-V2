@@ -7,6 +7,7 @@ Unresolved and say so: never Retire, never "unused" (adaptation.md).
 from app.analytics.generator import MONTHS, month_labels
 from app.analytics.generator.applications import BUSINESS_UNITS, CRITICALITY, DISPOSITIONS
 from app.analytics.schema import (
+    Collection,
     Chart,
     ColourRule,
     ColourScale,
@@ -224,6 +225,9 @@ APPLICATIONS = Dashboard(
         Level(id="application", label="Application", dimension="app"),
         Level(id="record", label="Usage records", entity=True),
     ],
+    collection=Collection(
+        frame="usage", source="usage telemetry", noun="application-months of usage"
+    ),
     evidence=Evidence(
         dimension="disposition",
         findings=[

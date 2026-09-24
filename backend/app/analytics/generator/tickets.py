@@ -23,7 +23,16 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from app.analytics.generator import END, MONTHS, START, allocate
+from app.analytics.generator import (
+    CALIBRATIONS,
+    COLLECTED,
+    END,
+    EVERY,
+    MONTHS,
+    START,
+    allocate,
+    step_of,
+)
 
 SEED = 20260623
 
@@ -356,4 +365,75 @@ def generate() -> pd.DataFrame:
     df["expected"] = expected
     excess = np.clip(hours - df["resolutionHoursBaseline"].to_numpy(), 0, None)
     df["excessHours"] = np.where(anomalous, np.round(excess, 1), 0.0)
+    # The week each ticket is collected in, once Life begins (D-17).
+    df[COLLECTED] = step_of(df["opened"])
     return df
+
+
+#: A cluster is confirmed once this share of its tickets has been collected.
+#: Until then it is provisional: its tickets are flagged, but the cluster is
+#: scored on partial evidence, below the confirmation threshold.
+CONFIRM_SHARE = 0.6
+PROVISIONAL = 0.75
+
+
+def calibrate(frames: dict[str, pd.DataFrame]) -> list[dict[str, dict[str, np.ndarray]]]:
+    """Every recalibration's baselines and scores, computed once (FR-LF6).
+
+    Calibration c is taken at step c x EVERY, over the tickets collected by
+    then. Each metric's baseline is the mean over the comparable normal
+    tickets collected so far, the same rule generation uses over all of
+    them, so the last calibration is exactly the generated frame. A
+    cluster's tickets keep their score once enough of it has arrived, and
+    are marked down to provisional before that. Nothing here runs when a
+    dashboard asks (FR-AN3).
+    """
+    df = frames["primary"]
+    collected = df[COLLECTED].to_numpy()
+    anomalous = df["anomalous"].to_numpy()
+    codes = df["pattern"].cat.codes.to_numpy()
+    cluster = df["cluster"].cat.codes.to_numpy()
+    sizes = np.bincount(cluster[cluster >= 0], minlength=len(CLUSTERS))
+    hours = df["resolutionHours"].to_numpy()
+    # Each metric's comparable cell, as one integer per ticket, so a
+    # baseline is two bincounts rather than a groupby and a join.
+    cells: dict[str, tuple[np.ndarray, int]] = {}
+    for metric in METRICS.values():
+        key = np.zeros(len(df), dtype=np.int64)
+        width = 1
+        for column in metric.comparable:
+            codes_of = df[column].cat.codes.to_numpy().astype(np.int64)
+            size = len(df[column].cat.categories)
+            key = key * size + codes_of
+            width *= size
+        cells[metric.column] = (key, width)
+    calibrations = []
+    for c in range(CALIBRATIONS):
+        step = c * EVERY
+        if c == CALIBRATIONS - 1:
+            calibrations.append({})
+            continue
+        seen = collected <= step
+        normal = ~anomalous & seen
+        columns: dict[str, np.ndarray] = {}
+        for metric in METRICS.values():
+            key, width = cells[metric.column]
+            values = df[metric.column].to_numpy().astype(float)
+            sums = np.bincount(key[normal], weights=values[normal], minlength=width)
+            counts = np.bincount(key[normal], minlength=width)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                means = np.round(sums / counts, 3)
+            columns[f"{metric.column}Baseline"] = means[key]
+        expected = np.full(len(df), np.nan)
+        for index, pattern in enumerate(PATTERNS):
+            rows = codes == index + 1
+            expected[rows] = columns[f"{METRICS[pattern].column}Baseline"][rows]
+        columns["expected"] = expected
+        excess = np.clip(hours - columns["resolutionHoursBaseline"], 0, None)
+        columns["excessHours"] = np.where(anomalous, np.round(excess, 1), 0.0)
+        share = np.bincount(cluster[(cluster >= 0) & seen], minlength=len(CLUSTERS)) / sizes
+        provisional = (cluster >= 0) & (share[np.maximum(cluster, 0)] < CONFIRM_SHARE)
+        score = df["score"].to_numpy()
+        columns["score"] = np.where(provisional, np.round(score * PROVISIONAL, 3), score)
+        calibrations.append({"primary": columns})
+    return calibrations

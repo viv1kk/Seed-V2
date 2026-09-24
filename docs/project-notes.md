@@ -4820,3 +4820,117 @@ query code. M18's hash, `8e2c525`, is backfilled.
 
 **Check by hand.** Run License Optimization and Application Portfolio
 from Life, click into each treemap, then open a record.
+
+### M19 · Life: collection and recalibration
+
+D-17, Option B. After the seeding phase closes, Agent One VW collects
+the final twelve simulated weeks of each dataset, one week a step,
+recalibrates every four, and ends caught up. Every figure is still
+computed from generated rows. The starting values are recorded under
+D-17, "As built".
+
+**Measured first.** The plan put generation at 0.108 s. It is 0.41 s
+today, the tickets frame being most of it. With every calibration and
+Life's plan precomputed, the whole build takes 0.80 s, inside NFR-P1's
+2 s and the startup test's 1.5 s. A first version took 1.23 s. Moving
+the ticket baselines to `bincount`s over category codes, and dropping
+string comparisons from the plan, brought it down, with identical
+results.
+
+**What changed.**
+
+- **Generators.**
+  - Every frame carries a `collected` step: 0 for what was already
+    collected, 1 to 12 for each week of the window.
+  - `generator/__init__.py` holds the shared clock: `STEPS`, `EVERY`,
+    `step_of`, `month_step`, `calibration_of` and `week_of`.
+  - `tickets.calibrate` and `applications.calibrate` return, for each
+    calibration, only the columns that differ from the generated frames.
+  - The last calibration is empty, so the caught-up state is exactly the
+    generated frames.
+- **Schema and store.**
+  - A `Collection` spec on each descriptor names the frame whose arrivals
+    are reported, the source, the noun and any dimension that
+    recalibration confirms.
+  - `Dataset.at(c)` gives the frames as calibration c saw them: shallow
+    copies with the recalibrated columns swapped in. Other columns are
+    shared.
+  - `Dataset.arrivals` and `Dataset.recalibrations` are Life's plan,
+    counted from rows at startup: arrivals per step, and what each
+    recalibration moved and confirmed.
+- **Query engine.**
+  - `FilterContext.step` is one more term (FR-LF7). With no step, the
+    engine reads the full dataset, so every existing caller and test is
+    unchanged.
+  - The step narrows every frame, "of total" figures included, and reads
+    under the calibration in force.
+  - The evidence panel names its calibration (FR-LF9), and whether a
+    selected cluster is confirmed or provisional.
+- **API.** The dashboard endpoint describes the clock: steps, and each
+  step's week and dates.
+- **Life workflow** (`workflows/life.py`, run after the narrative in
+  `runtime.py`):
+  - It collects only for live Agent Components.
+  - Each step is an event naming the source, the count and the week,
+    labelled simulated.
+  - Every four steps, a recalibration reports the baseline that moved
+    most, and the clusters confirmed or withdrawn.
+  - It ends with `life.caught_up`.
+  - `state.collection` is the system cursor, and the snapshot carries it.
+- **Frontend.**
+  - The system store follows the cursor.
+  - The Life header shows collection progress.
+  - The dashboard store holds the view cursor, URL-synced as `step`:
+    - at the top it follows the system;
+    - a drill pins it;
+    - the drill bar says how many collections are newer, and offers
+      Catch up;
+    - returning to the top follows again.
+  - The evidence panel shows the calibration.
+
+**Test edits.** None. All 476 existing tests passed unchanged.
+`tests/test_life.py` adds 55. They check:
+
+- the step term against the rows, for every frame, at seven steps;
+- ticket KPIs growing step by step;
+- filters combining with the step;
+- the caught-up state equalling the full dataset;
+- the generated frames staying untouched;
+- baselines recomputed from the rows;
+- the first recalibration confirming Cluster 27;
+- provisional clusters becoming confirmed;
+- application figures following the latest month;
+- the evidence naming its calibration;
+- pinned figures holding still;
+- the workflow's events matching the rows;
+- two runs from Reset matching;
+- a rejected component not collected;
+- zero narrative weight;
+- skip completing collection, and Reset clearing it;
+- the events subscribed and presented as activity;
+- the API, and the running app collecting after closing.
+
+**Gates.** `pytest` gives 531 passed. Typecheck and build pass. Live, on
+an isolated copy of the app, at 2x (13 of 13):
+
+- Life shows its progress.
+- A top-level dashboard grows with collection: 139,438 tickets, then
+  146,871.
+- Drilled in, the view holds still and reads "Pinned to week 25 · 2
+  newer collections".
+- The evidence names its calibration.
+- Catch up moves to the newest step, and the top follows again.
+- Caught up, the dashboard shows 184,392 tickets.
+- The stream has twelve collection steps. "Recalibration 1, week 27"
+  moves the Resolution stall baseline from 35.71 to 34.82 hours and
+  confirms Cluster 27, and the stream ends caught up.
+- `?step=4` opens week 27 pinned, with the API's figures.
+- The regressions pass: replay and Reset 5 of 5, the M14 walkthrough 31
+  of 31, and the M18 and M20 checks.
+
+**Check by hand.**
+
+1. Close seeding at 1x. Watch the Life header count the weeks, open
+   Ticket Anomaly Detection and see the totals grow.
+2. Drill into a cluster and watch it hold still, then Catch up.
+3. Read the recalibration entries in the Activity stream.

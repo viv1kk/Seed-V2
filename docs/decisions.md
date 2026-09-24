@@ -883,6 +883,38 @@ against ground truth, the per-component status strip, and the
 operations console. They remain available if a later session asks for
 the agent framing.
 
+*As built (M19).* The starting values, tuned at M22:
+
+- **The window.** The final twelve weeks, ISO weeks 24 to 35 of 2026,
+  one week a step, with a recalibration every four steps. The month ends
+  fall on the recalibration steps (30 June in step 4, 31 July in step 8,
+  31 August in step 12), so monthly data arrives exactly as a
+  recalibration reads it.
+- **The pace.** At 1x a step lands 3 seconds after the last, and a
+  recalibration pauses 2 more: about 42 seconds from start to caught up.
+- **The workflow.** Life runs after the narrative in the running app. Its
+  beats carry no weight, only a floor, so the 270-second budget and the
+  narrative's tests are untouched.
+- **What each dataset collects:**
+  - **Tickets** arrive by the day they were opened.
+  - **Licences:** seats are the licence system's entitlements, known from
+    the start, and each month's use arrives at the month's end.
+  - **Applications:** the portfolio is known from the start, and each
+    month's usage arrives at the month's end.
+- **What recalibrates:**
+  - **Tickets:** each metric's baseline is recomputed over the comparable
+    normal tickets collected so far. A cluster is confirmed once 60% of
+    its tickets have arrived, and scored at 0.75 of its score until then.
+    Tickets are flagged one by one from the start, and confirmation is a
+    judgement about the cluster.
+  - **Applications:** monthly users, and cost per user, are as of the
+    latest month collected, and their baselines are recomputed.
+  - **Licences:** nothing. The utilisation class reads the snapshot's
+    last 90 days, so no licence figure moves at a recalibration.
+- **Withdrawal** is computed and reported, but no cluster in this seed is
+  withdrawn. Every recalibration confirms clusters, and the first
+  confirms Cluster 27.
+
 *Requirement cost.* Two amendments, both narrow:
 
 - **A-8.** Recalibrating baselines within a run is not the Evolution

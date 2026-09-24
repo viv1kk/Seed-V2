@@ -28,8 +28,9 @@ from typing import Any
 
 import numpy as np
 
+from app.analytics.generator import COLLECTED, EVERY, week_of
 from app.analytics.query import FilterContext, Selection, plain
-from app.analytics.store import Dataset
+from app.analytics.store import CONFIRMED, Dataset
 from app.knowledge.methodologies import BY_ID
 
 SAMPLE = 10
@@ -45,7 +46,12 @@ def evidence(dataset: Dataset, context: FilterContext) -> dict[str, Any]:
 
     selection = Selection(dataset, context)
     rows = selection.rows("primary")
-    base: dict[str, Any] = {"dimension": dimension.id, "selected": len(rows), "simulated": True}
+    base: dict[str, Any] = {
+        "dimension": dimension.id,
+        "selected": len(rows),
+        "simulated": True,
+        "calibration": _calibration(dataset, selection),
+    }
     if not len(rows):
         return {**base, "status": "empty", "message": "Nothing matches the current selection."}
 
@@ -112,9 +118,12 @@ def evidence(dataset: Dataset, context: FilterContext) -> dict[str, Any]:
     deviation = observed / baseline - 1 if baseline else None
 
     # The comparable population: rows that meet the comparison's condition
-    # and share a comparable value with some contributing record.
-    frame = dataset.primary
+    # and share a comparable value with some contributing record, among
+    # the rows collected so far.
+    frame = selection.frames["primary"]
     comparable = np.ones(len(frame), dtype=bool)
+    if selection.step is not None and COLLECTED in frame:
+        comparable &= frame[COLLECTED].to_numpy() <= selection.step
     for restriction in finding.comparable_where:
         hit = (
             frame[dashboard.dimension(restriction.dimension).column]
@@ -145,4 +154,43 @@ def evidence(dataset: Dataset, context: FilterContext) -> dict[str, Any]:
             ],
         },
         "score": plain(round(float(contributing[spec.score].mean()), 3)) if spec.score else None,
+        "confirmation": _confirmation(dataset, selection, rows),
+    }
+
+
+def _calibration(dataset: Dataset, selection: Selection) -> dict[str, Any] | None:
+    """The calibration a finding is scored under, named (FR-LF9).
+
+    None where the dashboard has no collection, or the selection reads the
+    full dataset outside Life.
+    """
+    if dataset.dashboard.collection is None or selection.step is None:
+        return None
+    c = selection.calibration
+    week = week_of(c * EVERY)["week"]
+    return {
+        "index": c,
+        "step": selection.step,
+        "label": "Baseline as collected before Life began"
+        if c == 0
+        else f"Baseline as of recalibration {c}, {week}",
+    }
+
+
+def _confirmation(dataset: Dataset, selection: Selection, rows) -> dict[str, Any] | None:
+    """Whether the one group the selection narrows to is confirmed yet (FR-LF6)."""
+    spec = dataset.dashboard.collection
+    score = dataset.dashboard.evidence.score
+    if spec is None or not spec.confirm or not score or selection.step is None:
+        return None
+    key = dataset.dashboard.dimension(spec.confirm).column
+    values = rows[key].dropna().astype(str).unique()
+    if len(values) != 1:
+        return None
+    mean = float(rows[score].mean())
+    return {
+        "dimension": spec.confirm,
+        "value": values[0],
+        "status": "confirmed" if mean >= CONFIRMED else "provisional",
+        "score": plain(round(mean, 3)),
     }

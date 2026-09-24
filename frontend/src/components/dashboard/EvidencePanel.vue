@@ -71,7 +71,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <div v-else class="body">
       <section class="finding">
         <h2 class="title">
-          <span class="swatch" :style="{ background: `var(--chart-${e.finding?.role ?? 'muted'})` }" />
+          <span
+            class="swatch"
+            :style="{ background: `var(--chart-${e.finding?.role ?? 'muted'})` }"
+          />
           {{ e.finding?.title }}
         </h2>
         <p class="description">{{ e.finding?.description }}</p>
@@ -98,9 +101,27 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         {{ e.metric.label }}, mean over the contributing records.
       </p>
 
+      <!-- The calibration the finding is scored under, so a finding that
+           differs between steps reads as maintenance (FR-LF9). -->
+      <section v-if="e.calibration" class="section">
+        <h3 class="section-title">Calibration</h3>
+        <p class="line">{{ e.calibration.label }}.</p>
+        <p v-if="e.confirmation" class="line">
+          {{ e.confirmation.value }}
+          <span class="confirmation" :data-status="e.confirmation.status">
+            {{ e.confirmation.status === 'confirmed' ? 'confirmed' : 'provisional' }}
+          </span>
+          <template v-if="e.confirmation.status === 'provisional'">
+            , scored on partial evidence until more of it is collected
+          </template>
+        </p>
+      </section>
+
       <section v-if="comparable" class="section">
         <h3 class="section-title">Comparable population</h3>
-        <p class="line"><span class="mono">{{ comparable.size }}</span> · {{ comparable.basis }}</p>
+        <p class="line">
+          <span class="mono">{{ comparable.size }}</span> · {{ comparable.basis }}
+        </p>
       </section>
 
       <section v-if="e.records" class="section">
@@ -378,5 +399,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   .panel {
     animation: none;
   }
+}
+
+.confirmation {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--status-positive);
+}
+
+.confirmation[data-status='provisional'] {
+  color: var(--status-warning);
 }
 </style>
