@@ -4763,3 +4763,60 @@ app:
 - The stream says Agent One VW is live.
 - Replay and Reset give 5 of 5, the M14 walkthrough 31 of 31, and the
   M18 check 12 of 12.
+
+### M20 · Remaining dashboards
+
+**What was already there.** M9 built all three generators and declared
+all three dashboards in the descriptor schema. M10 built the generic
+renderer. So License Optimization and Application Portfolio
+Rationalization were already served and rendered. M20's work was to
+prove they hold up in the Life pane, as the exit asks: *both dashboards
+work with no new UI code and no new backend query code.*
+
+**Verified live**, on an isolated copy of the app, each dashboard run
+from the Life list:
+
+- **License Optimization** ("Licence Utilisation"):
+  - The dashboard opens in Life, URL-synced.
+  - Five KPIs: 13,620 entitled, 13,002 assigned, 9,496 active, 3,171
+    unused or underused, and $390k recoverable a year, over priced
+    products only, with 975 seats withheld.
+  - All four charts draw: the treemap, entitled against active, the
+    monthly trend and recoverable cost.
+  - The candidate and record tables fill.
+  - A treemap click drills and narrows the figures (Microsoft 365 E3,
+    Unused: 104 seats, $45k).
+  - A seat row reaches the record level (LIC-001848), and Back pops one
+    step.
+- **Application Portfolio Rationalization** ("Application Portfolio"):
+  - The dashboard opens in Life, URL-synced.
+  - Five KPIs: 186 applications, $4.76M, 49,099 users, $97 per user and
+    326 dependents.
+  - All four charts draw, and both tables fill.
+  - A treemap click drills to one application, and a row reaches its
+    record level. Back pops one step.
+- No console errors across either dashboard.
+
+That makes three to four charts and a drill path each (FR-AN7), with no
+methodology-specific UI (FR-EV4).
+
+**One descriptor fix.** At the record level, Application Portfolio
+labelled its breadcrumb with the application's name, the same as the
+application-level crumb before it: "Portfolio / API Gateway EMEA / API
+Gateway EMEA". Its `Entity.title` now names the application id, as
+Ticket Anomaly names the ticket number. The trail reads "Portfolio /
+API Gateway EMEA / APP-0158". This changes the descriptor only: no UI
+code and no query code (`descriptors/applications.py`).
+
+**Noted, not changed.** A treemap leaf click drills to the leaf's whole
+path in one step. In License Optimization, that sets vendor, product and
+utilisation class, and the crumb reads just "Unused". This is the
+generic renderer's behaviour, shared by every dashboard. Changing the
+label would be UI code, so it is left for M21's design pass.
+
+**Gates.** `pytest` gives 476 passed; the 200 ms timing test passed this
+time. Typecheck and build pass. The diff touches no frontend file and no
+query code. M18's hash, `8e2c525`, is backfilled.
+
+**Check by hand.** Run License Optimization and Application Portfolio
+from Life, click into each treemap, then open a record.

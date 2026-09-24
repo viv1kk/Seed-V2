@@ -36,7 +36,12 @@ APPLICATIONS = Dashboard(
     title="Application Portfolio",
     subtitle="Every application with its usage, ownership, cost and dependencies, and the "
     "disposition that evidence supports.",
-    entity=Entity(label="application", plural="applications", id="application", title="name"),
+    # An application is named by its id at the record level, as a ticket is by
+    # its number: its name is already the application level's crumb, and the
+    # record step would repeat it.
+    entity=Entity(
+        label="application", plural="applications", id="application", title="application"
+    ),
     frames=[Frame(id="usage", label="Monthly usage", dimensions=["month"])],
     dimensions=[
         Dimension(

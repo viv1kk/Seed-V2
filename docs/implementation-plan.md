@@ -244,9 +244,9 @@ seed-v2/
 | M15 Declared stack at Planting | NEW  | Built | `64ed030` |
 | M16 Routing-problem flag     | NEW    | Built | `4cf715d` |
 | M17 Growth tree              | NEW    | Built | `8fa369a` |
-| M18 Closing the seeding phase | NEW   | Built | |
+| M18 Closing the seeding phase | NEW   | Built | `8e2c525` |
 | M19 Life: collection and recalibration | NEW | Not started | |
-| M20 Remaining dashboards *(was M11)* | — | Not started | |
+| M20 Remaining dashboards *(was M11)* | — | Built | |
 | M21 Design pass *(was M12)*  | —      | Not started | |
 | M22 Rehearsal and hardening *(was M13)* | — | Not started | |
 
